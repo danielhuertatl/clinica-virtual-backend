@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendar Cita</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .grid-horarios {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+            display: none; /* Oculto hasta que seleccione fecha */
+        }
+        .btn-horario {
+            background-color: white;
+            border: 1px solid #0E3B5C;
+            color: #0E3B5C;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .btn-horario:hover {
+            background-color: #e6f0fa;
+        }
+        .btn-horario.seleccionado {
+            background-color: #0E3B5C;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
+        
+        <div class="header-consulta">
+            <p><strong>Agendar Nueva Consulta</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">cancelar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-bottom: 20px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <form id="form-agendar">
+            <div class="campo" style="margin-bottom: 20px;">
+                <label>1. Seleccione un Especialista:</label>
+                <select id="select-doctor" required style="width: 100%; padding: 10px; border: 1px solid #0E3B5C; border-radius: 4px; font-size: 16px;">
+                    <option value="" disabled selected>Elija un doctor...</option>
+                    <option value="andrea">Dra. Andrea Lizbeth Colin (Medicina General)</option>
+                    <option value="juan">Dr. Juan Pérez (Pediatría)</option>
+                </select>
+            </div>
+
+            <div class="campo" id="seccion-fecha" style="display: none; margin-bottom: 20px;">
+                <label>2. Seleccione la Fecha:</label>
+                <input type="date" id="fecha-cita" required style="width: 100%; padding: 10px; border: 1px solid #0E3B5C; border-radius: 4px; font-size: 16px;">
+            </div>
+
+            <div class="campo" id="seccion-horarios" style="display: none; margin-bottom: 30px;">
+                <label>3. Horarios Disponibles:</label>
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">Seleccione el horario que mejor le acomode basado en la disponibilidad del doctor.</p>
+                
+                <div class="grid-horarios" id="grid-horarios">
+                    <button type="button" class="btn-horario" onclick="seleccionarHora(this, '09:00')">09:00 hrs</button>
+                    <button type="button" class="btn-horario" onclick="seleccionarHora(this, '09:45')">09:45 hrs</button>
+                    <button type="button" class="btn-horario" onclick="seleccionarHora(this, '10:30')">10:30 hrs</button>
+                    <button type="button" class="btn-horario" onclick="seleccionarHora(this, '11:15')">11:15 hrs</button>
+                    <button type="button" class="btn-horario" onclick="seleccionarHora(this, '12:00')">12:00 hrs</button>
+                    <button type="button" class="btn-horario" onclick="seleccionarHora(this, '16:00')">16:00 hrs</button>
+                </div>
+                <input type="hidden" id="hora-seleccionada" required>
+            </div>
+
+            <button type="submit" class="btn-accion-verde" id="btn-confirmar" style="width: 100%; padding: 15px; display: none;">Confirmar y Agendar Cita</button>
+        </form>
+
+    </div>
+
+<script>
+        const selectDoctor = document.getElementById('select-doctor');
+        const inputFecha = document.getElementById('fecha-cita');
+        const seccionFecha = document.getElementById('seccion-fecha');
+        const seccionHorarios = document.getElementById('seccion-horarios');
+        const gridHorarios = document.getElementById('grid-horarios');
+        const btnConfirmar = document.getElementById('btn-confirmar');
+        const inputHora = document.getElementById('hora-seleccionada');
+
+        // Bloquear fechas del pasado
+        const hoy = new Date().toISOString().split('T')[0];
+        inputFecha.setAttribute('min', hoy);
+
+        selectDoctor.addEventListener('change', function() {
+            seccionFecha.style.display = 'block';
+            inputFecha.value = ''; 
+            seccionHorarios.style.display = 'none';
+            btnConfirmar.style.display = 'none';
+        });
+
+        inputFecha.addEventListener('change', function() {
+            if(this.value) {
+                seccionHorarios.style.display = 'block';
+                btnConfirmar.style.display = 'none';
+                inputHora.value = '';
+
+                // Truco Pro: Saber qué día de la semana eligió el paciente
+                // En JS, 0 es Lunes (ajustado), 5 es Sábado, 6 es Domingo
+                const fechaSeleccionada = new Date(this.value + 'T12:00:00'); 
+                const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 6 es Sábado
+
+                // Limpiamos los botones viejos
+                gridHorarios.innerHTML = '';
+
+                if(diaSemana === 0 || diaSemana === 6) {
+                    // Si es fin de semana (Sábado o Domingo)
+                    gridHorarios.style.display = 'block';
+                    gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">El doctor no atiende en fines de semana. Por favor, elija de Lunes a Viernes.</p>';
+                } else {
+                    // Si es entre semana, "cargamos" los horarios desde la base de datos fantasma
+                    gridHorarios.style.display = 'grid';
+                    const horariosSimulados = ['09:00', '09:45', '11:30', '13:00', '16:00', '17:15'];
+                    
+                    horariosSimulados.forEach(hora => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn-horario';
+                        btn.textContent = hora + ' hrs';
+                        btn.onclick = function() { seleccionarHora(this, hora); };
+                        gridHorarios.appendChild(btn);
+                    });
+                }
+            }
+        });
+
+        function seleccionarHora(boton, hora) {
+            document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('seleccionado'));
+            boton.classList.add('seleccionado');
+            inputHora.value = hora;
+            btnConfirmar.style.display = 'block';
+        }
+
+        document.getElementById('form-agendar').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if(!inputHora.value) {
+                alert("Debe seleccionar un horario disponible.");
+                return;
+            }
+            alert("✅ ¡Cita confirmada con éxito!\n\nDoctor: " + selectDoctor.options[selectDoctor.selectedIndex].text + "\nFecha: " + inputFecha.value + "\nHora: " + inputHora.value);
+            window.location.href = '26-mis-citas.html';
+        });
+    </script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toma de Signos Vitales</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
+        
+        <div class="header-consulta">
+            <p><strong>Registro de Signos Vitales</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">cancelar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-bottom: 10px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <div class="id-paciente-section" style="margin-top: 10px; background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C;">
+            <label style="color: #0E3B5C; font-weight: bold;">Buscar paciente con cita:</label>
+            <div class="input-inline" style="margin-top: 5px;">
+                <input type="text" placeholder="Ingrese ID, CURP o Nombre..." style="width: 100%; padding: 8px;">
+                <button type="button" class="btn-ok" onclick="alert('Simulando búsqueda... Paciente encontrado.')">Buscar</button>
+            </div>
+        </div>
+
+        <form id="form-signos" class="datos-paciente-grid">
+            <div class="campo" style="margin-top: 15px;">
+                <label>Nombre del Paciente:</label>
+                <input type="text" id="nombre-paciente" value="Angel Daniel Huerta Tehuacatl" required style="border: 1px solid #0E3B5C;">
+                <p style="font-size: 11px; color: #666; margin-top: 3px;">*Puede escribir el nombre manualmente si es un paciente de paso.</p>
+            </div>
+            
+            <h3 style="color: #0E3B5C; margin-top: 20px; border-bottom: 2px solid #0E3B5C; padding-bottom: 5px;">Signos Vitales</h3>
+            
+            <div class="campo-fila">
+                <div>
+                    <label>Peso (kg):</label> 
+                    <input type="number" id="peso" step="0.1" min="1" max="350" required placeholder="Ej. 70.5" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46">
+                </div>
+                <div>
+                    <label>Talla (m):</label> 
+                    <input type="number" id="talla" step="0.01" min="0.40" max="2.50" required placeholder="Ej. 1.65" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46">
+                </div>
+            </div>
+            <div class="campo-fila">
+                <div>
+                    <label>FC (ppm):</label> 
+                    <input type="number" id="fc" min="0" max="300" required placeholder="Latidos x min" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+                <div>
+                    <label>FR (rpm):</label> 
+                    <input type="number" id="fr" min="0" max="100" required placeholder="Resp. x min" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+            </div>
+            <div class="campo-fila">
+                <div>
+                    <label>SatO2 (%):</label> 
+                    <input type="number" id="sato2" min="0" max="100" required placeholder="0 - 100" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+                <div>
+                    <label>Temp (°C):</label> 
+                    <input type="number" id="temp" step="0.1" min="30" max="45" required placeholder="Ej. 36.5" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="button" class="btn-accion-verde" style="flex: 1;" onclick="enviarCitaProgramada()">Enviar a Consulta (Con Cita)</button>
+                
+                <button type="button" class="btn-accion-rojo" style="flex: 1; background-color: #d35400; border-color: #d35400;" onclick="enviarPacienteNuevo()">Enviar Paciente Nuevo (Sin Cita)</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const formSignos = document.getElementById('form-signos');
+
+        // Función para el paciente que ya tenía cita
+        function enviarCitaProgramada() {
+            // reportValidity() obliga al navegador a checar que no falten datos ni haya números locos
+            if (formSignos.reportValidity()) {
+                alert('✅ Signos vitales registrados.\n\nEl paciente ahora aparecerá como "Listo" en la agenda del doctor.');
+                window.location.href = '4-enfermero.html';
+            }
+        }
+
+        // Función para el paciente que va llegando (Urgencia/Paso)
+        function enviarPacienteNuevo() {
+            if (formSignos.reportValidity()) {
+                const nombre = document.getElementById('nombre-paciente').value;
+                
+                // Simulamos si hay un doctor libre (70% de probabilidad de que sí haya, 30% de que no)
+                const hayDoctorLibre = Math.random() > 0.3; 
+
+                if (hayDoctorLibre) {
+                    alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al Consultorio 1 con la Dra. Andrea Colin. Pase al paciente.`);
+                    window.location.href = '4-enfermero.html';
+                } else {
+                    alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nTodos los consultorios están llenos. Pida a ${nombre} que espere en la sala o canalice a urgencias externas si es grave.`);
+                }
+            }
+        }
+    </script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

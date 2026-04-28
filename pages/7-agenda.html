@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda del Doctor - Panel de Control</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 700px; position: relative; z-index: 1;">
+        
+        <div class="header-consulta">
+            <div class="info-doctor">
+                <p><strong>Mi Agenda y Notificaciones</strong></p>
+                <p style="font-size: 14px; color: #666;">Dra. Andrea Lizbeth Colin</p>
+            </div>
+            <div class="reloj-salir">
+                <span id="reloj-actual" style="font-weight: bold; color: #0E3B5C;">--:--</span>
+                <button class="btn-salir-rojo" onclick="window.location.href='2-doctor.html'">regresar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-bottom: 10px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <h3 style="color: #991D27; border-bottom: 2px solid #991D27; padding-bottom: 5px; margin-top: 15px;">
+            🔔 Solicitudes Pendientes <span class="badge-notificacion">2</span>
+        </h3>
+        
+        <div class="tarjeta-alerta-agenda">
+            <div style="flex-grow: 1;">
+                <p style="font-size: 14px; color: #666;">ID: PT-4451</p>
+                <p><strong>Carlos Ramírez</strong> solicita reagendar su cita de hoy (16:00 hrs) para mañana a las 10:00 hrs.</p>
+            </div>
+            <div style="display: flex; gap: 5px; flex-direction: column;">
+                <button class="btn-accion-verde" style="padding: 5px; font-size: 12px;" onclick="this.parentElement.parentElement.style.display='none';">Aceptar</button>
+                <button class="btn-accion-rojo" style="padding: 5px; font-size: 12px;" onclick="this.parentElement.parentElement.style.display='none';">Rechazar</button>
+            </div>
+        </div>
+
+        <div class="tarjeta-alerta-agenda" style="border-left-color: #666;">
+            <div style="flex-grow: 1;">
+                <p style="font-size: 14px; color: #666;">ID: PT-1092</p>
+                <p><strong>Laura Gómez</strong> ha <span style="color:#991D27; font-weight:bold;">CANCELADO</span> su cita de las 18:00 hrs.</p>
+            </div>
+            <div>
+                <button class="btn-accion" style="padding: 5px; font-size: 12px; background-color: #666;" onclick="this.parentElement.parentElement.style.display='none';">Enterado</button>
+            </div>
+        </div>
+
+        <h3 style="color: #0E3B5C; border-bottom: 2px solid #0E3B5C; padding-bottom: 5px; margin-top: 25px;">
+            📅 Citas Programadas para Hoy
+        </h3>
+
+        <div class="tarjeta-cita">
+            <div class="info-cita">
+                <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">13:43 hrs</p>
+                <p><strong>Angel Daniel Huerta Tehuacatl</strong></p>
+                <p style="font-size: 12px; color: #666;">Signos tomados por enfermería: Sí</p>
+            </div>
+            <div>
+                <button class="btn-accion" onclick="window.location.href='6-consulta-ahora.html'">Iniciar Consulta</button>
+            </div>
+        </div>
+
+        <div class="tarjeta-cita">
+            <div class="info-cita">
+                <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">14:30 hrs</p>
+                <p><strong>María Fernanda López</strong></p>
+                <p style="font-size: 12px; color: #666;">Signos tomados por enfermería: Pendiente</p>
+            </div>
+            <div>
+                <button class="btn-accion" style="background-color: #ccc; color: #333;" disabled>En Espera</button>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 20px;">
+            <button class="btn-cargar" style="flex: 1; border-color: #0E3B5C; color: #0E3B5C;" onclick="window.location.href='25-editar-horario.html'">⚙️ Editar mi Horario Disponible</button>
+            <button class="btn-cargar" style="flex: 1; border-color: #2D5A27; color: #2D5A27;" onclick="window.location.href='6-consulta-ahora.html'">➕ Atender Paciente sin Cita</button>
+        </div>
+
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html>

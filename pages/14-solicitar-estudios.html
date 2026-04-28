@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitar Estudios</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="pantalla-consulta">
+        <div class="header-consulta">
+            <p><strong>Solicitud de Estudios Médicos</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">regresar</button>
+            </div>
+        </div>
+
+        <div class="logo-container-consulta">
+            <img src="../assets/logo cuadrado.png" alt="Logo" class="logo-consulta">
+        </div>
+
+        <div class="id-paciente-section" style="margin-top: 20px;">
+            <label>ID del Paciente:</label>
+            <div class="input-inline">
+                <input type="text" placeholder="Ingrese el ID">
+                <button class="btn-ok">Buscar</button>
+            </div>
+        </div>
+
+        <form class="datos-paciente-grid">
+            <div class="campo">
+                <label>Paciente:</label>
+                <input type="text" value="Angel Daniel Huerta Tehuacatl" readonly style="background-color: #f0f0f0;">
+            </div>
+            
+            <div class="campo">
+                <label>Tipo de Estudio (Laboratorio / Imagenología):</label>
+                <select style="width: 100%; border: 1px solid #0E3B5C; padding: 8px; outline: none; font-size: 16px;">
+                    <option value="">Seleccione un estudio...</option>
+                    <option value="bh">Biometría Hemática</option>
+                    <option value="qs">Química Sanguínea (27 elementos)</option>
+                    <option value="ego">Examen General de Orina</option>
+                    <option value="rx">Radiografía (Rayos X)</option>
+                    <option value="usg">Ultrasonido</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label>Indicaciones para el estudio / Motivo:</label>
+                <textarea rows="4" placeholder="Escriba aquí las indicaciones clínicas para el laboratorio..."></textarea>
+            </div>
+            
+            <button type="button" class="btn-enviar-consulta" onclick="alert('Estudio solicitado correctamente a nombre del paciente.'); window.location.href='8-consultar-estudios.html';">Generar Solicitud</button>
+        </form>
+    </div>
+</body>
+</html>

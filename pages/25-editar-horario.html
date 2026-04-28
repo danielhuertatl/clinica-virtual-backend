@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Horario</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .fila-horario {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0E3B5C;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .fila-horario.inactivo {
+            border-left-color: #ccc;
+            background-color: #f9f9f9;
+            opacity: 0.6;
+        }
+        .dia-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 120px;
+            font-weight: bold;
+            color: #0E3B5C;
+        }
+        .controles-tiempo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-hora {
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: inherit;
+            color: #333;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
+        <div class="header-consulta">
+            <p><strong>Configuración de Horario Semanal</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">cancelar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-bottom: 20px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <p style="color: #666; font-size: 14px; margin-bottom: 20px; text-align: center;">
+            Seleccione los días laborales y establezca su hora de entrada y salida. Estos horarios se reflejarán en la aplicación de los pacientes.
+        </p>
+
+        <div class="fila-horario">
+            <div class="dia-toggle">
+                <input type="checkbox" checked id="chk-lunes">
+                <label for="chk-lunes">Lunes</label>
+            </div>
+            <div class="controles-tiempo">
+                <input type="time" class="input-hora" value="09:00">
+                <span>a</span>
+                <input type="time" class="input-hora" value="18:00">
+            </div>
+        </div>
+
+        <div class="fila-horario">
+            <div class="dia-toggle">
+                <input type="checkbox" checked id="chk-martes">
+                <label for="chk-martes">Martes</label>
+            </div>
+            <div class="controles-tiempo">
+                <input type="time" class="input-hora" value="09:00">
+                <span>a</span>
+                <input type="time" class="input-hora" value="18:00">
+            </div>
+        </div>
+
+        <div class="fila-horario">
+            <div class="dia-toggle">
+                <input type="checkbox" checked id="chk-miercoles">
+                <label for="chk-miercoles">Miércoles</label>
+            </div>
+            <div class="controles-tiempo">
+                <input type="time" class="input-hora" value="09:00">
+                <span>a</span>
+                <input type="time" class="input-hora" value="18:00">
+            </div>
+        </div>
+
+        <div class="fila-horario">
+            <div class="dia-toggle">
+                <input type="checkbox" checked id="chk-jueves">
+                <label for="chk-jueves">Jueves</label>
+            </div>
+            <div class="controles-tiempo">
+                <input type="time" class="input-hora" value="09:00">
+                <span>a</span>
+                <input type="time" class="input-hora" value="14:00">
+            </div>
+        </div>
+
+        <div class="fila-horario">
+            <div class="dia-toggle">
+                <input type="checkbox" checked id="chk-viernes">
+                <label for="chk-viernes">Viernes</label>
+            </div>
+            <div class="controles-tiempo">
+                <input type="time" class="input-hora" value="09:00">
+                <span>a</span>
+                <input type="time" class="input-hora" value="17:00">
+            </div>
+        </div>
+
+        <div class="fila-horario inactivo">
+            <div class="dia-toggle">
+                <input type="checkbox" id="chk-sabado">
+                <label for="chk-sabado" style="color: #666;">Sábado</label>
+            </div>
+            <div class="controles-tiempo">
+                <span style="font-size: 14px; color: #991D27; font-weight: bold; margin-right: 25px;">Descanso</span>
+            </div>
+        </div>
+
+        <div class="fila-horario inactivo">
+            <div class="dia-toggle">
+                <input type="checkbox" id="chk-domingo">
+                <label for="chk-domingo" style="color: #666;">Domingo</label>
+            </div>
+            <div class="controles-tiempo">
+                <span style="font-size: 14px; color: #991D27; font-weight: bold; margin-right: 25px;">Descanso</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button class="btn-accion-verde" style="width: 100%; padding: 15px;" onclick="alert('Horario actualizado con éxito. Los pacientes ahora verán esta disponibilidad.'); window.location.href='7-agenda.html'">Guardar Configuración</button>
+        </div>
+
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Agenda - Doctor</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .tarjeta-cita {
+            background-color: white;
+            border-left: 5px solid #0E3B5C;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tarjeta-cita.completada {
+            border-left-color: #2D5A27;
+            opacity: 0.7;
+        }
+        .info-cita p { margin: 3px 0; }
+    </style>
+</head>
+<body>
+    <div class="pantalla-consulta">
+        <div class="header-consulta">
+            <p><strong>Citas Programadas</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="window.location.href='2-doctor.html'">regresar</button>
+            </div>
+        </div>
+
+        <div class="logo-container-consulta">
+            <img src="../assets/logo cuadrado.png" alt="Logo" class="logo-consulta">
+        </div>
+
+        <div style="text-align: center; margin: 15px 0; color: #0E3B5C;">
+            <h3>📅 Hoy: 16 de Abril de 2026</h3>
+            <p>Dra. Andrea Lizbeth Colin</p>
+        </div>
+
+        <div class="tarjeta-cita completada">
+            <div class="info-cita">
+                <p style="font-size: 18px; font-weight: bold; color: #2D5A27;">09:00 AM</p>
+                <p><strong>ID:</strong> PT-10023</p>
+                <p>María González Pérez</p>
+            </div>
+            <div>
+                <span style="color: #2D5A27; font-weight: bold;">Atendido</span>
+            </div>
+        </div>
+
+        <div class="tarjeta-cita">
+            <div class="info-cita">
+                <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">13:43 PM</p>
+                <p><strong>ID:</strong> PT-98765</p>
+                <p>Angel Daniel Huerta Tehuacatl</p>
+            </div>
+            <div>
+                <button class="btn-accion" onclick="window.location.href='6-consulta-ahora.html'">Iniciar Cita</button>
+            </div>
+        </div>
+
+        <div class="tarjeta-cita">
+            <div class="info-cita">
+                <p style="font-size: 18px; font-weight: bold; color: #666;">16:00 PM</p>
+                <p><strong>ID:</strong> PT-45012</p>
+                <p>Carlos Ramírez</p>
+            </div>
+            <div>
+                <button class="btn-accion" style="background-color: #ccc; color: #333;" disabled>En espera</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

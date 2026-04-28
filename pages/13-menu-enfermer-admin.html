@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Enfermería - Admin</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        /* Estilos alineados al Panel de Médicos */
+        .grid-gestion {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .card-admin {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-left: 6px solid #0E3B5C;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            width: 100%;
+        }
+
+        .card-admin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            background-color: #f8fafd;
+        }
+
+        .icon-box {
+            font-size: 30px;
+            background: #eef7ee; /* Color ligeramente diferente para distinguir enfermería */
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .text-box h3 {
+            margin: 0;
+            color: #0E3B5C;
+            font-size: 18px;
+        }
+
+        .text-box p {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card-baja {
+            border-left-color: #991D27;
+        }
+
+        .card-baja h3 {
+            color: #991D27;
+        }
+    </style>
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 550px; position: relative; z-index: 1;">
+        
+        <div class="header-consulta">
+            <p><strong>Panel de Administración</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="window.location.href='5-admin.html'">regresar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-top: 10px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <h2 style="color: #0E3B5C; margin-bottom: 5px;">Gestión de Enfermería</h2>
+            <p style="color: #666;">Administre al personal de triaje y asistencia clínica</p>
+        </div>
+
+        <div class="grid-gestion">
+            
+            <button class="card-admin" onclick="window.location.href='16-agregar-personal.html'">
+                <div class="icon-box">🩺</div>
+                <div class="text-box">
+                    <h3>Registrar Nuevo Enfermero(a)</h3>
+                    <p>Dar de alta personal de enfermería en el sistema.</p>
+                </div>
+            </button>
+
+            <button class="card-admin" onclick="window.location.href='17-editar-personal.html'">
+                <div class="icon-box">📝</div>
+                <div class="text-box">
+                    <h3>Actualizar Datos</h3>
+                    <p>Modificar información personal o de contacto.</p>
+                </div>
+            </button>
+
+            <button class="card-admin card-baja" onclick="window.location.href='18-borrar-personal.html'">
+                <div class="icon-box">❌</div>
+                <div class="text-box">
+                    <h3>Dar de Baja</h3>
+                    <p>Desactivar accesos por término de contrato o renuncia.</p>
+                </div>
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html>

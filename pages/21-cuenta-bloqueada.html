@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuenta Bloqueada</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .bloqueo-container {
+            text-align: center;
+            background-color: white;
+            padding: 40px 20px;
+            border-top: 8px solid #991D27;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="pantalla-login">
+        <div class="logo-container" style="border-color: #991D27; margin-bottom: 20px;">
+            <img src="../assets/logo cuadrado.png" alt="Logo" class="logo-principal">
+        </div>
+
+        <div class="bloqueo-container">
+            <h1 style="color: #991D27; margin-bottom: 15px;">🔒 Cuenta Bloqueada</h1>
+            <p style="color: #333; margin-bottom: 20px; line-height: 1.5;">
+                Por motivos de seguridad, su cuenta ha sido suspendida temporalmente tras múltiples intentos de inicio de sesión fallidos.
+            </p>
+            <p style="color: #666; font-size: 14px; margin-bottom: 30px;">
+                Por favor, póngase en contacto con el administrador del sistema de la Clínica Virtual para restablecer sus credenciales.
+            </p>
+            
+            <button class="btn-ingresar" style="width: 100%;" onclick="window.location.href='../index.html'">Volver al Inicio</button>
+        </div>
+    </div>
+</body>
+</html>

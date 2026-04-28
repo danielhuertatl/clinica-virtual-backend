@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receta Médica</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .receta-papel {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .receta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #0E3B5C;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pantalla-consulta">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
+            <button class="btn-accion" onclick="window.print()">Imprimir PDF</button>
+            <button class="btn-salir-rojo" onclick="window.location.href='2-doctor.html'">Cerrar</button>
+        </div>
+
+        <div class="receta-papel">
+            <div class="receta-header">
+                <div>
+                    <h2 style="color: #0E3B5C;">Clínica Virtual</h2>
+                    <p><strong>Dra. Andrea Lizbeth Colin</strong></p>
+                    <p style="font-size: 12px; color: #666;">Céd. Prof. 14776894 | IPN</p>
+                </div>
+                <img src="../assets/cuadrado.png" alt="Logo" style="width: 80px; mix-blend-mode: multiply;">
+            </div>
+
+            <div style="margin-bottom: 20px; font-size: 14px;">
+                <p><strong>Paciente:</strong> Angel Daniel Huerta Tehuacatl</p>
+                <p><strong>Fecha:</strong> <span id="fecha-receta"></span></p>
+                <p><strong>Peso:</strong> 52 kg | <strong>Talla:</strong> 1.64 m</p>
+            </div>
+
+            <div style="min-height: 200px; border-left: 2px solid #991D27; padding-left: 15px;">
+                <h3 style="color: #0E3B5C; margin-bottom: 10px;">Rx:</h3>
+                <p id="contenido-receta" style="margin-bottom: 10px; font-size: 16px; white-space: pre-wrap;"></p>
+            </div>
+
+            <div style="margin-top: 40px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+                <p style="font-size: 12px; color: #666;">Firma del Médico</p>
+                <div style="width: 200px; height: 50px; border-bottom: 1px solid #000; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/app.js"></script>
+</body>
+</html>

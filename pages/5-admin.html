@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Administrador</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 500px; position: relative; z-index: 1;">
+        <div style="text-align: right; margin-bottom: 10px;">
+            <button class="btn-salir" onclick="window.location.href='../index.html'">salir</button>
+        </div>
+        
+        <div class="logo-wrapper" style="margin-bottom: 20px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo" style="max-width: 150px;">
+        </div>
+        
+        <h2 id="saludo-admin" style="color: #0E3B5C; text-align: center; margin-bottom: 5px;">¡Bienvenido Administrador!</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">Panel de Control y Gestión de la Clínica</p>
+        
+        <div class="menu-grid" style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <h4 style="color: #991D27; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 5px;">Gestión de Personal</h4>
+            
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='12-menu-doctor-admin.html'">👨‍⚕️ Gestionar Doctores (Altas/Bajas)</button>
+            
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='13-menu-enfermer-admin.html'">🩺 Gestionar Enfermería (Altas/Bajas)</button>
+            
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 15px;">Operación de la Clínica</h4>
+
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='10-registrar-paciente.html'">📝 Registrar Nuevo Paciente</button>
+
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='29-agenda-admin.html'">💬 Buzón y Agenda Operativa</button>
+            
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombreUsuario');
+            const titulo = document.getElementById('saludo-admin');
+            if (nombre && nombre !== "undefined") {
+                // Cambia "Administrador" por el nombre real de la BD
+                titulo.innerText = `¡Bienvenido(a) ${nombre}!`;
+            }
+        });
+    </script>
+</body>
+</html>

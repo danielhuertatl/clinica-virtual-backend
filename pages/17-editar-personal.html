@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualizar Personal</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 750px; position: relative; z-index: 1;">
+        <div class="header-consulta">
+            <p><strong>Actualizar Datos del Personal</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">cancelar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-top: 10px; margin-bottom: 10px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 80px;">
+        </div>
+
+        <div class="id-paciente-section" style="background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C; margin-bottom: 20px;">
+            <label style="color: #0E3B5C; font-weight: bold;">Ingrese Cédula Profesional para buscar:</label>
+            <div class="input-inline" style="margin-top: 5px;">
+                <input type="text" id="buscar-cedula" placeholder="Ej. 14776894" style="width: 100%; padding: 8px;">
+                <button type="button" class="btn-ok" onclick="simularBusqueda()">Buscar</button>
+            </div>
+        </div>
+
+        <form id="form-editar-personal" class="datos-paciente-grid">
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Edición de Identidad</h4>
+            <div class="campo-fila">
+                <div>
+                    <label>Nombre(s):</label> 
+                    <input type="text" id="nombre" required placeholder="Nombre">
+                </div>
+                <div>
+                    <label>Apellido Paterno:</label> 
+                    <input type="text" id="apellido_p" required placeholder="Apellido">
+                </div>
+                <div>
+                    <label>Apellido Materno:</label> 
+                    <input type="text" id="apellido_m" required placeholder="Apellido">
+                </div>
+            </div>
+
+            <div class="campo-fila">
+                <div>
+                    <label>Teléfono (10 dígitos):</label> 
+                    <input type="text" id="telefono" maxlength="10" required placeholder="10 dígitos" 
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+                <div>
+                    <label>Email Institucional:</label> 
+                    <input type="email" id="email" required placeholder="correo@clinica.com">
+                </div>
+            </div>
+
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 15px;">Actualizar Dirección</h4>
+            <div class="campo-fila">
+                <div style="flex: 2;">
+                    <label>Calle:</label> 
+                    <input type="text" id="calle" required placeholder="Calle">
+                </div>
+                <div style="flex: 1;">
+                    <label>Núm Ext:</label> 
+                    <input type="text" id="num_ext" required placeholder="Núm">
+                </div>
+                <div style="flex: 1;">
+                    <label>CP:</label> 
+                    <input type="text" id="cp" maxlength="5" required placeholder="5 dígitos" 
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+            </div>
+            <div class="campo">
+                <label>Colonia / Municipio:</label>
+                <input type="text" id="colonia" required placeholder="Colonia, Municipio">
+            </div>
+
+            <div class="campo-fila" style="margin-top: 15px; opacity: 0.7;">
+                <div>
+                    <label>Puesto (No editable):</label>
+                    <input type="text" id="display-puesto" readonly style="background-color: #eee;">
+                </div>
+                <div>
+                    <label>Cédula ID (No editable):</label>
+                    <input type="text" id="display-cedula" readonly style="background-color: #eee;">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-enviar-consulta" style="margin-top: 25px; background-color: #2D5A27;">
+                Guardar Cambios Actualizados
+            </button>
+        </form>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html>

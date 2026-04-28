@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Comunicación - Admin</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .container-admin-29 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+        .seccion-blanca {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .tabla-contactos {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .tabla-contactos th {
+            text-align: left;
+            padding: 10px;
+            background: #f4f4f4;
+            color: #0E3B5C;
+        }
+        .tabla-contactos td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .indicador-nuevo {
+            background: #d35400;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 850px; position: relative; z-index: 1;">
+        <div class="header-consulta">
+            <p><strong>Panel de Comunicación y Agenda Operativa</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="window.location.href='5-admin.html'">regresar</button>
+            </div>
+        </div>
+
+        <div class="container-admin-29">
+            
+            <div class="seccion-blanca">
+                <h3 style="color: #0E3B5C; margin-bottom: 5px;">📞 Configuración de Directorio Médico</h3>
+                <p style="font-size: 13px; color: #666;">Los números registrados aquí aparecerán automáticamente en la agenda de los pacientes.</p>
+                
+                <table class="tabla-contactos">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Médico/Área</th>
+                            <th>Teléfono de Contacto</th>
+                            <th>Puesto</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-directorio">
+                        <tr>
+                            <td>Dra. Andrea Lizbeth Colin</td>
+                            <td><input type="text" value="5512345678" style="padding: 5px; width: 100%;"></td>
+                            <td>Medicina General</td>
+                            <td><button class="btn-ok" style="padding: 5px 10px;">Actualizar</button></td>
+                        </tr>
+                        <tr>
+                            <td>Recepción / Urgencias</td>
+                            <td><input type="text" value="5599887766" style="padding: 5px; width: 100%;"></td>
+                            <td>Administración</td>
+                            <td><button class="btn-ok" style="padding: 5px 10px;">Actualizar</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn-enviar-consulta" style="margin-top: 15px; background: #2D5A27; font-size: 14px;">+ Agregar Nuevo Contacto al Directorio</button>
+            </div>
+
+            <div class="seccion-blanca" style="border-top: 5px solid #991D27;">
+                <h3 style="color: #991D27;">📥 Buzón de Incidencias y Mensajes</h3>
+                <div style="margin-top: 15px;">
+                    <div style="padding: 15px; background: #fff9f9; border: 1px solid #f5c6cb; border-radius: 6px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: #991D27;">Queja de Servicio</strong>
+                            <span class="indicador-nuevo">Nuevo</span>
+                        </div>
+                        <p style="font-size: 14px; margin: 8px 0;">"El paciente Daniel Huerta reporta que no puede descargar su última receta desde la Pantalla 7."</p>
+                        <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
+                            <span>👤 Paciente ID: 1022</span>
+                            <span>📅 27/04/2026</span>
+                            <a href="#" style="color: #0E3B5C;">Marcar como leído</a>
+                        </div>
+                    </div>
+
+                    <div style="padding: 15px; background: #f8fafd; border: 1px solid #ddd; border-radius: 6px; opacity: 0.8;">
+                        <strong style="color: #0E3B5C;">Sugerencia</strong>
+                        <p style="font-size: 14px; margin: 8px 0;">"Me gustaría que hubiera recordatorios por WhatsApp 1 día antes de la cita."</p>
+                        <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
+                            <span>👤 María López</span>
+                            <span>📅 25/04/2026</span>
+                            <span style="color: #2D5A27;">✔️ Atendido</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function actualizarTelefono() {
+            alert("Sincronizando con la Base de Datos... El paciente ahora verá el nuevo número.");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Personal</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 900px; position: relative; z-index: 1;">
+        <div class="header-consulta">
+            <p><strong>Registro de Personal (Estructura de Datos)</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">salir</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-bottom: 15px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 120px;">
+        </div>
+
+        <form id="form-personal" class="datos-paciente-grid">
+            
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left;">Datos de Identidad</h4>
+            
+            <div class="campo-fila">
+                <input type="text" id="nombre" placeholder="Nombre(s)" required>
+                <input type="text" id="apellido_p" placeholder="Apellido Paterno" required>
+                <input type="text" id="apellido_m" placeholder="Apellido Materno">
+            </div>
+
+            <div class="campo-fila">
+                <input type="email" id="correo" placeholder="Correo Institucional" required style="flex: 1.5;">
+                <input type="password" id="password" placeholder="Contraseña Acceso" required style="flex: 1;">
+                <select id="puesto" required style="flex: 1; height: 35px; border: 1px solid #0E3B5C;">
+                    <option value="" disabled selected>Puesto...</option>
+                    <option value="doctor">Doctor(a)</option>
+                    <option value="enfermero">Enfermero(a)</option>
+                    <option value="admin">Administrador(a)</option>
+                </select>
+                <input type="text" id="telefono" placeholder="Teléfono (10 dígitos)" maxlength="10" required 
+                       onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1;">
+            </div>
+
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left; margin-top: 15px;">Dirección</h4>
+            
+            <div class="campo-fila">
+                <input type="text" id="calle" placeholder="Calle" required style="flex: 2;">
+                <input type="text" id="num_ext" placeholder="Núm Ext" required style="flex: 1;">
+                <input type="text" id="cp" placeholder="CP (5 dígitos)" maxlength="5" required 
+                       onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1;">
+            </div>
+
+            <div class="campo-fila">
+                <input type="text" id="colonia_municipio" placeholder="Colonia / Municipio" required style="width: 100%;">
+            </div>
+
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left; margin-top: 15px;">Legal</h4>
+
+            <div class="campo-fila">
+                <input type="text" id="cedula" placeholder="Cédula Profesional" required style="flex: 1;">
+                <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required 
+                       style="flex: 1; text-transform: uppercase;"
+                       oninput="let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v;">
+            </div>
+            
+            <button type="submit" id="btn-personal" class="btn-enviar-consulta" style="margin-top: 30px;">Sincronizar con Base de Datos</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('form-personal').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btn-personal');
+            const telefono = document.getElementById('telefono').value;
+            const curp = document.getElementById('curp').value.toUpperCase();
+            const cp = document.getElementById('cp').value;
+
+            // VALIDACIONES DE VUELTA
+            if (telefono.length !== 10) {
+                alert('⚠️ El teléfono debe tener 10 dígitos.');
+                return;
+            }
+
+            if (cp.length !== 5) {
+                alert('⚠️ El Código Postal debe tener 5 dígitos.');
+                return;
+            }
+
+            const regexCURP = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+            if (!regexCURP.test(curp)) {
+                alert('⚠️ Formato de CURP inválido.');
+                return;
+            }
+
+            btn.innerText = "Sincronizando...";
+
+            const datos = {
+                nombre: document.getElementById('nombre').value,
+                apellido_p: document.getElementById('apellido_p').value,
+                apellido_m: document.getElementById('apellido_m').value,
+                correo: document.getElementById('correo').value,
+                password: document.getElementById('password').value,
+                puesto: document.getElementById('puesto').value,
+                telefono: telefono,
+                calle: document.getElementById('calle').value,
+                num_ext: document.getElementById('num_ext').value,
+                cp: cp,
+                colonia: document.getElementById('colonia_municipio').value,
+                cedula: document.getElementById('cedula').value,
+                curp: curp
+            };
+
+            try {
+                const res = await fetch('http://localhost:3000/api/personal', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(datos)
+                });
+                const resData = await res.json();
+                alert("✅ " + resData.mensaje);
+                if (resData.success) history.back();
+            } catch (err) {
+                alert("❌ Error de conexión al servidor");
+            } finally {
+                btn.innerText = "Sincronizar con Base de Datos";
+            }
+        });
+    </script>
+</body>
+</html>

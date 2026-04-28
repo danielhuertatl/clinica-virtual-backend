@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Citas - Paciente</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .tarjeta-cita-destacada {
+            background-color: white;
+            border: 2px solid #0E3B5C;
+            border-left: 8px solid #0E3B5C;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .form-reagendar {
+            display: none; 
+            background-color: #f0f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border: 1px dashed #0E3B5C;
+        }
+        .estado-vacio {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+            background-color: white;
+            border-radius: 8px;
+            border: 2px dashed #ccc;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
+        
+        <div class="header-consulta">
+            <p><strong>Gestión de mis citas</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="window.location.href='3-paciente.html'">regresar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-bottom: 20px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <button class="btn-accion-verde" style="width: 100%; margin-bottom: 25px; padding: 12px; font-size: 16px;" onclick="window.location.href='27-agendar-cita.html'">➕ Agendar Nueva Cita</button>
+
+        <h3 style="color: #0E3B5C; border-bottom: 2px solid #0E3B5C; padding-bottom: 5px; margin-bottom: 15px;">
+            Tu próxima cita
+        </h3>
+
+        <div id="mensaje-sin-citas" class="estado-vacio">
+            <h3 style="color: #0E3B5C; margin-bottom: 10px;">No tienes citas próximas</h3>
+            <p style="font-size: 14px; margin-bottom: 20px;">¿Necesitas atención médica? Agenda una nueva cita con nuestros especialistas.</p>
+        </div>
+
+        <div id="cita-activa" class="tarjeta-cita-destacada">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <div>
+                    <p style="font-size: 22px; font-weight: bold; color: #0E3B5C;" id="fecha-mostrar">Jueves, 16 de Abril de 2026</p>
+                    <p style="font-size: 18px; color: #991D27;" id="hora-mostrar">13:43 hrs</p>
+                </div>
+                <span style="background-color: #e6f4ea; color: #1e8e3e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">Confirmada</span>
+            </div>
+            
+            <p style="margin-bottom: 5px;"><strong>Doctora:</strong> Dra. Andrea Lizbeth Colin</p>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;"><strong>Ubicación:</strong> Consultorio 3 - Planta Baja</p>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-accion" style="flex: 1;" onclick="toggleReagendar()">📅 Reagendar</button>
+                <button class="btn-accion-rojo" style="flex: 1;" onclick="cancelarCita()">❌ Cancelar Cita</button>
+            </div>
+
+            <div id="form-reagendar" class="form-reagendar">
+                <h4 style="color: #0E3B5C; margin-bottom: 10px;">Selecciona tu nueva fecha</h4>
+                <div class="campo-fila">
+                    <div>
+                        <label>Nueva Fecha:</label>
+                        <input type="date" id="nueva-fecha" style="width: 100%; padding: 8px;" required>
+                    </div>
+                    <div>
+                        <label>Nuevo Horario:</label>
+                        <input type="time" id="nueva-hora" style="width: 100%; padding: 8px;" required>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn-accion-verde" style="flex: 2;" onclick="confirmarReagenda()">Confirmar Cambio</button>
+                    <button class="btn-salir" style="flex: 1; border-color: #ccc; color: #666;" onclick="toggleReagendar()">Descartar</button>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="color: #666; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 30px; margin-bottom: 15px;">
+            Historial de Citas Pasadas
+        </h3>
+        
+        <div class="tarjeta-cita" style="opacity: 0.6;">
+            <div class="info-cita">
+                <p style="font-size: 14px; color: #666;">10 de Febrero de 2026</p>
+                <p><strong>Dra. Andrea Lizbeth Colin</strong></p>
+                <p style="font-size: 12px; color: #2D5A27; font-weight: bold;">Atendida</p>
+            </div>
+            <div>
+                <button class="btn-accion" style="background-color: #eee; color: #333; font-size: 12px;" onclick="window.location.href='20-receta.html'">Ver Receta</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleReagendar() {
+            const form = document.getElementById('form-reagendar');
+            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        }
+
+        function confirmarReagenda() {
+            const nuevaFecha = document.getElementById('nueva-fecha').value;
+            const nuevaHora = document.getElementById('nueva-hora').value;
+            if (!nuevaFecha || !nuevaHora) { alert("Selecciona fecha y hora."); return; }
+            alert("Solicitud enviada al doctor. Nueva fecha tentativa: " + nuevaFecha + " a las " + nuevaHora);
+            document.getElementById('fecha-mostrar').textContent = "Nueva Fecha Solicitada";
+            document.getElementById('hora-mostrar').textContent = nuevaHora + " hrs";
+            document.getElementById('fecha-mostrar').style.color = "#d39e00"; 
+            toggleReagendar(); 
+        }
+
+        function cancelarCita() {
+            if (confirm("⚠️ ¿Deseas CANCELAR esta cita? Esta acción no se puede deshacer.")) {
+                alert("Cita cancelada exitosamente.");
+                document.getElementById('cita-activa').style.display = 'none';
+                document.getElementById('mensaje-sin-citas').style.display = 'block';
+            }
+        }
+    </script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

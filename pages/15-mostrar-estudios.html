@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados e Historial</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        /* Estilos específicos para la lista de estudios */
+        .lista-estudios {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .tarjeta-estudio {
+            background-color: white;
+            border: 1px solid #0E3B5C;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .info-estudio p {
+            margin: 2px 0;
+            font-size: 14px;
+        }
+        .btn-ver {
+            background-color: #0E3B5C;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-ver:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="pantalla-consulta">
+        <div class="header-consulta">
+            <p><strong>Expediente y Estudios</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">regresar</button>
+            </div>
+        </div>
+
+        <div class="logo-container-consulta">
+            <img src="../assets/logo cuadrado.png" alt="Logo" class="logo-consulta">
+        </div>
+
+        <div class="datos-agenda" style="margin-top: 20px; background: #fff; padding: 10px; border: 1px dashed #0E3B5C;">
+            <div class="campo"><label>Paciente:</label> <p>Angel Daniel Huerta Tehuacatl</p></div>
+            <div class="campo"><label>ID:</label> <p>PT-98765</p></div>
+        </div>
+
+        <div class="lista-estudios">
+            <h3 style="color: #0E3B5C; border-bottom: 2px solid #991D27; padding-bottom: 5px; margin-bottom: 10px;">Resultados Recientes</h3>
+            
+            <div class="tarjeta-estudio">
+                <div class="info-estudio">
+                    <p><strong>Química Sanguínea de 27 elementos</strong></p>
+                    <p style="color: #666;">Fecha: 15/Marzo/2026</p>
+                    <p style="color: #2D5A27; font-weight: bold;">Estado: Completado</p>
+                </div>
+                <button class="btn-ver" onclick="alert('Descargando/Abriendo PDF del resultado...')">Ver PDF</button>
+            </div>
+
+            <div class="tarjeta-estudio">
+                <div class="info-estudio">
+                    <p><strong>Radiografía de Tórax</strong></p>
+                    <p style="color: #666;">Fecha: 10/Marzo/2026</p>
+                    <p style="color: #2D5A27; font-weight: bold;">Estado: Completado</p>
+                </div>
+                <button class="btn-ver" onclick="alert('Abriendo visor de imágenes médicas...')">Ver Placa</button>
+            </div>
+            
+            <div class="tarjeta-estudio">
+                <div class="info-estudio">
+                    <p><strong>Biometría Hemática</strong></p>
+                    <p style="color: #666;">Fecha: Solicitado Hoy</p>
+                    <p style="color: #991D27; font-weight: bold;">Estado: Pendiente</p>
+                </div>
+                <button class="btn-ver" disabled>No disponible</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

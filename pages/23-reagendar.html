@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Cita</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="pantalla-consulta">
+        <div class="header-consulta">
+            <p><strong>Gestionar mi cita</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="window.location.href='3-paciente.html'">cancelar</button>
+            </div>
+        </div>
+
+        <div class="logo-container-consulta">
+            <img src="../assets/logo cuadrado.png" alt="Logo" class="logo-consulta">
+        </div>
+
+        <div class="datos-agenda" style="margin-top: 20px; background: #fff; padding: 15px; border: 1px solid #0E3B5C;">
+            <h3 style="color: #0E3B5C; margin-bottom: 10px; text-align: center;">Cita Actual</h3>
+            <div class="campo"><label>Doctor(a):</label> <p>Dra. Andrea Lizbeth Colin</p></div>
+            <div class="campo"><label>Fecha:</label> <p>Jueves, 16 de Abril de 2026</p></div>
+            <div class="campo"><label>Hora:</label> <p>13:43 hrs</p></div>
+        </div>
+
+        <form class="datos-paciente-grid" style="margin-top: 20px;">
+            <h3 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Reagendar</h3>
+            <div class="campo-fila">
+                <div>
+                    <label>Nueva Fecha:</label> 
+                    <input type="date" required style="width: 100%; padding: 8px; border: 1px solid #0E3B5C;">
+                </div>
+                <div>
+                    <label>Hora preferida:</label> 
+                    <input type="time" required style="width: 100%; padding: 8px; border: 1px solid #0E3B5C;">
+                </div>
+            </div>
+            
+            <div class="acciones-consulta" style="margin-top: 30px;">
+                <button type="button" class="btn-accion-rojo" onclick="if(confirm('¿Está seguro de que desea CANCELAR definitivamente esta cita?')) { alert('Cita cancelada.'); window.location.href='3-paciente.html'; }">Cancelar Cita Definitivamente</button>
+                
+                <button type="button" class="btn-accion-verde" onclick="alert('Su solicitud de reagenda ha sido enviada a la clínica. Le confirmaremos en breve.'); window.location.href='3-paciente.html';">Solicitar Nuevo Horario</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

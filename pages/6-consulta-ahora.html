@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta General Completa</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="position: relative; z-index: 1;">
+        <div class="header-consulta">
+            <div class="info-doctor">
+                <p><strong>Dra. Andrea Lizbeth Colin</strong></p>
+                <p>Céd. Prof. 14776894 | IPN</p>
+            </div>
+            <div class="reloj-salir">
+                <span id="reloj-actual" style="font-weight: bold; color: #0E3B5C;">--:--</span>
+                <button class="btn-salir-rojo" onclick="window.location.href='2-doctor.html'">salir</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini">
+        </div>
+
+        <div class="id-paciente-section">
+            <label>Ingrese ID paciente para comenzar una cita:</label>
+            <div class="input-inline">
+                <input type="text" placeholder="ID" id="id-busqueda">
+                <button class="btn-ok">OK</button>
+            </div>
+        </div>
+
+        <form class="datos-paciente-grid">
+            <div class="campo">
+                <label>Nombre:</label>
+                <input type="text" value="Angel Daniel Huerta Tehuacatl" readonly>
+            </div>
+            <div class="campo-fila">
+                <div><label>Edad:</label> <input type="text" value="27 años" readonly></div>
+                <div><label>Peso (kg):</label> <input type="number" step="0.1" id="input-peso" value="52"></div>
+                <div><label>Talla (m):</label> <input type="number" step="0.01" id="input-talla" value="1.64"></div>
+            </div>
+            <div class="campo-fila">
+                <div><label>FC (ppm):</label> <input type="text" value="94"></div>
+                <div><label>FR (rpm):</label> <input type="text" value="17"></div>
+                <div><label>SatO2 (%):</label> <input type="text" value="99"></div>
+            </div>
+            
+            <div class="campo" style="position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label>Receta:</label>
+                    <button type="button" id="btn-expandir" style="background: transparent; border: none; color: #0E3B5C; cursor: pointer; text-decoration: underline; font-size: 12px; font-weight: bold;">Ampliar ⤢</button>
+                </div>
+                <textarea id="texto-receta" rows="4" placeholder="Escriba las indicaciones médicas..."></textarea>
+            </div>
+
+            <div class="campo-fila">
+                <div><label>Tipo Sangre:</label> <input type="text" value="O+"></div>
+                <div><label>IMC:</label> <input type="text" id="input-imc" placeholder="Calculando..." readonly style="background-color: #f0f0f0; font-weight: bold;"></div>
+            </div>
+        </form>
+
+        <div class="acciones-consulta">
+            <button class="btn-accion" onclick="window.location.href='8-consultar-estudios.html'">Consultar estudios</button>
+            <button class="btn-accion-rojo">Finalizar consulta S/R</button>
+            <button type="button" class="btn-accion-verde" onclick="guardarYGenerarReceta()">Finalizar consulta</button>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html>

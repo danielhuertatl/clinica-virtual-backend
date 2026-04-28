@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dar de Baja Personal</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .alerta-baja {
+            display: none; /* Oculta hasta buscar */
+            border: 2px solid #991D27;
+            background-color: #fff3f4;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 30px;
+        }
+        .nombre-resaltado {
+            display: block;
+            font-size: 24px;
+            color: #991D27;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .mensaje-legal {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
+        
+        <div class="header-consulta">
+            <p><strong>Desactivación de Personal</strong></p>
+            <div class="reloj-salir">
+                <button class="btn-salir-rojo" onclick="history.back()">cancelar</button>
+            </div>
+        </div>
+
+        <div class="logo-wrapper-mini" style="margin-top: 10px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
+        </div>
+
+        <div class="id-paciente-section" style="margin-top: 20px; background-color: #f0f4f8; padding: 20px; border-radius: 5px; border: 1px solid #0E3B5C;">
+            <label style="color: #0E3B5C; font-weight: bold;">Ingrese ID o Cédula a dar de baja:</label>
+            <div class="input-inline" style="margin-top: 10px;">
+                <input type="text" id="input-busqueda" placeholder="Ej. 14776894" style="width: 100%; padding: 10px;">
+                <button type="button" class="btn-ok" onclick="buscarParaBaja()">Buscar</button>
+            </div>
+        </div>
+
+        <div id="cuadro-confirmacion" class="alerta-baja">
+            <p style="font-size: 18px; color: #333;">⚠️ <strong>Atención</strong></p>
+            <p>Está a punto de dar de baja del sistema a:</p>
+            
+            <span class="nombre-resaltado" id="nombre-encontrado">Dra. Andrea Lizbeth Colin</span>
+            
+            <p class="mensaje-legal">
+                Esta acción revocará sus accesos inmediatamente y la marcará como "Inactiva". 
+                <br><strong>Nota:</strong> Su historial médico y legal permanecerá en la base de datos.
+            </p>
+
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="btn-salir" style="flex: 1; border: 1px solid #ccc;" onclick="location.reload()">Cancelar</button>
+                <button class="btn-accion-rojo" style="flex: 1;" onclick="confirmarBajaLogica()">Confirmar Baja</button>
+            </div>
+        </div>
+
+        <div id="error-busqueda" style="display: none; text-align: center; color: #991D27; margin-top: 20px; font-weight: bold;">
+            No se encontró personal con ese ID en la base de datos activa.
+        </div>
+
+    </div>
+
+    <script>
+        function buscarParaBaja() {
+            const id = document.getElementById('input-busqueda').value.trim();
+            const cuadro = document.getElementById('cuadro-confirmacion');
+            const error = document.getElementById('error-busqueda');
+
+            if(id === "14776894") {
+                cuadro.style.display = 'block';
+                error.style.display = 'none';
+            } else if (id === "") {
+                alert("Ingrese una cédula.");
+            } else {
+                cuadro.style.display = 'none';
+                error.style.display = 'block';
+            }
+        }
+
+        function confirmarBajaLogica() {
+            const nombre = document.getElementById('nombre-encontrado').textContent;
+            
+            // Segunda confirmación (doble validación de seguridad)
+            if(confirm(`¿Confirmar la baja definitiva de los accesos de ${nombre}?`)) {
+                alert(`✅ Operación exitosa.\n\nEl registro de ${nombre} ha sido marcado como INACTIVO en la base de datos.`);
+                window.location.href = '5-admin.html';
+            }
+        }
+    </script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

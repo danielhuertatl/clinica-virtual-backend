@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica Virtual - Enfermero</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="marca-agua"></div>
+
+    <div class="pantalla-consulta" style="max-width: 500px; position: relative; z-index: 1;">
+        <div style="text-align: right; margin-bottom: 10px;">
+            <button class="btn-salir" onclick="window.location.href='../index.html'">salir</button>
+        </div>
+        
+        <div class="logo-wrapper" style="margin-bottom: 20px;">
+            <img src="../assets/cuadrado.png" alt="Logo" class="logo" style="max-width: 150px;">
+        </div>
+
+        <h2 id="bienvenida-nombre" style="color: #0E3B5C; text-align: center; margin-bottom: 5px;">¡Bienvenido(a)!</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">Panel de Soporte y Enfermería</p>
+
+        <div class="menu-grid" style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 5px;">Actividades del Día</h4>
+
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='19-signos-vitales.html'">🌡️ Registrar signos vitales ahora</button>
+            
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='28-agenda-enfermero.html'">📅 Consultar agenda del día</button>
+            
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='9-historial.html'">📑 Consultar historial clínico</button>
+            
+            <button class="btn-menu" style="width: 100%; text-align: left; padding: 15px;" onclick="window.location.href='10-registrar-paciente.html'">📝 Registrar paciente</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombreUsuario');
+            if (nombre && nombre !== "undefined") {
+                document.getElementById('bienvenida-nombre').innerText = `¡Bienvenido(a) ${nombre}!`;
+            }
+        });
+    </script>
+</body>
+</html>
