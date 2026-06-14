@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const contrasenaInput = document.getElementById('contrasena').value;
 
             try {
-                const respuesta = await fetch('http://localhost:3000/api/login', {
+                const respuesta = await fetch('https://clinica-virtual-backend.onrender.com/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ correo: usuarioInput, password: contrasenaInput })
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const res = await fetch('http://localhost:3000/api/personal/update', {
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/personal/update', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosEditados)
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!cedula || cedula === 'undefined') return;
 
             try {
-                const res = await fetch(`http://localhost:3000/api/citas/doctor/${cedula}/fecha/${fecha}`);
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/doctor/${cedula}/fecha/${fecha}`);
                 const data = await res.json();
                 contenedorCitasHoy.innerHTML = ''; 
 
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!idPaciente) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/api/citas/paciente/${idPaciente}`);
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
                 const data = await res.json();
                 
                 contenedorProximaCita.innerHTML = '';
@@ -347,7 +347,7 @@ window.simularBusqueda = async function() {
     if (!cedula) return alert("⚠️ Ingrese una cédula profesional.");
 
     try {
-        const res = await fetch(`http://localhost:3000/api/personal/${cedula}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${cedula}`);
         const data = await res.json();
 
         if (data.success) {
@@ -395,7 +395,7 @@ window.simularBusqueda = async function() {
 window.cancelarCitaPaciente = async function(id_cita) {
     if (confirm("⚠️ ¿Deseas CANCELAR definitivamente esta cita? Esta acción no se puede deshacer.")) {
         try {
-            const res = await fetch('http://localhost:3000/api/citas/cancelar', {
+            const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/cancelar', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id_cita })
@@ -443,7 +443,7 @@ window.guardarYGenerarReceta = async function() {
     };
 
     try {
-        const res = await fetch('http://localhost:3000/api/consultas', {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/consultas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosConsulta)
@@ -480,7 +480,7 @@ window.buscarPacienteConsulta = async function() {
     if (!idInput) return alert("⚠️ Ingrese un ID de paciente o su CURP.");
 
     try {
-        const res = await fetch(`http://localhost:3000/api/pacientes/${idInput}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
         const data = await res.json();
 
         if (data.success) {
@@ -531,7 +531,7 @@ window.buscarPacienteConsulta = async function() {
             }
             
             // --- NUEVO: BUSCAR ESTUDIOS PENDIENTES ---
-            const resEstudios = await fetch(`http://localhost:3000/api/estudios/${p.id_paciente}/pendientes`);
+            const resEstudios = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${p.id_paciente}/pendientes`);
             const dataEstudios = await resEstudios.json();
             
             const alertaEstudios = document.getElementById('alerta-estudios');
@@ -581,7 +581,7 @@ window.completarEstudio = async function(id_estudio, nombreEstudio) {
     if (!notas) return alert("⚠️ Debe escribir la interpretación clínica antes de marcar el estudio como completado.");
     
     try {
-        const res = await fetch('http://localhost:3000/api/estudios/completar', {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios/completar', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_estudio, notas_medico: notas })
@@ -609,7 +609,7 @@ window.buscarPacienteSignos = async function() {
     if (!idInput) return alert("⚠️ Ingrese un ID de paciente o su CURP.");
 
     try {
-        const res = await fetch(`http://localhost:3000/api/pacientes/${idInput}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
         const data = await res.json();
 
         if (data.success) {
@@ -641,7 +641,7 @@ window.buscarPacienteEstudio = async function() {
     if (!idInput) return alert("⚠️ Ingrese un ID de paciente o su CURP.");
 
     try {
-        const res = await fetch(`http://localhost:3000/api/pacientes/${idInput}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
         const data = await res.json();
 
         if (data.success) {
@@ -689,7 +689,7 @@ window.solicitarEstudio = async function() {
     };
 
     try {
-        const res = await fetch('http://localhost:3000/api/estudios', {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosEstudio)
@@ -716,7 +716,7 @@ window.buscarEstudiosPaciente = async function() {
 
     try {
         // 1. Buscamos primero al paciente para saber su nombre
-        const resPac = await fetch(`http://localhost:3000/api/pacientes/${idInput}`);
+        const resPac = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
         const dataPac = await resPac.json();
 
         if (!dataPac.success) {
@@ -728,7 +728,7 @@ window.buscarEstudiosPaciente = async function() {
         document.getElementById('nombre-paciente-ver').innerHTML = `<strong>${nombreCompleto}</strong>`;
 
         // 2. Buscamos los estudios asociados a su ID
-        const resEstudios = await fetch(`http://localhost:3000/api/estudios/${p.id_paciente}`);
+        const resEstudios = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${p.id_paciente}`);
         const dataEstudios = await resEstudios.json();
 
         const contenedor = document.getElementById('contenedor-estudios');
@@ -773,7 +773,7 @@ window.buscarEstudiosPaciente = async function() {
         }
 
         // 3. Buscamos las consultas previas para el historial completo
-        const resConsultas = await fetch(`http://localhost:3000/api/consultas/${p.id_paciente}`);
+        const resConsultas = await fetch(`https://clinica-virtual-backend.onrender.com/api/consultas/${p.id_paciente}`);
         const dataConsultas = await resConsultas.json();
         const contConsultas = document.getElementById('contenedor-consultas');
         

@@ -94,7 +94,7 @@
         // Cargar doctores dinámicamente desde la BD
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/doctores');
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
                 const data = await res.json();
                 if(data.success) {
                     data.doctores.forEach(doc => {
@@ -193,7 +193,7 @@
             btnConfirmar.disabled = true;
 
             try {
-                const res = await fetch('http://localhost:3000/api/citas', {
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosCita)

@@ -74,7 +74,7 @@
                 return;
             }
             try {
-                const res = await fetch(`http://localhost:3000/api/pacientes/${id}`);
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${id}`);
                 const data = await res.json();
                 if(data.success) {
                     document.getElementById('alerta-no-encontrado').style.display = 'none';
@@ -104,7 +104,7 @@
             }
 
             try {
-                const res = await fetch(`http://localhost:3000/api/pacientes/${documento}`);
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${documento}`);
                 const data = await res.json();
                 if(data.success) {
                     document.getElementById('alerta-no-encontrado').style.display = 'none';
