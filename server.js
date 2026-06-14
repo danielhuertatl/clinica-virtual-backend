@@ -7,19 +7,19 @@ app.use(cors());
 app.use(express.json());
 
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'clinica_virtual',
-    password: 'admin123', 
-    port: 5432,
+    // Conexión directa a tu base de datos en la nube (Neon.tech)
+    connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_KRWps6QMUD2A@ep-frosty-firefly-adls50nb-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require',
+    ssl: { rejectUnauthorized: false }
 });
 
-// LOGIN UNIFICADO
+const PORT = process.env.PORT || 3000;
+
+// 1. LOGIN UNIFICADO
 app.post('/api/login', async (req, res) => {
     const { correo, password } = req.body;
     try {
         const result = await pool.query(
-            `SELECT u.rol, COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre 
+            `SELECT u.rol, COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre, p.cedula_id, pac.id_paciente 
              FROM usuarios u 
              LEFT JOIN personal p ON u.id_usuario = p.id_usuario 
              LEFT JOIN pacientes pac ON u.id_usuario = pac.id_usuario
@@ -27,16 +27,44 @@ app.post('/api/login', async (req, res) => {
             [correo, password]
         );
         if (result.rows.length > 0) {
-            res.json({ success: true, rol: result.rows[0].rol, nombre: result.rows[0].nombre });
+            res.json({ success: true, rol: result.rows[0].rol, nombre: result.rows[0].nombre, cedula: result.rows[0].cedula_id, id_paciente: result.rows[0].id_paciente });
         } else {
             res.json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
     } catch (error) {
+        console.error('Error en /api/login:', error);
         res.status(500).json({ success: false, mensaje: 'Error en el servidor' });
     }
 });
 
-// REGISTRO DE PACIENTES (VÍA PROCEDURE)
+// 2. REGISTRO DE PERSONAL (NUEVA RUTA RESTAURADA)
+app.post('/api/personal', async (req, res) => {
+    const d = req.body;
+    try {
+        // Primero creamos el usuario
+        const userRes = await pool.query(
+            'INSERT INTO usuarios (correo, password_hash, rol, estatus) VALUES ($1, $2, $3, true) RETURNING id_usuario',
+            [d.correo, d.password, d.puesto]
+        );
+        
+        const idU = userRes.rows[0].id_usuario;
+        
+        // Luego insertamos en la tabla personal con tus columnas reales
+        await pool.query(
+            `INSERT INTO personal 
+            (cedula_id, id_usuario, nombre, apellido_paterno, apellido_materno, telefono, direccion_calle, direccion_num_ext, direccion_cp, direccion_colonia, puesto, curp) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+            [d.cedula, idU, d.nombre, d.apellido_p, d.apellido_m, d.telefono, d.calle, d.num_ext, d.cp, d.colonia, d.puesto, d.curp]
+        );
+        
+        res.json({ success: true, mensaje: 'Personal registrado con éxito.' });
+    } catch (error) {
+        console.error('Error en /api/personal:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al registrar personal: ' + error.message });
+    }
+});
+
+// 3. REGISTRO DE PACIENTES (VÍA PROCEDURE)
 app.post('/api/pacientes', async (req, res) => {
     const d = req.body;
     try {
@@ -46,27 +74,29 @@ app.post('/api/pacientes', async (req, res) => {
         );
         res.json({ success: true, mensaje: 'Paciente registrado correctamente.' });
     } catch (error) {
+        console.error('Error en /api/pacientes:', error);
         res.status(500).json({ success: false, mensaje: error.message });
     }
 });
 
-// BUSCAR PERSONAL POR CORREO
-app.get('/api/personal/buscar/:correo', async (req, res) => {
-    const { correo } = req.params;
+// 4. BUSCAR PERSONAL POR CÉDULA
+app.get('/api/personal/:cedula', async (req, res) => {
+    const { cedula } = req.params;
     try {
         const result = await pool.query(
             `SELECT p.*, u.correo FROM personal p 
              JOIN usuarios u ON p.id_usuario = u.id_usuario 
-             WHERE LOWER(u.correo) = LOWER($1)`, [correo]
+             WHERE p.cedula_id = $1`, [cedula]
         );
         if (result.rows.length > 0) res.json({ success: true, persona: result.rows[0] });
-        else res.json({ success: false, mensaje: 'No se encontró personal con ese correo.' });
+        else res.json({ success: false, mensaje: 'No se encontró personal con esa cédula.' });
     } catch (error) {
+        console.error('Error en /api/personal/:cedula:', error);
         res.status(500).json({ success: false, mensaje: 'Error al buscar.' });
     }
 });
 
-// ACTUALIZAR PERSONAL (VÍA PROCEDURE)
+// 5. ACTUALIZAR PERSONAL (VÍA PROCEDURE)
 app.put('/api/personal/update', async (req, res) => {
     const d = req.body;
     try {
@@ -76,8 +106,228 @@ app.put('/api/personal/update', async (req, res) => {
         );
         res.json({ success: true, mensaje: 'Datos actualizados correctamente.' });
     } catch (error) {
-        res.status(500).json({ success: false, mensaje: 'Error al actualizar.' });
+        console.error('Error en /api/personal/update:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar: ' + error.message });
     }
 });
 
-app.listen(3000, '0.0.0.0', () => console.log('✅ SERVIDOR ACTIVO EN PUERTO 3000'));
+// 6. BUSCAR PACIENTE POR ID O CURP
+app.get('/api/pacientes/:id', async (req, res) => {
+    const { id } = req.params;
+    const idNumerico = parseInt(id.replace(/\D/g, ''), 10); 
+    try {
+        const result = await pool.query(
+            `SELECT id_paciente, nombre, apellido_paterno, apellido_materno, edad, tipo_sangre 
+             FROM pacientes 
+             WHERE id_paciente = $1 OR UPPER(curp) = UPPER($2)`, 
+             [!isNaN(idNumerico) ? idNumerico : 0, id]
+        );
+        if (result.rows.length > 0) res.json({ success: true, paciente: result.rows[0] });
+        else res.json({ success: false, mensaje: 'No se encontró paciente con ese ID o CURP.' });
+    } catch (error) {
+        console.error('Error en /api/pacientes/:id:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al buscar paciente.' });
+    }
+});
+
+// 7. GUARDAR CONSULTA Y RECETA
+app.post('/api/consultas', async (req, res) => {
+    const d = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO consultas (id_paciente, cedula_doctor, peso, talla, fc, fr, sato2, imc, receta) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [d.id_paciente, d.cedula_doctor, d.peso, d.talla, d.fc, d.fr, d.sato2, d.imc, d.receta]
+        );
+        res.json({ success: true, mensaje: 'Consulta finalizada y receta guardada.' });
+    } catch (error) {
+        console.error('Error en /api/consultas:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al guardar la consulta.' });
+    }
+});
+
+// 8. SOLICITAR ESTUDIO MÉDICO
+app.post('/api/estudios', async (req, res) => {
+    const d = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO estudios (id_paciente, cedula_doctor, tipo_estudio, indicaciones) 
+             VALUES ($1, $2, $3, $4)`,
+            [d.id_paciente, d.cedula_doctor, d.tipo_estudio, d.indicaciones]
+        );
+        res.json({ success: true, mensaje: 'Estudio solicitado y guardado en el expediente.' });
+    } catch (error) {
+        console.error('Error en /api/estudios:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al solicitar el estudio.' });
+    }
+});
+
+// 9. OBTENER ESTUDIOS DE UN PACIENTE
+app.get('/api/estudios/:id_paciente', async (req, res) => {
+    const { id_paciente } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT * FROM estudios WHERE id_paciente = $1 ORDER BY fecha_solicitud DESC`,
+            [id_paciente]
+        );
+        res.json({ success: true, estudios: result.rows });
+    } catch (error) {
+        console.error('Error en /api/estudios/get:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener estudios.' });
+    }
+});
+
+// 10. OBTENER ESTUDIOS PENDIENTES DE UN PACIENTE
+app.get('/api/estudios/:id_paciente/pendientes', async (req, res) => {
+    const { id_paciente } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT * FROM estudios WHERE id_paciente = $1 AND estado = 'Pendiente' ORDER BY fecha_solicitud DESC`,
+            [id_paciente]
+        );
+        res.json({ success: true, estudios: result.rows });
+    } catch (error) {
+        console.error('Error en /api/estudios/pendientes:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener estudios pendientes.' });
+    }
+});
+
+// 11. MARCAR ESTUDIO COMO COMPLETADO Y GUARDAR NOTAS
+app.put('/api/estudios/completar', async (req, res) => {
+    const { id_estudio, notas_medico } = req.body;
+    try {
+        await pool.query(
+            `UPDATE estudios SET estado = 'Completado', notas_medico = $1 WHERE id_estudio = $2`,
+            [notas_medico, id_estudio]
+        );
+        res.json({ success: true, mensaje: 'Estudio interpretado y guardado en historial.' });
+    } catch (error) {
+        console.error('Error al completar estudio:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar el estudio.' });
+    }
+});
+
+// 12. OBTENER HISTORIAL DE CONSULTAS DE UN PACIENTE
+app.get('/api/consultas/:id_paciente', async (req, res) => {
+    const { id_paciente } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT c.*, p.nombre as doctor_nombre, p.apellido_paterno as doctor_apellido 
+             FROM consultas c 
+             LEFT JOIN personal p ON c.cedula_doctor = p.cedula_id
+             WHERE c.id_paciente = $1 ORDER BY c.fecha DESC`,
+            [id_paciente]
+        );
+        res.json({ success: true, consultas: result.rows });
+    } catch (error) {
+        console.error('Error en /api/consultas/get:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener consultas.' });
+    }
+});
+
+// 13. OBTENER CITAS DEL DOCTOR POR FECHA
+app.get('/api/citas/doctor/:cedula/fecha/:fecha', async (req, res) => {
+    const { cedula, fecha } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT c.id_cita, c.hora, c.estatus, p.id_paciente, p.nombre, p.apellido_paterno, p.apellido_materno
+             FROM citas c
+             JOIN pacientes p ON c.id_paciente = p.id_paciente
+             WHERE c.cedula_doctor = $1 AND c.fecha = $2
+             ORDER BY c.hora ASC`,
+            [cedula, fecha]
+        );
+        res.json({ success: true, citas: result.rows });
+    } catch (error) {
+        console.error('Error en /api/citas/doctor/fecha:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener citas.' });
+    }
+});
+
+// 14. OBTENER LISTA DE DOCTORES (Para agendar cita)
+app.get('/api/doctores', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT cedula_id, nombre, apellido_paterno, apellido_materno 
+             FROM personal WHERE puesto = 'doctor' AND activo = true`
+        );
+        res.json({ success: true, doctores: result.rows });
+    } catch (error) {
+        console.error('Error al obtener doctores:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener lista de doctores.' });
+    }
+});
+
+// 15. AGENDAR UNA NUEVA CITA
+app.post('/api/citas', async (req, res) => {
+    const d = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO citas (id_paciente, cedula_doctor, fecha, hora, motivo, estatus) 
+             VALUES ($1, $2, $3, $4, $5, 'agendada')`,
+            [d.id_paciente, d.cedula_doctor, d.fecha, d.hora, d.motivo]
+        );
+        res.json({ success: true, mensaje: 'Cita agendada correctamente.' });
+    } catch (error) {
+        console.error('Error al agendar cita:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al agendar la cita.' });
+    }
+});
+
+// 16. OBTENER CITAS DE UN PACIENTE
+app.get('/api/citas/paciente/:id_paciente', async (req, res) => {
+    const { id_paciente } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT c.id_cita, c.fecha, c.hora, c.estatus, p.nombre, p.apellido_paterno, p.apellido_materno
+             FROM citas c
+             JOIN personal p ON c.cedula_doctor = p.cedula_id
+             WHERE c.id_paciente = $1
+             ORDER BY c.fecha DESC, c.hora DESC`,
+            [id_paciente]
+        );
+        res.json({ success: true, citas: result.rows });
+    } catch (error) {
+        console.error('Error en /api/citas/paciente:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener citas del paciente.' });
+    }
+});
+
+// 17. CANCELAR UNA CITA
+app.put('/api/citas/cancelar', async (req, res) => {
+    const { id_cita } = req.body;
+    try {
+        await pool.query(
+            `UPDATE citas SET estatus = 'cancelada' WHERE id_cita = $1`,
+            [id_cita]
+        );
+        res.json({ success: true, mensaje: 'Cita cancelada correctamente.' });
+    } catch (error) {
+        console.error('Error al cancelar cita:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al cancelar la cita.' });
+    }
+});
+
+// 18. SOLICITUD DE RECUPERACIÓN DE CONTRASEÑA
+app.post('/api/recuperar-password', async (req, res) => {
+    const { correo } = req.body;
+    try {
+        const userRes = await pool.query('SELECT id_usuario FROM usuarios WHERE correo = $1', [correo]);
+        
+        if (userRes.rows.length > 0) {
+            const idUsuario = userRes.rows[0].id_usuario;
+            // Insertamos un mensaje automático para el administrador
+            await pool.query(
+                `INSERT INTO mensajes (id_usuario_emisor, asunto, contenido) VALUES ($1, $2, $3)`,
+                [idUsuario, 'Recuperación de Contraseña', `El usuario con correo ${correo} ha solicitado restablecer su acceso al sistema.`]
+            );
+        }
+        // Por seguridad estándar, siempre se dice que se envió para no revelar si el correo existe o no a los hackers.
+        res.json({ success: true, mensaje: 'Si el correo está registrado, se ha enviado la solicitud al administrador.' });
+    } catch (error) {
+        console.error('Error al solicitar recuperación:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al procesar la solicitud.' });
+    }
+});
+
+app.listen(PORT, '0.0.0.0', () => console.log(`✅ SERVIDOR ACTIVO EN PUERTO ${PORT}`));

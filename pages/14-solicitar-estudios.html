@@ -20,22 +20,22 @@
         </div>
 
         <div class="id-paciente-section" style="margin-top: 20px;">
-            <label>ID del Paciente:</label>
+            <label>ID o CURP del Paciente:</label>
             <div class="input-inline">
-                <input type="text" placeholder="Ingrese el ID">
-                <button class="btn-ok">Buscar</button>
+                <input type="text" id="id-busqueda-estudio" placeholder="Ingrese ID o CURP...">
+                <button type="button" class="btn-ok" onclick="buscarPacienteEstudio()">Buscar</button>
             </div>
         </div>
 
         <form class="datos-paciente-grid">
             <div class="campo">
                 <label>Paciente:</label>
-                <input type="text" value="Angel Daniel Huerta Tehuacatl" readonly style="background-color: #f0f0f0;">
+                <input type="text" id="nombre-paciente-estudio" placeholder="Esperando paciente..." readonly style="background-color: #f0f0f0;">
             </div>
             
             <div class="campo">
                 <label>Tipo de Estudio (Laboratorio / Imagenología):</label>
-                <select style="width: 100%; border: 1px solid #0E3B5C; padding: 8px; outline: none; font-size: 16px;">
+                <select id="tipo-estudio" style="width: 100%; border: 1px solid #0E3B5C; padding: 8px; outline: none; font-size: 16px;">
                     <option value="">Seleccione un estudio...</option>
                     <option value="bh">Biometría Hemática</option>
                     <option value="qs">Química Sanguínea (27 elementos)</option>
@@ -47,11 +47,12 @@
 
             <div class="campo">
                 <label>Indicaciones para el estudio / Motivo:</label>
-                <textarea rows="4" placeholder="Escriba aquí las indicaciones clínicas para el laboratorio..."></textarea>
+                <textarea id="indicaciones-estudio" rows="4" placeholder="Escriba aquí las indicaciones clínicas para el laboratorio..."></textarea>
             </div>
             
-            <button type="button" class="btn-enviar-consulta" onclick="alert('Estudio solicitado correctamente a nombre del paciente.'); window.location.href='8-consultar-estudios.html';">Generar Solicitud</button>
+            <button type="button" class="btn-enviar-consulta" onclick="solicitarEstudio()">Generar Solicitud</button>
         </form>
     </div>
+    <script src="../js/app.js"></script>
 </body>
 </html>

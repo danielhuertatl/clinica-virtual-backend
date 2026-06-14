@@ -25,16 +25,16 @@
         <div class="id-paciente-section" style="margin-top: 10px; background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C;">
             <label style="color: #0E3B5C; font-weight: bold;">Buscar paciente con cita:</label>
             <div class="input-inline" style="margin-top: 5px;">
-                <input type="text" placeholder="Ingrese ID, CURP o Nombre..." style="width: 100%; padding: 8px;">
-                <button type="button" class="btn-ok" onclick="alert('Simulando búsqueda... Paciente encontrado.')">Buscar</button>
+                <input type="text" id="id-busqueda-signos" placeholder="Ingrese ID o CURP..." style="width: 100%; padding: 8px;">
+                <button type="button" class="btn-ok" onclick="buscarPacienteSignos()">Buscar</button>
             </div>
         </div>
 
         <form id="form-signos" class="datos-paciente-grid">
             <div class="campo" style="margin-top: 15px;">
                 <label>Nombre del Paciente:</label>
-                <input type="text" id="nombre-paciente" value="Angel Daniel Huerta Tehuacatl" required style="border: 1px solid #0E3B5C;">
-                <p style="font-size: 11px; color: #666; margin-top: 3px;">*Puede escribir el nombre manualmente si es un paciente de paso.</p>
+                <input type="text" id="nombre-paciente" placeholder="Esperando paciente..." required style="border: 1px solid #0E3B5C;" readonly>
+                <p style="font-size: 11px; color: #666; margin-top: 3px;">*Se llenará automáticamente al buscar.</p>
             </div>
             
             <h3 style="color: #0E3B5C; margin-top: 20px; border-bottom: 2px solid #0E3B5C; padding-bottom: 5px;">Signos Vitales</h3>
@@ -81,28 +81,52 @@
     <script>
         const formSignos = document.getElementById('form-signos');
 
+        function guardarSignosEnMemoria() {
+            const inputBusqueda = document.getElementById('id-busqueda-signos');
+            const idReal = inputBusqueda ? inputBusqueda.dataset.idReal : null;
+            
+            if (!idReal) {
+                alert("⚠️ Primero debe buscar y seleccionar un paciente válido.");
+                return false;
+            }
+
+            const signos = {
+                peso: document.getElementById('peso').value,
+                talla: document.getElementById('talla').value,
+                fc: document.getElementById('fc').value,
+                fr: document.getElementById('fr').value,
+                sato2: document.getElementById('sato2').value,
+                temp: document.getElementById('temp').value
+            };
+
+            // Se guarda en el "puente" temporal para que lo vea el doctor
+            localStorage.setItem('signosPendientes_' + idReal, JSON.stringify(signos));
+            return true;
+        }
+
         // Función para el paciente que ya tenía cita
         function enviarCitaProgramada() {
-            // reportValidity() obliga al navegador a checar que no falten datos ni haya números locos
             if (formSignos.reportValidity()) {
-                alert('✅ Signos vitales registrados.\n\nEl paciente ahora aparecerá como "Listo" en la agenda del doctor.');
-                window.location.href = '4-enfermero.html';
+                if (guardarSignosEnMemoria()) {
+                    alert('✅ Signos vitales guardados en el expediente.\n\nEl doctor ya los verá listos en su pantalla.');
+                    window.location.href = '4-enfermero.html';
+                }
             }
         }
 
         // Función para el paciente que va llegando (Urgencia/Paso)
         function enviarPacienteNuevo() {
             if (formSignos.reportValidity()) {
-                const nombre = document.getElementById('nombre-paciente').value;
-                
-                // Simulamos si hay un doctor libre (70% de probabilidad de que sí haya, 30% de que no)
-                const hayDoctorLibre = Math.random() > 0.3; 
+                if (guardarSignosEnMemoria()) {
+                    const nombre = document.getElementById('nombre-paciente').value;
+                    const hayDoctorLibre = Math.random() > 0.3; 
 
-                if (hayDoctorLibre) {
-                    alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al Consultorio 1 con la Dra. Andrea Colin. Pase al paciente.`);
-                    window.location.href = '4-enfermero.html';
-                } else {
-                    alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nTodos los consultorios están llenos. Pida a ${nombre} que espere en la sala o canalice a urgencias externas si es grave.`);
+                    if (hayDoctorLibre) {
+                        alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al Consultorio 1 con la Dra. Andrea Colin.`);
+                        window.location.href = '4-enfermero.html';
+                    } else {
+                        alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nTodos los consultorios están llenos.`);
+                    }
                 }
             }
         }

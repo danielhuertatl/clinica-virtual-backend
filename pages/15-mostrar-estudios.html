@@ -53,41 +53,55 @@
             <img src="../assets/logo cuadrado.png" alt="Logo" class="logo-consulta">
         </div>
 
+        <div class="id-paciente-section" style="margin-top: 10px; background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C;">
+            <label style="color: #0E3B5C; font-weight: bold;">Ingrese ID del Paciente para ver su historial:</label>
+            <div class="input-inline" style="margin-top: 5px;">
+                <input type="text" id="id-busqueda-ver-estudio" placeholder="Ej. 1..." style="width: 100%; padding: 8px;">
+                <button type="button" class="btn-ok" onclick="buscarEstudiosPaciente()">Buscar</button>
+            </div>
+        </div>
+
         <div class="datos-agenda" style="margin-top: 20px; background: #fff; padding: 10px; border: 1px dashed #0E3B5C;">
-            <div class="campo"><label>Paciente:</label> <p>Angel Daniel Huerta Tehuacatl</p></div>
-            <div class="campo"><label>ID:</label> <p>PT-98765</p></div>
+            <div class="campo"><label>Paciente:</label> <p id="nombre-paciente-ver">Esperando búsqueda...</p></div>
         </div>
 
         <div class="lista-estudios">
-            <h3 style="color: #0E3B5C; border-bottom: 2px solid #991D27; padding-bottom: 5px; margin-bottom: 10px;">Resultados Recientes</h3>
             
-            <div class="tarjeta-estudio">
-                <div class="info-estudio">
-                    <p><strong>Química Sanguínea de 27 elementos</strong></p>
-                    <p style="color: #666;">Fecha: 15/Marzo/2026</p>
-                    <p style="color: #2D5A27; font-weight: bold;">Estado: Completado</p>
-                </div>
-                <button class="btn-ver" onclick="alert('Descargando/Abriendo PDF del resultado...')">Ver PDF</button>
+            <h3 style="color: #0E3B5C; border-bottom: 2px solid #991D27; padding-bottom: 5px; margin-bottom: 10px; margin-top: 20px;">Órdenes de Estudios Médicos</h3>
+            <div id="contenedor-estudios">
+                <p style="color: #666; font-size: 14px; text-align: center; padding: 20px;">Busque un paciente para ver sus estudios médicos.</p>
             </div>
 
-            <div class="tarjeta-estudio">
-                <div class="info-estudio">
-                    <p><strong>Radiografía de Tórax</strong></p>
-                    <p style="color: #666;">Fecha: 10/Marzo/2026</p>
-                    <p style="color: #2D5A27; font-weight: bold;">Estado: Completado</p>
-                </div>
-                <button class="btn-ver" onclick="alert('Abriendo visor de imágenes médicas...')">Ver Placa</button>
-            </div>
-            
-            <div class="tarjeta-estudio">
-                <div class="info-estudio">
-                    <p><strong>Biometría Hemática</strong></p>
-                    <p style="color: #666;">Fecha: Solicitado Hoy</p>
-                    <p style="color: #991D27; font-weight: bold;">Estado: Pendiente</p>
-                </div>
-                <button class="btn-ver" disabled>No disponible</button>
+            <h3 style="color: #0E3B5C; border-bottom: 2px solid #0E3B5C; padding-bottom: 5px; margin-bottom: 10px; margin-top: 30px;">Historial de Consultas Previas</h3>
+            <div id="contenedor-consultas">
+                <p style="color: #666; font-size: 14px; text-align: center; padding: 20px;">Busque un paciente para ver su historial de consultas.</p>
             </div>
         </div>
     </div>
+    <script src="../js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pacID = localStorage.getItem('pacienteBuscadoHistorial');
+            const rolUsuario = localStorage.getItem('rolUsuario');
+            const miIdPaciente = localStorage.getItem('idPaciente');
+
+            if (rolUsuario === 'paciente' && miIdPaciente) {
+                // Ocultar sección de búsqueda para el paciente
+                const searchSection = document.querySelector('.id-paciente-section');
+                if (searchSection) searchSection.style.display = 'none';
+
+                document.getElementById('id-busqueda-ver-estudio').value = miIdPaciente;
+                setTimeout(() => {
+                    if(typeof buscarEstudiosPaciente === 'function') buscarEstudiosPaciente();
+                }, 100);
+            } else if(pacID) {
+                document.getElementById('id-busqueda-ver-estudio').value = pacID;
+                setTimeout(() => {
+                    if(typeof buscarEstudiosPaciente === 'function') buscarEstudiosPaciente();
+                    localStorage.removeItem('pacienteBuscadoHistorial');
+                }, 100);
+            }
+        });
+    </script>
 </body>
 </html>

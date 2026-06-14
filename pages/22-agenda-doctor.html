@@ -38,8 +38,8 @@
         </div>
 
         <div style="text-align: center; margin: 15px 0; color: #0E3B5C;">
-            <h3>📅 Hoy: 16 de Abril de 2026</h3>
-            <p>Dra. Andrea Lizbeth Colin</p>
+            <h3 id="fecha-hoy-agenda">📅 Hoy: Cargando...</h3>
+            <p id="nombre-doctor-agenda2">Cargando Doctor...</p>
         </div>
 
         <div class="tarjeta-cita completada">
@@ -75,5 +75,18 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombreUsuario');
+            if (nombre && nombre !== "undefined") {
+                document.getElementById('nombre-doctor-agenda2').innerText = `Dr(a). ${nombre}`;
+            }
+            
+            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('fecha-hoy-agenda').textContent = '📅 Hoy: ' + new Date().toLocaleDateString('es-MX', opciones);
+        });
+    </script>
+    <script src="../js/app.js"></script>
 </body>
 </html>

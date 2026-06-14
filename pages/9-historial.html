@@ -67,18 +67,28 @@
     </div>
 
     <script>
-        function buscarPorID() {
+        async function buscarPorID() {
             const id = document.getElementById('busqueda-id').value.trim();
             if(id === "") {
                 alert("Ingrese un ID válido.");
                 return;
             }
-            // Simulación de éxito
-            document.getElementById('alerta-no-encontrado').style.display = 'none';
-            window.location.href = '15-mostrar-estudios.html';
+            try {
+                const res = await fetch(`http://localhost:3000/api/pacientes/${id}`);
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('alerta-no-encontrado').style.display = 'none';
+                    localStorage.setItem('pacienteBuscadoHistorial', data.paciente.id_paciente);
+                    window.location.href = '15-mostrar-estudios.html';
+                } else {
+                    document.getElementById('alerta-no-encontrado').style.display = 'block';
+                }
+            } catch(e) {
+                alert("Error de conexión al buscar.");
+            }
         }
 
-        function buscarPorNombre() {
+        async function buscarPorNombre() {
             const nombre = document.getElementById('busqueda-nombre').value.trim();
             const documento = document.getElementById('busqueda-documento').value.trim();
             const esExtranjero = document.getElementById('chk-extranjero').checked;
@@ -93,12 +103,18 @@
                 return;
             }
 
-            // Simulación de búsqueda (si escribe "nuevo", fingimos que no existe)
-            if(nombre.toLowerCase() === "nuevo") {
-                document.getElementById('alerta-no-encontrado').style.display = 'block';
-            } else {
-                document.getElementById('alerta-no-encontrado').style.display = 'none';
-                window.location.href = '15-mostrar-estudios.html';
+            try {
+                const res = await fetch(`http://localhost:3000/api/pacientes/${documento}`);
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('alerta-no-encontrado').style.display = 'none';
+                    localStorage.setItem('pacienteBuscadoHistorial', data.paciente.id_paciente);
+                    window.location.href = '15-mostrar-estudios.html';
+                } else {
+                    document.getElementById('alerta-no-encontrado').style.display = 'block';
+                }
+            } catch(e) {
+                alert("Error de conexión al buscar.");
             }
         }
 

@@ -54,8 +54,6 @@
                 <label>1. Seleccione un Especialista:</label>
                 <select id="select-doctor" required style="width: 100%; padding: 10px; border: 1px solid #0E3B5C; border-radius: 4px; font-size: 16px;">
                     <option value="" disabled selected>Elija un doctor...</option>
-                    <option value="andrea">Dra. Andrea Lizbeth Colin (Medicina General)</option>
-                    <option value="juan">Dr. Juan Pérez (Pediatría)</option>
                 </select>
             </div>
 
@@ -93,9 +91,33 @@
         const btnConfirmar = document.getElementById('btn-confirmar');
         const inputHora = document.getElementById('hora-seleccionada');
 
+        // Cargar doctores dinámicamente desde la BD
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/doctores');
+                const data = await res.json();
+                if(data.success) {
+                    data.doctores.forEach(doc => {
+                        const option = document.createElement('option');
+                        option.value = doc.cedula_id;
+                        option.textContent = `Dr(a). ${doc.nombre} ${doc.apellido_paterno} ${doc.apellido_materno || ''}`;
+                        selectDoctor.appendChild(option);
+                    });
+                }
+            } catch(e) {
+                console.error('Error al cargar doctores');
+            }
+        });
+
         // Bloquear fechas del pasado
         const hoy = new Date().toISOString().split('T')[0];
         inputFecha.setAttribute('min', hoy);
+        
+        // Limitar a máximo 3 meses
+        const maxDate = new Date();
+        maxDate.setMonth(maxDate.getMonth() + 3);
+        const maxStr = maxDate.toISOString().split('T')[0];
+        inputFecha.setAttribute('max', maxStr);
 
         selectDoctor.addEventListener('change', function() {
             seccionFecha.style.display = 'block';
@@ -146,14 +168,51 @@
             btnConfirmar.style.display = 'block';
         }
 
-        document.getElementById('form-agendar').addEventListener('submit', function(e) {
+        document.getElementById('form-agendar').addEventListener('submit', async function(e) {
             e.preventDefault();
             if(!inputHora.value) {
                 alert("Debe seleccionar un horario disponible.");
                 return;
             }
-            alert("✅ ¡Cita confirmada con éxito!\n\nDoctor: " + selectDoctor.options[selectDoctor.selectedIndex].text + "\nFecha: " + inputFecha.value + "\nHora: " + inputHora.value);
-            window.location.href = '26-mis-citas.html';
+            
+            const idPaciente = localStorage.getItem('idPaciente');
+            if(!idPaciente) {
+                alert("⚠️ No se pudo identificar su cuenta de paciente. Por favor, inicie sesión nuevamente.");
+                return;
+            }
+
+            const datosCita = {
+                id_paciente: idPaciente,
+                cedula_doctor: selectDoctor.value,
+                fecha: inputFecha.value,
+                hora: inputHora.value,
+                motivo: 'Consulta General'
+            };
+
+            btnConfirmar.textContent = 'Agendando...';
+            btnConfirmar.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:3000/api/citas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosCita)
+                });
+                const data = await res.json();
+
+                if(data.success) {
+                    alert("✅ ¡Cita confirmada con éxito!\n\nDoctor: " + selectDoctor.options[selectDoctor.selectedIndex].text + "\nFecha: " + inputFecha.value + "\nHora: " + inputHora.value);
+                    window.location.href = '26-mis-citas.html';
+                } else {
+                    alert("❌ " + data.mensaje);
+                    btnConfirmar.textContent = 'Confirmar y Agendar Cita';
+                    btnConfirmar.disabled = false;
+                }
+            } catch(e) {
+                alert("❌ Error de conexión al agendar.");
+                btnConfirmar.textContent = 'Confirmar y Agendar Cita';
+                btnConfirmar.disabled = false;
+            }
         });
     </script>
     <script src="../js/app.js"></script>

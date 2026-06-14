@@ -27,10 +27,24 @@
         </div>
         
         <div style="margin-top: 30px; color: #0E3B5C;">
-            <p><strong>Dra. Andrea Lizbeth Colin</strong></p>
-            <p>Céd. Prof. 14776894 | IPN</p>
-            <p>13:43</p>
+            <p><strong id="nombre-doctor-estudios">Cargando Doctor...</strong></p>
+            <p>Céd. Prof. <span id="cedula-doctor-estudios">S/N</span> | IPN</p>
+            <p><span id="reloj-actual" style="font-weight: bold;">--:--</span></p>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombreUsuario');
+            const cedula = localStorage.getItem('cedulaUsuario');
+            if (nombre && nombre !== "undefined") {
+                document.getElementById('nombre-doctor-estudios').innerText = `Dr(a). ${nombre}`;
+            }
+            if (cedula && cedula !== "undefined") {
+                document.getElementById('cedula-doctor-estudios').innerText = cedula;
+            }
+        });
+    </script>
+    <script src="../js/app.js"></script>
 </body>
 </html>

@@ -20,11 +20,17 @@
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
+        /* Magia: Ocultar botones al imprimir el PDF */
+        @media print {
+            .botones-impresion {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="pantalla-consulta">
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
+        <div class="botones-impresion" style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
             <button class="btn-accion" onclick="window.print()">Imprimir PDF</button>
             <button class="btn-salir-rojo" onclick="window.location.href='2-doctor.html'">Cerrar</button>
         </div>
@@ -33,21 +39,38 @@
             <div class="receta-header">
                 <div>
                     <h2 style="color: #0E3B5C;">Clínica Virtual</h2>
-                    <p><strong>Dra. Andrea Lizbeth Colin</strong></p>
-                    <p style="font-size: 12px; color: #666;">Céd. Prof. 14776894 | IPN</p>
+                    <p><strong id="nombre-doctor-receta">Cargando Doctor...</strong></p>
+                    <p style="font-size: 12px; color: #666;">Céd. Prof. <span id="cedula-doctor-receta">S/N</span> | IPN</p>
                 </div>
                 <img src="../assets/cuadrado.png" alt="Logo" style="width: 80px; mix-blend-mode: multiply;">
             </div>
 
-            <div style="margin-bottom: 20px; font-size: 14px;">
-                <p><strong>Paciente:</strong> Angel Daniel Huerta Tehuacatl</p>
-                <p><strong>Fecha:</strong> <span id="fecha-receta"></span></p>
-                <p><strong>Peso:</strong> 52 kg | <strong>Talla:</strong> 1.64 m</p>
+            <div style="margin-bottom: 20px; font-size: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border: 1px solid #eee; padding: 15px; border-radius: 5px; background-color: #fafafa;">
+                <div>
+                    <p><strong>Paciente:</strong> <span id="nombre-paciente-receta">Esperando paciente...</span></p>
+                    <p><strong>Edad:</strong> <span id="edad-paciente-receta">--</span></p>
+                    <p><strong>Fecha y Hora:</strong> <span id="fecha-receta"></span></p>
+                </div>
+                <div>
+                    <p><strong>Peso:</strong> <span id="peso-paciente-receta">--</span></p>
+                    <p><strong>Talla:</strong> <span id="talla-paciente-receta">--</span></p>
+                    <p><strong>IMC:</strong> <span id="imc-paciente-receta">--</span></p>
+                </div>
             </div>
 
             <div style="min-height: 200px; border-left: 2px solid #991D27; padding-left: 15px;">
                 <h3 style="color: #0E3B5C; margin-bottom: 10px;">Rx:</h3>
                 <p id="contenido-receta" style="margin-bottom: 10px; font-size: 16px; white-space: pre-wrap;"></p>
+            </div>
+
+            <div id="contenedor-interpretados-receta" style="display: none; margin-top: 20px; padding: 15px; border-left: 3px solid #0E3B5C; background-color: #f4f8fb;">
+                <p style="color: #0E3B5C; font-weight: bold; margin-bottom: 5px;">🔬 Interpretación de Estudios:</p>
+                <p id="texto-interpretados-receta" style="white-space: pre-wrap; font-size: 14px; color: #333;"></p>
+            </div>
+
+            <div id="contenedor-pendientes-receta" style="display: none; margin-top: 20px; padding: 10px; border: 1px dashed #991D27; background-color: #fff3f4;">
+                <p style="color: #991D27; font-weight: bold; margin-bottom: 5px;">⚠️ Estudios de laboratorio/gabinete pendientes de realizar:</p>
+                <p id="texto-pendientes-receta" style="white-space: pre-wrap; font-size: 14px; color: #333;"></p>
             </div>
 
             <div style="margin-top: 40px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
