@@ -147,7 +147,7 @@ body {
     width: 80vw;
     max-width: 500px; /* Tamaño máximo gigante */
     height: 80vh;
-    background-image: url('../assets/Largo.png'); 
+    background-image: url('../assets/largo.png'); 
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
