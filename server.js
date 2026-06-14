@@ -14,10 +14,8 @@ const pool = new Pool({
 
 const PORT = process.env.PORT || 3000;
 
-// RUTA RAÍZ PARA VERIFICAR QUE EL SERVIDOR ESTÁ ACTIVO
-app.get('/', (req, res) => {
-    res.send('✅ La API de la Clínica Virtual está funcionando correctamente en la nube.');
-});
+// SERVIR LOS ARCHIVOS FRONTEND (HTML, CSS, JS) DESDE EL MISMO SERVIDOR
+app.use(express.static(__dirname));
 
 // 1. LOGIN UNIFICADO
 app.post('/api/login', async (req, res) => {
