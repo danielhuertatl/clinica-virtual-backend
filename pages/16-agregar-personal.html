@@ -26,9 +26,9 @@
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left;">Datos de Identidad</h4>
             
             <div class="campo-fila">
-                <input type="text" id="nombre" placeholder="Nombre(s)" required>
-                <input type="text" id="apellido_p" placeholder="Apellido Paterno" required>
-                <input type="text" id="apellido_m" placeholder="Apellido Materno">
+                <input type="text" id="nombre" placeholder="Nombre(s)" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                <input type="text" id="apellido_p" placeholder="Apellido Paterno" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                <input type="text" id="apellido_m" placeholder="Apellido Materno" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
             </div>
 
             <div class="campo-fila">
@@ -62,10 +62,15 @@
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left; margin-top: 15px;">Legal</h4>
 
             <div class="campo-fila">
-                <input type="text" id="cedula" placeholder="Cédula Profesional" required style="flex: 1;">
-                <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required 
-                       style="flex: 1; text-transform: uppercase;"
-                       oninput="let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v;">
+                <div style="flex: 1;">
+                    <input type="text" id="cedula" placeholder="Cédula Profesional" required style="width: 100%;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div style="flex: 1; position: relative;">
+                    <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required 
+                           style="width: 100%; text-transform: uppercase;"
+                           oninput="let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v; const span = document.getElementById('curp-error'); if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ span.style.display='block'; } else { span.style.display='none'; }">
+                    <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
+                </div>
             </div>
             
             <button type="submit" id="btn-personal" class="btn-enviar-consulta" style="margin-top: 30px;">Sincronizar con Base de Datos</button>

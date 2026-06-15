@@ -40,7 +40,7 @@
             
             <div class="campo" style="margin-top: 10px;">
                 <label>Nombre Completo (Obligatorio):</label>
-                <input type="text" id="busqueda-nombre" placeholder="Nombre(s) y Apellidos" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="text" id="busqueda-nombre" placeholder="Nombre(s) y Apellidos" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
             </div>
 
             <div class="campo" style="margin-top: 10px;">
@@ -48,7 +48,8 @@
                     <label id="label-documento">CURP (Obligatorio):</label>
                     <a href="https://www.gob.mx/curp/" target="_blank" id="link-curp" style="font-size: 11px; color: #0E3B5C; text-decoration: underline;">¿No conoces tu CURP? Consúltala aquí</a>
                 </div>
-                <input type="text" id="busqueda-documento" placeholder="18 caracteres" maxlength="18" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-transform: uppercase;">
+                <input type="text" id="busqueda-documento" placeholder="18 caracteres" maxlength="18" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-transform: uppercase;" oninput="if(!document.getElementById('chk-extranjero').checked) { let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v; const span = document.getElementById('curp-error'); if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ span.style.display='block'; } else { span.style.display='none'; } }">
+                <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
             </div>
 
             <div style="margin-top: 10px; display: flex; align-items: center; gap: 5px;">

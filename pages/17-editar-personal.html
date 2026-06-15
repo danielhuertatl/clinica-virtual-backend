@@ -34,15 +34,15 @@
             <div class="campo-fila">
                 <div>
                     <label>Nombre(s):</label> 
-                    <input type="text" id="nombre" required placeholder="Nombre">
+                    <input type="text" id="nombre" required placeholder="Nombre" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                 </div>
                 <div>
                     <label>Apellido Paterno:</label> 
-                    <input type="text" id="apellido_p" required placeholder="Apellido">
+                    <input type="text" id="apellido_p" required placeholder="Apellido" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                 </div>
                 <div>
                     <label>Apellido Materno:</label> 
-                    <input type="text" id="apellido_m" required placeholder="Apellido">
+                    <input type="text" id="apellido_m" required placeholder="Apellido" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                 </div>
             </div>
 
@@ -50,7 +50,8 @@
                 <div>
                     <label>Teléfono (10 dígitos):</label> 
                     <input type="text" id="telefono" maxlength="10" required placeholder="10 dígitos" 
-                           onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div>
                     <label>Email Institucional:</label> 

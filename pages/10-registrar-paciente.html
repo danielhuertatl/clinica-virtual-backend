@@ -32,15 +32,15 @@
             <div class="campo-fila">
                 <div>
                     <label>Nombre(s):</label> 
-                    <input type="text" id="nombre" placeholder="Ej. Daniel" required>
+                    <input type="text" id="nombre" placeholder="Ej. Daniel" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                 </div>
                 <div>
                     <label>Ap. Paterno:</label> 
-                    <input type="text" id="ap-paterno" placeholder="Ej. Huerta" required>
+                    <input type="text" id="ap-paterno" placeholder="Ej. Huerta" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                 </div>
                 <div>
                     <label>Ap. Materno:</label> 
-                    <input type="text" id="ap-materno" placeholder="Ej. Tehuacatl">
+                    <input type="text" id="ap-materno" placeholder="Ej. Tehuacatl" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                 </div>
             </div>
 
@@ -80,8 +80,9 @@
                 <div style="flex: 1;">
                     <label>CURP (Opcional):</label> 
                     <input type="text" id="curp" placeholder="18 CARACTERES" maxlength="18" 
-                           style="text-transform: uppercase;"
-                           oninput="let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v;">
+                           style="text-transform: uppercase; width: 100%;"
+                           oninput="let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v; const span = document.getElementById('curp-error'); if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ span.style.display='block'; } else { span.style.display='none'; }">
+                    <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
                 </div>
             </div>
 
