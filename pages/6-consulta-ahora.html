@@ -17,7 +17,7 @@
             </div>
             <div class="reloj-salir">
                 <span id="reloj-actual" style="font-weight: bold; color: #0E3B5C;">--:--</span>
-                <button class="btn-salir-rojo" onclick="window.location.href='2-doctor.html'">salir</button>
+                <button class="btn-salir-rojo" onclick="confirmarSalidaConsulta()">salir</button>
             </div>
         </div>
 
@@ -26,9 +26,9 @@
         </div>
 
         <div class="id-paciente-section">
-            <label>Ingrese ID o CURP del paciente para comenzar:</label>
+            <label>Ingrese Teléfono, CURP o Correo del paciente para comenzar:</label>
             <div class="input-inline">
-                <input type="text" placeholder="Ej. 1 o CURP..." id="id-busqueda">
+                <input type="text" placeholder="Ej. 5512345678, CURP o correo..." id="id-busqueda">
                 <button type="button" class="btn-ok" onclick="buscarPacienteConsulta()">OK</button>
             </div>
         </div>
@@ -77,6 +77,22 @@
     </div>
 
     <script>
+        function confirmarSalidaConsulta() {
+            const paciente = document.getElementById('nombre-paciente').value;
+            const peso = document.getElementById('input-peso').value;
+            const talla = document.getElementById('input-talla').value;
+            const receta = document.getElementById('texto-receta').value.trim();
+
+            // Si hay aunque sea un dato escrito o el paciente cargado, mandamos alerta
+            if (paciente !== "" || peso !== "" || talla !== "" || receta !== "") {
+                if (confirm('⚠️ Se perderán todos los datos escritos. ¿Continuar y salir?')) {
+                    window.location.href = '2-doctor.html';
+                }
+            } else {
+                window.location.href = '2-doctor.html';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const nombre = localStorage.getItem('nombreUsuario');
             const cedula = localStorage.getItem('cedulaUsuario');

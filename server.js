@@ -120,13 +120,14 @@ app.get('/api/pacientes/:id', async (req, res) => {
     const idNumerico = parseInt(id.replace(/\D/g, ''), 10); 
     try {
         const result = await pool.query(
-            `SELECT id_paciente, nombre, apellido_paterno, apellido_materno, edad, tipo_sangre 
-             FROM pacientes 
-             WHERE id_paciente = $1 OR UPPER(curp) = UPPER($2)`, 
+            `SELECT p.id_paciente, p.nombre, p.apellido_paterno, p.apellido_materno, p.edad, p.tipo_sangre 
+             FROM pacientes p
+             LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario
+             WHERE p.id_paciente = $1 OR UPPER(p.curp) = UPPER($2) OR p.telefono = $2 OR UPPER(u.correo) = UPPER($2)`, 
              [!isNaN(idNumerico) ? idNumerico : 0, id]
         );
         if (result.rows.length > 0) res.json({ success: true, paciente: result.rows[0] });
-        else res.json({ success: false, mensaje: 'No se encontró paciente con ese ID o CURP.' });
+        else res.json({ success: false, mensaje: 'No se encontró paciente con ese Teléfono, CURP o Correo.' });
     } catch (error) {
         console.error('Error en /api/pacientes/:id:', error);
         res.status(500).json({ success: false, mensaje: 'Error al buscar paciente.' });
