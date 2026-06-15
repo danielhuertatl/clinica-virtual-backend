@@ -22,7 +22,10 @@
         </div>
 
         <div class="aviso-legal" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 20px; font-size: 12px; border: 1px solid #f5c6cb; text-align: justify; border-radius: 4px;">
-            Atención: Para pacientes extranjeros, deje el campo CURP vacío. La contraseña de acceso será el teléfono registrado.
+            Atención: Para pacientes extranjeros, deje el campo CURP vacío.
+            <div style="margin-top: 10px; font-size: 16px; font-weight: bold; text-align: center; color: #991D27; border-top: 1px dashed #f5c6cb; padding-top: 10px;">
+                ⚠️ LA CONTRASEÑA DE ACCESO SERÁ EL TELÉFONO REGISTRADO ⚠️
+            </div>
         </div>
 
         <form id="form-registro" class="datos-paciente-grid">
@@ -73,9 +76,11 @@
             </div>
 
             <div class="campo-fila">
-                <div style="flex: 2;">
+                <div style="flex: 2; position: relative;">
                     <label>Email:</label>
-                    <input type="email" id="email" placeholder="correo@ejemplo.com" required>
+                    <input type="email" id="email" placeholder="correo@ejemplo.com" required 
+                           onblur="const span = document.getElementById('email-error'); if(this.value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value)){ span.style.display='block'; } else { span.style.display='none'; }">
+                    <span id="email-error" style="color: #991D27; font-size: 11px; display: none;">Formato de correo inválido</span>
                 </div>
                 <div style="flex: 1;">
                     <label>CURP (Opcional):</label> 
