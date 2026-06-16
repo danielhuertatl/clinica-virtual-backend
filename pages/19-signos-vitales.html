@@ -81,7 +81,7 @@
     <script>
         const formSignos = document.getElementById('form-signos');
 
-        function guardarSignosEnMemoria() {
+        async function guardarSignosEnBD() {
             const inputBusqueda = document.getElementById('id-busqueda-signos');
             const idReal = inputBusqueda ? inputBusqueda.dataset.idReal : null;
             
@@ -91,6 +91,7 @@
             }
 
             const signos = {
+                id_paciente: parseInt(idReal),
                 peso: document.getElementById('peso').value,
                 talla: document.getElementById('talla').value,
                 fc: document.getElementById('fc').value,
@@ -99,15 +100,25 @@
                 temp: document.getElementById('temp').value
             };
 
-            // Se guarda en el "puente" temporal para que lo vea el doctor
-            localStorage.setItem('signosPendientes_' + idReal, JSON.stringify(signos));
-            return true;
+            try {
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/signos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(signos)
+                });
+                const data = await res.json();
+                return data.success;
+            } catch(e) {
+                alert("❌ Error de conexión al guardar en la Base de Datos.");
+                return false;
+            }
         }
 
         // Función para el paciente que ya tenía cita
-        function enviarCitaProgramada() {
+        async function enviarCitaProgramada() {
             if (formSignos.reportValidity()) {
-                if (guardarSignosEnMemoria()) {
+                const guardado = await guardarSignosEnBD();
+                if (guardado) {
                     alert('✅ Signos vitales guardados en el expediente.\n\nEl doctor ya los verá listos en su pantalla.');
                     window.location.href = '4-enfermero.html';
                 }
@@ -115,14 +126,15 @@
         }
 
         // Función para el paciente que va llegando (Urgencia/Paso)
-        function enviarPacienteNuevo() {
+        async function enviarPacienteNuevo() {
             if (formSignos.reportValidity()) {
-                if (guardarSignosEnMemoria()) {
+                const guardado = await guardarSignosEnBD();
+                if (guardado) {
                     const nombre = document.getElementById('nombre-paciente').value;
                     const hayDoctorLibre = Math.random() > 0.3; 
 
                     if (hayDoctorLibre) {
-                        alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al Consultorio 1 con la Dra. Andrea Colin.`);
+                        alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al consultorio del médico en turno.`);
                         window.location.href = '4-enfermero.html';
                     } else {
                         alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nTodos los consultorios están llenos.`);

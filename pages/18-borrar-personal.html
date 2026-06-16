@@ -58,7 +58,7 @@
             <p style="font-size: 18px; color: #333;">⚠️ <strong>Atención</strong></p>
             <p>Está a punto de dar de baja del sistema a:</p>
             
-            <span class="nombre-resaltado" id="nombre-encontrado">Dra. Andrea Lizbeth Colin</span>
+            <span class="nombre-resaltado" id="nombre-encontrado">Médico</span>
             
             <p class="mensaje-legal">
                 Esta acción revocará sus accesos inmediatamente y la marcará como "Inactiva". 
@@ -71,36 +71,65 @@
             </div>
         </div>
 
-        <div id="error-busqueda" style="display: none; text-align: center; color: #991D27; margin-top: 20px; font-weight: bold;">
+        <div id="error-busqueda" style="display: none; text-align: center; color: #991D27; margin-top: 20px; font-size: 14px; font-weight: bold;">
             No se encontró personal con ese ID en la base de datos activa.
         </div>
 
     </div>
 
     <script>
-        function buscarParaBaja() {
-            const id = document.getElementById('input-busqueda').value.trim();
+        let idUsuarioParaBaja = null;
+
+        async function buscarParaBaja() {
+            const cedula = document.getElementById('input-busqueda').value.trim();
             const cuadro = document.getElementById('cuadro-confirmacion');
             const error = document.getElementById('error-busqueda');
+            const nombreSpan = document.getElementById('nombre-encontrado');
 
-            if(id === "14776894") {
-                cuadro.style.display = 'block';
-                error.style.display = 'none';
-            } else if (id === "") {
-                alert("Ingrese una cédula.");
-            } else {
-                cuadro.style.display = 'none';
-                error.style.display = 'block';
+            if (cedula === "") return alert("Ingrese una cédula profesional.");
+
+            try {
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${cedula}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const p = data.persona;
+                    idUsuarioParaBaja = p.id_usuario;
+                    nombreSpan.textContent = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
+                    cuadro.style.display = 'block';
+                    error.style.display = 'none';
+                } else {
+                    cuadro.style.display = 'none';
+                    error.style.display = 'block';
+                }
+            } catch (err) {
+                alert("Error de conexión al buscar personal.");
             }
         }
 
-        function confirmarBajaLogica() {
+        async function confirmarBajaLogica() {
             const nombre = document.getElementById('nombre-encontrado').textContent;
             
+            if(!idUsuarioParaBaja) return;
+
             // Segunda confirmación (doble validación de seguridad)
             if(confirm(`¿Confirmar la baja definitiva de los accesos de ${nombre}?`)) {
-                alert(`✅ Operación exitosa.\n\nEl registro de ${nombre} ha sido marcado como INACTIVO en la base de datos.`);
-                window.location.href = '5-admin.html';
+                try {
+                    const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios/baja', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id_usuario: idUsuarioParaBaja })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(`✅ Operación exitosa.\n\nEl registro de ${nombre} ha sido marcado como INACTIVO en la base de datos.`);
+                        window.location.href = '5-admin.html';
+                    } else {
+                        alert("❌ " + data.mensaje);
+                    }
+                } catch(e) {
+                    alert("❌ Error de conexión al intentar dar de baja.");
+                }
             }
         }
     </script>

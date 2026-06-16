@@ -15,6 +15,20 @@ const pool = new Pool({
 
 const PORT = process.env.PORT || 3000;
 
+// CREAR TABLA DE SIGNOS VITALES PENDIENTES AUTOMÁTICAMENTE SI NO EXISTE
+pool.query(`
+    CREATE TABLE IF NOT EXISTS signos_vitales_pendientes (
+        id_paciente INTEGER PRIMARY KEY,
+        peso NUMERIC(5,2),
+        talla NUMERIC(4,2),
+        fc INTEGER,
+        fr INTEGER,
+        sato2 INTEGER,
+        temp NUMERIC(4,2),
+        fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+`).catch(err => console.error("Error creando tabla signos_vitales_pendientes:", err));
+
 // SERVIR LOS ARCHIVOS FRONTEND (HTML, CSS, JS) DESDE EL MISMO SERVIDOR
 app.use(express.static(__dirname));
 
@@ -361,6 +375,41 @@ app.get('/api/admin/usuarios', async (req, res) => {
         console.error('Error al obtener usuarios:', error);
         res.status(500).json({ success: false, mensaje: 'Error al obtener la lista de usuarios.' });
     }
+});
+
+// 21. GUARDAR SIGNOS VITALES TEMPORALES (ENFERMERÍA)
+app.post('/api/signos', async (req, res) => {
+    const { id_paciente, peso, talla, fc, fr, sato2, temp } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO signos_vitales_pendientes (id_paciente, peso, talla, fc, fr, sato2, temp) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (id_paciente) 
+             DO UPDATE SET peso = EXCLUDED.peso, talla = EXCLUDED.talla, fc = EXCLUDED.fc, fr = EXCLUDED.fr, sato2 = EXCLUDED.sato2, temp = EXCLUDED.temp, fecha = CURRENT_TIMESTAMP`,
+            [id_paciente, peso, talla, fc, fr, sato2, temp]
+        );
+        res.json({ success: true, mensaje: 'Signos guardados en la base de datos.' });
+    } catch (error) {
+        console.error('Error al guardar signos:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al guardar los signos vitales.' });
+    }
+});
+
+// 22. OBTENER SIGNOS VITALES PENDIENTES (DOCTOR)
+app.get('/api/signos/:id_paciente', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM signos_vitales_pendientes WHERE id_paciente = $1', [req.params.id_paciente]);
+        if (result.rows.length > 0) res.json({ success: true, signos: result.rows[0] });
+        else res.json({ success: false, mensaje: 'Sin signos previos.' });
+    } catch (error) { res.status(500).json({ success: false }); }
+});
+
+// 23. BORRAR SIGNOS VITALES (DESPUÉS DE LA CONSULTA)
+app.delete('/api/signos/:id_paciente', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM signos_vitales_pendientes WHERE id_paciente = $1', [req.params.id_paciente]);
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 // 20. DAR DE BAJA A UN USUARIO

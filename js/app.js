@@ -457,6 +457,9 @@ window.guardarYGenerarReceta = async function() {
         const data = await res.json();
         
         if (data.success) {
+            // NUEVO: Borrar signos pendientes de la BD porque ya se usaron
+            try { fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${idReal}`, { method: 'DELETE' }); } catch(e){}
+
             alert("✅ " + data.mensaje);
             // Guardar en memoria temporal para mostrarlo en la hoja de impresión
             localStorage.setItem('recetaTemporal', receta);
@@ -506,33 +509,39 @@ window.buscarPacienteConsulta = async function() {
             document.getElementById('id-busqueda').dataset.idReal = p.id_paciente;
 
             // --- NUEVO: Cargar signos de enfermería si existen ---
-            const signosGuardados = localStorage.getItem('signosPendientes_' + p.id_paciente);
-            if (signosGuardados) {
-                const signos = JSON.parse(signosGuardados);
-                
-                const inputPeso = document.getElementById('input-peso');
-                const inputTalla = document.getElementById('input-talla');
-                
-                if(inputPeso) inputPeso.value = signos.peso || '';
-                if(inputTalla) inputTalla.value = signos.talla || '';
-                
-                const inputFc = document.getElementById('input-fc');
-                if(inputFc) inputFc.value = signos.fc || '';
-                
-                const inputFr = document.getElementById('input-fr');
-                if(inputFr) inputFr.value = signos.fr || '';
-                
-                const inputSato2 = document.getElementById('input-sato2');
-                if(inputSato2) inputSato2.value = signos.sato2 || '';
-                
-                // Forzar cálculo de IMC automáticamente
-                if(inputPeso) {
-                    inputPeso.dispatchEvent(new Event('input'));
+            try {
+                const resSignos = await fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${p.id_paciente}`);
+                const dataSignos = await resSignos.json();
+
+                if (dataSignos.success) {
+                    const signos = dataSignos.signos;
+                    
+                    const inputPeso = document.getElementById('input-peso');
+                    const inputTalla = document.getElementById('input-talla');
+                    
+                    if(inputPeso) inputPeso.value = signos.peso || '';
+                    if(inputTalla) inputTalla.value = signos.talla || '';
+                    
+                    const inputFc = document.getElementById('input-fc');
+                    if(inputFc) inputFc.value = signos.fc || '';
+                    
+                    const inputFr = document.getElementById('input-fr');
+                    if(inputFr) inputFr.value = signos.fr || '';
+                    
+                    const inputSato2 = document.getElementById('input-sato2');
+                    if(inputSato2) inputSato2.value = signos.sato2 || '';
+                    
+                    // Forzar cálculo de IMC automáticamente
+                    if(inputPeso) {
+                        inputPeso.dispatchEvent(new Event('input'));
+                    }
+                    
+                    alert("✅ Datos del paciente y SIGNOS VITALES de enfermería cargados correctamente.");
+                } else {
+                    alert("✅ Datos del paciente cargados correctamente. (Sin signos vitales previos)");
                 }
-                
-                alert("✅ Datos del paciente y SIGNOS VITALES de enfermería cargados correctamente.");
-            } else {
-                alert("✅ Datos del paciente cargados correctamente. (Sin signos vitales previos)");
+            } catch(e) {
+                alert("✅ Datos del paciente cargados. (No se pudo conectar a los signos vitales)");
             }
             
             // --- NUEVO: BUSCAR ESTUDIOS PENDIENTES ---
