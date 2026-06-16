@@ -801,3 +801,72 @@ window.buscarEstudiosPaciente = async function() {
         alert("❌ Error de conexión al consultar el historial.");
     }
 };
+
+// --- CARGAR LISTA DE USUARIOS (PANTALLA ADMIN) ---
+window.cargarUsuariosAdmin = async function() {
+    const contenedor = document.getElementById('contenedor-usuarios-admin');
+    if (!contenedor) return;
+
+    try {
+        // Cambia la URL si pruebas en local: http://localhost:3000/api/admin/usuarios
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
+        const data = await res.json();
+        
+        contenedor.innerHTML = '';
+        
+        if (data.success && data.usuarios.length > 0) {
+            let html = '<table style="width:100%; border-collapse: collapse; margin-top: 15px; background: white;">';
+            html += '<tr style="background-color: #0E3B5C; color: white;">';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">ID</th>';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">Nombre</th>';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">Rol</th>';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">Correo</th>';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">Contraseña</th>';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">Cédula</th>';
+            html += '<th style="padding: 10px; border: 1px solid #ccc;">Acciones</th>';
+            html += '</tr>';
+            
+            data.usuarios.forEach(u => {
+                const nombre = u.nombre ? `${u.nombre} ${u.apellido_paterno} ${u.apellido_materno || ''}`.trim() : 'N/A';
+                const cedula = u.cedula_id || 'N/A';
+                const btnBaja = u.estatus ? 
+                    `<button onclick="darDeBajaUsuario(${u.id_usuario})" class="btn-accion-rojo" style="padding: 5px; font-size: 12px; width: 100%;">Dar de Baja</button>` : 
+                    `<span style="color: #991D27; font-weight: bold; font-size: 12px;">Inactivo</span>`;
+                
+                html += `<tr style="${!u.estatus ? 'opacity: 0.5; background-color: #f8f8f8;' : ''}">
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${u.id_usuario}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc;">${nombre}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center; text-transform: capitalize;">${u.rol}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc;">${u.correo}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc; font-size: 10px; color: #666; max-width: 120px; word-wrap: break-word;">${u.password_hash}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${cedula}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${btnBaja}</td>
+                </tr>`;
+            });
+            html += '</table>';
+            contenedor.innerHTML = html;
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay usuarios registrados.</p>';
+        }
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la lista de usuarios.</p>';
+    }
+};
+
+// --- DAR DE BAJA A UN USUARIO (PANTALLA ADMIN) ---
+window.darDeBajaUsuario = async function(id_usuario) {
+    if (!confirm("⚠️ ¿Estás seguro de que deseas dar de baja a este usuario? Ya no podrá iniciar sesión.")) return;
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios/baja', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_usuario })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("✅ " + data.mensaje);
+            cargarUsuariosAdmin(); // Recargar la tabla para reflejar el cambio
+        } else alert("❌ " + data.mensaje);
+    } catch (e) { alert("❌ Error de conexión al intentar dar de baja."); }
+};

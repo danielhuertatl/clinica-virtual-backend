@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
@@ -22,15 +23,24 @@ app.post('/api/login', async (req, res) => {
     const { correo, password } = req.body;
     try {
         const result = await pool.query(
-            `SELECT u.rol, COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre, p.cedula_id, pac.id_paciente 
+            `SELECT u.password_hash, u.rol, COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre, p.cedula_id, pac.id_paciente 
              FROM usuarios u 
              LEFT JOIN personal p ON u.id_usuario = p.id_usuario 
              LEFT JOIN pacientes pac ON u.id_usuario = pac.id_usuario
-             WHERE u.correo = $1 AND u.password_hash = $2 AND u.estatus = true`,
-            [correo, password]
+             WHERE u.correo = $1 AND u.estatus = true`,
+            [correo]
         );
+        
         if (result.rows.length > 0) {
-            res.json({ success: true, rol: result.rows[0].rol, nombre: result.rows[0].nombre, cedula: result.rows[0].cedula_id, id_paciente: result.rows[0].id_paciente });
+            const user = result.rows[0];
+            // Verifica si la contraseña coincide (ya sea encriptada o la anterior en texto plano)
+            const esPasswordValido = await bcrypt.compare(password, user.password_hash) || password === user.password_hash;
+            
+            if (esPasswordValido) {
+                res.json({ success: true, rol: user.rol, nombre: user.nombre, cedula: user.cedula_id, id_paciente: user.id_paciente });
+            } else {
+                res.json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
+            }
         } else {
             res.json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
@@ -44,10 +54,13 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/personal', async (req, res) => {
     const d = req.body;
     try {
+        // Encriptar la contraseña antes de guardarla
+        const passwordEncriptada = await bcrypt.hash(d.password, 10);
+        
         // Primero creamos el usuario
         const userRes = await pool.query(
             'INSERT INTO usuarios (correo, password_hash, rol, estatus) VALUES ($1, $2, $3, true) RETURNING id_usuario',
-            [d.correo, d.password, d.puesto]
+            [d.correo, passwordEncriptada, d.puesto]
         );
         
         const idU = userRes.rows[0].id_usuario;
@@ -331,6 +344,34 @@ app.post('/api/recuperar-password', async (req, res) => {
     } catch (error) {
         console.error('Error al solicitar recuperación:', error);
         res.status(500).json({ success: false, mensaje: 'Error al procesar la solicitud.' });
+    }
+});
+
+// 19. OBTENER LISTA DE TODOS LOS USUARIOS (PARA ADMINISTRADOR)
+app.get('/api/admin/usuarios', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT u.id_usuario, u.correo, u.password_hash, u.rol, u.estatus, p.cedula_id, p.nombre, p.apellido_paterno, p.apellido_materno
+             FROM usuarios u
+             LEFT JOIN personal p ON u.id_usuario = p.id_usuario
+             ORDER BY u.rol, p.nombre`
+        );
+        res.json({ success: true, usuarios: result.rows });
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener la lista de usuarios.' });
+    }
+});
+
+// 20. DAR DE BAJA A UN USUARIO
+app.put('/api/admin/usuarios/baja', async (req, res) => {
+    const { id_usuario } = req.body;
+    try {
+        await pool.query('UPDATE usuarios SET estatus = false WHERE id_usuario = $1', [id_usuario]);
+        res.json({ success: true, mensaje: 'Usuario dado de baja correctamente. Ya no tendrá acceso.' });
+    } catch (error) {
+        console.error('Error al dar de baja:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar el estatus.' });
     }
 });
 
