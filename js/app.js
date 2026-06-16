@@ -606,7 +606,7 @@ window.completarEstudio = async function(id_estudio, nombreEstudio) {
 // --- BÚSQUEDA DE PACIENTE EN ENFERMERÍA (PANTALLA 19) ---
 window.buscarPacienteSignos = async function() {
     const idInput = document.getElementById('id-busqueda-signos').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un ID de paciente o su CURP.");
+    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
@@ -638,7 +638,7 @@ window.buscarPacienteSignos = async function() {
 // --- BÚSQUEDA DE PACIENTE PARA ESTUDIOS (PANTALLA 14) ---
 window.buscarPacienteEstudio = async function() {
     const idInput = document.getElementById('id-busqueda-estudio').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un ID de paciente o su CURP.");
+    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
@@ -712,7 +712,7 @@ window.solicitarEstudio = async function() {
 // --- VER ESTUDIOS DE UN PACIENTE (PANTALLA 15) ---
 window.buscarEstudiosPaciente = async function() {
     const idInput = document.getElementById('id-busqueda-ver-estudio').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese el ID del paciente.");
+    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
 
     try {
         // 1. Buscamos primero al paciente para saber su nombre
