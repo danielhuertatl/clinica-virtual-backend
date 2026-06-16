@@ -812,6 +812,9 @@ window.cargarUsuariosAdmin = async function() {
     const contenedor = document.getElementById('contenedor-usuarios-admin');
     if (!contenedor) return;
 
+    // Mensaje de carga mientras el servidor de Render responde
+    contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; padding: 20px; font-weight: bold;">⏳ Cargando lista de usuarios... (Si es el primer acceso, el servidor puede tardar unos segundos en despertar)</p>';
+
     try {
         // Cambia la URL si pruebas en local: http://localhost:3000/api/admin/usuarios
         const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
@@ -834,6 +837,7 @@ window.cargarUsuariosAdmin = async function() {
             data.usuarios.forEach(u => {
                 const nombre = u.nombre ? `${u.nombre} ${u.apellido_paterno} ${u.apellido_materno || ''}`.trim() : 'N/A';
                 const cedula = u.cedula_id || 'N/A';
+                const passParaHtml = (u.password_hash || '').replace(/'/g, "\\'");
                 const btnBaja = u.estatus ? 
                     `<button onclick="darDeBajaUsuario(${u.id_usuario})" class="btn-accion-rojo" style="padding: 5px; font-size: 12px; width: 100%;">Dar de Baja</button>` : 
                     `<span style="color: #991D27; font-weight: bold; font-size: 12px;">Inactivo</span>`;
@@ -845,7 +849,7 @@ window.cargarUsuariosAdmin = async function() {
                     <td style="padding: 10px; border: 1px solid #ccc;">${u.correo}</td>
                     <td style="padding: 10px; border: 1px solid #ccc; text-align: center; max-width: 150px;">
                         <span id="pass-${u.id_usuario}" style="font-size: 14px; color: #000; letter-spacing: 2px;">••••••••</span>
-                        <button onclick="revelarContrasena(${u.id_usuario}, '${u.password_hash}')" style="background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 5px;" title="Mostrar/Ocultar">👁️</button>
+                        <button onclick="revelarContrasena(${u.id_usuario}, '${passParaHtml}')" style="background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 5px;" title="Mostrar/Ocultar">👁️</button>
                     </td>
                     <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${cedula}</td>
                     <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${btnBaja}</td>
