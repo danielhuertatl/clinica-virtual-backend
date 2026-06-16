@@ -339,6 +339,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         cargarMisCitas();
     }
+
+    // --- AUTO-CARGAR USUARIOS SI ESTAMOS EN LA PANTALLA 30 ---
+    if (window.location.pathname.includes('30-lista-usuarios.html')) {
+        cargarUsuariosAdmin();
+    }
 });
 
 // --- FUNCIÓN DE BÚSQUEDA (Global para el botón onclick) ---
@@ -838,7 +843,10 @@ window.cargarUsuariosAdmin = async function() {
                     <td style="padding: 10px; border: 1px solid #ccc;">${nombre}</td>
                     <td style="padding: 10px; border: 1px solid #ccc; text-align: center; text-transform: capitalize;">${u.rol}</td>
                     <td style="padding: 10px; border: 1px solid #ccc;">${u.correo}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; font-size: 10px; color: #666; max-width: 120px; word-wrap: break-word;">${u.password_hash}</td>
+                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center; max-width: 150px;">
+                        <span id="pass-${u.id_usuario}" style="font-size: 14px; color: #000; letter-spacing: 2px;">••••••••</span>
+                        <button onclick="revelarContrasena(${u.id_usuario}, '${u.password_hash}')" style="background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 5px;" title="Mostrar/Ocultar">👁️</button>
+                    </td>
                     <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${cedula}</td>
                     <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${btnBaja}</td>
                 </tr>`;
@@ -851,6 +859,27 @@ window.cargarUsuariosAdmin = async function() {
     } catch (error) {
         console.error('Error al cargar usuarios:', error);
         contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la lista de usuarios.</p>';
+    }
+};
+
+// --- REVELAR CONTRASEÑA CON EL OJITO ---
+window.revelarContrasena = function(id, hash) {
+    const span = document.getElementById(`pass-${id}`);
+    if (span.innerText.includes('••••')) {
+        const pass = prompt("🔒 Por seguridad, ingrese su contraseña de administrador para visualizar este dato:");
+        if (pass !== null && pass.trim() !== "") {
+            // Se muestra el hash encriptado de la base de datos
+            span.innerText = hash;
+            span.style.fontSize = '10px';
+            span.style.color = '#666';
+            span.style.wordWrap = 'break-word';
+            span.style.letterSpacing = 'normal';
+        }
+    } else {
+        span.innerText = '••••••••';
+        span.style.fontSize = '14px';
+        span.style.color = '#000';
+        span.style.letterSpacing = '2px';
     }
 };
 
