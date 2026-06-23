@@ -491,6 +491,9 @@ window.guardarYGenerarReceta = async function() {
 window.buscarPacienteConsulta = async function() {
     const idInput = document.getElementById('id-busqueda').value.trim();
     if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
+    
+    // Aseguramos que la alerta esté oculta antes de cada nueva búsqueda.
+    document.getElementById('alerta-signos-faltantes').style.display = 'none';
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
