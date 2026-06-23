@@ -18,8 +18,12 @@ body {
 .pantalla-login {
     width: 100%;
     max-width: 400px; /* Tamaño tipo móvil/tablet como en tu PDF */
-    padding: 20px;
+    padding: 40px 30px;
     position: relative;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-top: 5px solid #0E3B5C;
 }
 
 /* --- ESTILOS DEL LOGIN (Nuevos títulos y footer) --- */
@@ -106,22 +110,40 @@ body {
 }
 
 .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    position: relative; /* Clave para posicionar el ícono */
+    margin-bottom: 20px;
 }
 
 .input-group label {
-    color: #333;
-    font-size: 16px;
+    display: none; /* Ocultamos las etiquetas, los placeholders son suficientes */
 }
 
 .input-group input {
-    border: 3px solid #0E3B5C; /* Borde azul oscuro */
-    background-color: transparent;
-    padding: 10px;
+    width: 100%;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    padding: 12px 12px 12px 45px; /* Espacio a la izquierda para el ícono */
     font-size: 16px;
     outline: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: #0E3B5C;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(14, 59, 92, 0.2);
+}
+
+.input-group::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: "Arial"; /* O una fuente de íconos si la tuvieras */
+    color: #aaa;
+    transition: color 0.3s ease;
 }
 
 .btn-ingresar {
@@ -133,10 +155,23 @@ body {
     font-weight: bold;
     cursor: pointer;
     margin-top: 10px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 
 .btn-ingresar:hover {
     background-color: #09263D;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Iconos para los campos */
+.input-group.user::before {
+    content: '👤';
+}
+
+.input-group.pass::before {
+    content: '🔒';
 }
 /* Estilos para los menús principales */
 .pantalla-menu {
@@ -435,4 +470,56 @@ textarea.receta-expandida {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+/* --- NUEVO: ESTILOS DE TARJETAS PARA MENÚS --- */
+.card-menu {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-left: 6px solid #0E3B5C;
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+    color: #0E3B5C; /* Asegura que el texto sea del color correcto */
+    font-weight: normal; /* Resetea el bold de los botones viejos */
+    font-size: 16px; /* Resetea el tamaño de fuente */
+}
+
+.card-menu:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    background-color: #f8fafd;
+    color: #0E3B5C; /* Mantiene el color del texto en hover */
+}
+
+.card-menu .icon-box {
+    font-size: 24px;
+    background: #f0f4f8;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0; /* Evita que el ícono se encoja */
+}
+
+.card-menu .text-box h3 {
+    margin: 0;
+    color: #0E3B5C;
+    font-size: 17px;
+}
+
+.card-menu .text-box p {
+    margin: 4px 0 0;
+    color: #666;
+    font-size: 13px;
+    font-weight: normal;
+}
 }

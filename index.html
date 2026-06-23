@@ -9,22 +9,22 @@
 <body>
     <div class="pantalla-login">
         <div class="header-login">
-            <h2 class="titulo-login">Bienvenido a Clínica Virtual</h2>
+            <h2 class="titulo-login">Iniciar Sesión</h2>
         </div>
 
         <div class="logo-wrapper">
-            <img src="assets/largo.png" alt="Logo Clínica Virtual" class="logo-principal">
+            <img src="assets/logocuad.png" alt="Logo Clínica Virtual" class="logo-principal" style="max-width: 150px; mix-blend-mode: multiply;">
         </div>
 
         <form id="loginForm" class="form-login">
-            <div class="input-group">
+            <div class="input-group user">
                 <label for="usuario">usuario:</label>
-                <input type="text" id="usuario" name="usuario" placeholder="usuario" required autocomplete="off">
+                <input type="text" id="usuario" name="usuario" placeholder="Correo electrónico" required autocomplete="email">
             </div>
 
-            <div class="input-group">
+            <div class="input-group pass">
                 <label for="contrasena">contraseña:</label>
-                <input type="password" id="contrasena" name="contrasena" placeholder="********" required>
+                <input type="password" id="contrasena" name="contrasena" placeholder="Contraseña" required>
             </div>
 
             <button type="submit" class="btn-ingresar">Ingresar</button>
