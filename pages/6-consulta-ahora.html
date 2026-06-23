@@ -39,40 +39,41 @@
             <div id="lista-estudios-pendientes"></div>
         </div>
 
-        <form class="datos-paciente-grid">
+        <form class="datos-paciente-grid" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 0;">Expediente de Consulta</h4>
             <div class="campo">
-                <label>Nombre:</label>
-                <input type="text" id="nombre-paciente" readonly placeholder="Esperando búsqueda...">
+                <label>👤 Nombre:</label>
+                <input type="text" id="nombre-paciente" readonly placeholder="Esperando búsqueda..." style="background-color: #f9f9f9;">
             </div>
             <div class="campo-fila">
-                <div><label>Edad:</label> <input type="text" id="edad-paciente" readonly placeholder="--"></div>
-                <div><label>Peso (kg):</label> <input type="number" step="0.1" id="input-peso" placeholder="0.0"></div>
-                <div><label>Talla (m):</label> <input type="number" step="0.01" id="input-talla" placeholder="0.00"></div>
+                <div><label>🎂 Edad:</label> <input type="text" id="edad-paciente" readonly placeholder="--" style="background-color: #f9f9f9;"></div>
+                <div><label>⚖️ Peso (kg):</label> <input type="number" step="0.1" id="input-peso" placeholder="0.0"></div>
+                <div><label>📏 Talla (m):</label> <input type="number" step="0.01" id="input-talla" placeholder="0.00"></div>
             </div>
             <div class="campo-fila">
-                <div><label>FC (ppm):</label> <input type="number" id="input-fc" placeholder="0"></div>
-                <div><label>FR (rpm):</label> <input type="number" id="input-fr" placeholder="0"></div>
-                <div><label>SatO2 (%):</label> <input type="number" id="input-sato2" placeholder="0"></div>
+                <div><label>❤️ FC (ppm):</label> <input type="number" id="input-fc" placeholder="0"></div>
+                <div><label>🫁 FR (rpm):</label> <input type="number" id="input-fr" placeholder="0"></div>
+                <div><label>🩸 SatO2 (%):</label> <input type="number" id="input-sato2" placeholder="0"></div>
             </div>
             
             <div class="campo" style="position: relative;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label>Receta:</label>
+                    <label>📝 Receta:</label>
                     <button type="button" id="btn-expandir" style="background: transparent; border: none; color: #0E3B5C; cursor: pointer; text-decoration: underline; font-size: 12px; font-weight: bold;">Ampliar ⤢</button>
                 </div>
                 <textarea id="texto-receta" rows="4" placeholder="Escriba las indicaciones médicas..."></textarea>
             </div>
 
             <div class="campo-fila">
-                <div><label>Tipo Sangre:</label> <input type="text" id="sangre-paciente" readonly placeholder="--"></div>
-                <div><label>IMC:</label> <input type="text" id="input-imc" placeholder="Calculando..." readonly style="background-color: #f0f0f0; font-weight: bold;"></div>
+                <div><label>🩸 Tipo Sangre:</label> <input type="text" id="sangre-paciente" readonly placeholder="--" style="background-color: #f9f9f9;"></div>
+                <div><label>📊 IMC:</label> <input type="text" id="input-imc" placeholder="Calculando..." readonly style="background-color: #eef5f9; font-weight: bold; text-align: center;"></div>
             </div>
         </form>
 
         <div class="acciones-consulta">
-            <button class="btn-accion" onclick="window.location.href='8-consultar-estudios.html'">Consultar estudios</button>
-            <button class="btn-accion-rojo">Finalizar consulta S/R</button>
-            <button type="button" class="btn-accion-verde" onclick="guardarYGenerarReceta()">Finalizar consulta</button>
+            <button class="btn-accion" onclick="window.location.href='8-consultar-estudios.html'">🔬 Consultar estudios</button>
+            <button class="btn-accion-rojo">❌ Finalizar S/R</button>
+            <button type="button" class="btn-accion-verde" onclick="guardarYGenerarReceta()">✅ Finalizar y Generar Receta</button>
         </div>
     </div>
 
