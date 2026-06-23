@@ -47,9 +47,13 @@
         </div>
 
         <div class="id-paciente-section" style="margin-top: 20px; background-color: #f0f4f8; padding: 20px; border-radius: 5px; border: 1px solid #0E3B5C;">
-            <label style="color: #0E3B5C; font-weight: bold;">Ingrese ID o Cédula a dar de baja:</label>
+            <label style="color: #0E3B5C; font-weight: bold;">Ingrese Cédula o Correo del personal a dar de baja:</label>
             <div class="input-inline" style="margin-top: 10px;">
-                <input type="text" id="input-busqueda" placeholder="Ej. 14776894" style="width: 100%; padding: 10px;">
+                <input type="text" id="input-busqueda" placeholder="Cédula profesional o correo..." style="width: 100%; padding: 10px;"
+                       oninput="
+                           if (!this.value.includes('@')) { this.value = this.value.replace(/[^0-9]/g, ''); }
+                           this.value = this.value.trim();
+                       ">
                 <button type="button" class="btn-ok" onclick="buscarParaBaja()">Buscar</button>
             </div>
         </div>
@@ -62,7 +66,7 @@
             
             <p class="mensaje-legal">
                 Esta acción revocará sus accesos inmediatamente y la marcará como "Inactiva". 
-                <br><strong>Nota:</strong> Su historial médico y legal permanecerá en la base de datos.
+                <br><strong>Nota:</strong> Su registro e historial permanecerán en la base de datos.
             </p>
 
             <div style="display: flex; gap: 15px; justify-content: center;">
@@ -72,7 +76,7 @@
         </div>
 
         <div id="error-busqueda" style="display: none; text-align: center; color: #991D27; margin-top: 20px; font-size: 14px; font-weight: bold;">
-            No se encontró personal con ese ID en la base de datos activa.
+            No se encontró personal con esa Cédula o Correo en la base de datos.
         </div>
 
     </div>
@@ -81,15 +85,15 @@
         let idUsuarioParaBaja = null;
 
         async function buscarParaBaja() {
-            const cedula = document.getElementById('input-busqueda').value.trim();
+            const termino = document.getElementById('input-busqueda').value.trim();
             const cuadro = document.getElementById('cuadro-confirmacion');
             const error = document.getElementById('error-busqueda');
             const nombreSpan = document.getElementById('nombre-encontrado');
 
-            if (cedula === "") return alert("Ingrese una cédula profesional.");
+            if (termino === "") return alert("Ingrese una Cédula Profesional o Correo Electrónico.");
 
             try {
-                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${cedula}`);
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
                 const data = await res.json();
 
                 if (data.success) {

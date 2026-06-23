@@ -53,9 +53,11 @@
                            onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
-                <div>
+                <div style="position: relative;">
                     <label>Email Institucional:</label> 
-                    <input type="email" id="email" required placeholder="correo@clinica.com">
+                    <input type="email" id="email" required placeholder="correo@clinica.com"
+                           onblur="const span = document.getElementById('email-error-edit'); if(this.value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value)){ span.style.display='block'; } else { span.style.display='none'; }">
+                    <span id="email-error-edit" style="color: #991D27; font-size: 11px; display: none; position: absolute; bottom: -15px; left: 0;">Formato de correo inválido</span>
                 </div>
             </div>
 
@@ -72,7 +74,8 @@
                 <div style="flex: 1;">
                     <label>CP:</label> 
                     <input type="text" id="cp" maxlength="5" required placeholder="5 dígitos" 
-                           onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
             </div>
             <div class="campo">

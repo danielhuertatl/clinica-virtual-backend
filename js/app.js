@@ -348,11 +348,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- FUNCIÓN DE BÚSQUEDA (Global para el botón onclick) ---
 window.simularBusqueda = async function() {
-    const cedula = document.getElementById('buscar-cedula').value.trim();
-    if (!cedula) return alert("⚠️ Ingrese una cédula profesional.");
+    const termino = document.getElementById('buscar-cedula').value.trim();
+    if (!termino) return alert("⚠️ Ingrese una Cédula Profesional o Correo Electrónico.");
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${cedula}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
         const data = await res.json();
 
         if (data.success) {

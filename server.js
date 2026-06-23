@@ -110,16 +110,16 @@ app.post('/api/pacientes', async (req, res) => {
 });
 
 // 4. BUSCAR PERSONAL POR CÉDULA
-app.get('/api/personal/:cedula', async (req, res) => {
-    const { cedula } = req.params;
+app.get('/api/personal/:termino', async (req, res) => {
+    const { termino } = req.params;
     try {
         const result = await pool.query(
             `SELECT p.*, u.correo FROM personal p 
              JOIN usuarios u ON p.id_usuario = u.id_usuario 
-             WHERE p.cedula_id = $1`, [cedula]
+             WHERE p.cedula_id = $1 OR u.correo = $1`, [termino]
         );
         if (result.rows.length > 0) res.json({ success: true, persona: result.rows[0] });
-        else res.json({ success: false, mensaje: 'No se encontró personal con esa cédula.' });
+        else res.json({ success: false, mensaje: 'No se encontró personal con esa Cédula o Correo.' });
     } catch (error) {
         console.error('Error en /api/personal/:cedula:', error);
         res.status(500).json({ success: false, mensaje: 'Error al buscar.' });

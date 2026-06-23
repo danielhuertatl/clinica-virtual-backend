@@ -21,6 +21,17 @@
             <img src="../assets/logocuad.png" alt="Logo" class="logo-mini" style="max-width: 120px;">
         </div>
 
+        <div style="background-color: #eef5f9; color: #0E3B5C; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #b8daff; text-align: justify; border-radius: 4px;">
+            <strong>Usuario de Acceso:</strong> El correo electrónico que registre será el <strong>nombre de usuario</strong> para que el personal inicie sesión en el sistema.
+        </div>
+
+        <div style="background-color: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 20px; font-size: 12px; border: 1px solid #f5c6cb; text-align: center; border-radius: 4px;">
+            <div style="font-size: 16px; font-weight: bold; color: #991D27;">
+                ⚠️ LA CONTRASEÑA DEBE SER ENTREGADA AL PERSONAL ⚠️
+            </div>
+            <p style="font-size: 12px; margin-top: 5px;">Asegúrese de proporcionar la contraseña al nuevo miembro del equipo para su primer acceso.</p>
+        </div>
+
         <form id="form-personal" class="datos-paciente-grid">
             
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left;">Datos de Identidad</h4>
@@ -63,12 +74,15 @@
 
             <div class="campo-fila">
                 <div style="flex: 1;">
+                    <input type="number" id="edad" placeholder="Edad (Auto)" readonly style="background-color: #eee; border: 1px solid #ccc;">
+                </div>
+                <div style="flex: 1;">
                     <input type="text" id="cedula" placeholder="Cédula Profesional" required style="width: 100%;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div style="flex: 1; position: relative;">
                     <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required 
                            style="width: 100%; text-transform: uppercase;"
-                           oninput="let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v; const span = document.getElementById('curp-error'); if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ span.style.display='block'; } else { span.style.display='none'; }">
+                           oninput="procesarCurpPersonal(this)">
                     <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
                 </div>
             </div>
@@ -78,6 +92,30 @@
     </div>
 
     <script>
+        function procesarCurpPersonal(input) {
+            let v = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            input.value = v;
+            const span = document.getElementById('curp-error');
+
+            if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ 
+                span.style.display='block'; 
+            } else { 
+                span.style.display='none'; 
+            }
+
+            if (v.length >= 10 && /^[A-Z]{4}\d{6}/.test(v)) {
+                const yy = parseInt(v.substr(4, 2));
+                const mm = parseInt(v.substr(6, 2));
+                const dd = parseInt(v.substr(8, 2));
+                let year = yy + (yy > new Date().getFullYear() % 100 ? 1900 : 2000);
+                let birthDate = new Date(year, mm - 1, dd);
+                let age = new Date().getFullYear() - birthDate.getFullYear();
+                let m = new Date().getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) age--;
+                if(!isNaN(age)) document.getElementById('edad').value = age > 0 ? age : 0;
+            } else document.getElementById('edad').value = '';
+        }
+
         document.getElementById('form-personal').addEventListener('submit', async (e) => {
             e.preventDefault();
             
