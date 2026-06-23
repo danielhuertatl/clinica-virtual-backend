@@ -344,6 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('30-lista-usuarios.html')) {
         cargarUsuariosAdmin();
     }
+
+    // --- AUTO-CARGAR AGENDA DE ENFERMERÍA (PANTALLA 28) ---
+    if (window.location.pathname.includes('28-agenda-enfermero.html')) {
+        cargarAgendaEnfermeria();
+    }
 });
 
 // --- FUNCIÓN DE BÚSQUEDA (Global para el botón onclick) ---
@@ -911,4 +916,79 @@ window.darDeBajaUsuario = async function(id_usuario) {
             cargarUsuariosAdmin(); // Recargar la tabla para reflejar el cambio
         } else alert("❌ " + data.mensaje);
     } catch (e) { alert("❌ Error de conexión al intentar dar de baja."); }
+};
+
+// --- CARGAR AGENDA DE ENFERMERÍA (PANTALLA 28) ---
+window.cargarAgendaEnfermeria = async function() {
+    const contenedor = document.getElementById('contenedor-agenda-enfermeria');
+    if (!contenedor) return;
+
+    contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; padding: 20px; font-weight: bold;">⏳ Cargando agenda del día...</p>';
+    const hoy = new Date().toISOString().split('T')[0];
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/fecha/${hoy}`);
+        const data = await res.json();
+
+        if (data.success && data.citas.length > 0) {
+            let html = '';
+            data.citas.forEach(cita => {
+                const nombreCompleto = `${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
+                const nombreDoctor = `Dr(a). ${cita.doctor_nombre || 'No'} ${cita.doctor_apellido || 'Asignado'}`.trim();
+                const horaCita = cita.hora.substring(0, 5);
+
+                let controles = '';
+                let claseEstado = '';
+
+                switch(cita.estatus) {
+                    case 'agendada':
+                        controles = `
+                            <button class="btn-accion-verde" style="padding: 8px;" onclick="marcarAsistencia(${cita.id_cita}, 'presente', ${cita.id_paciente})">✅ Sí llegó</button>
+                            <button class="btn-accion-rojo" style="padding: 8px;" onclick="marcarAsistencia(${cita.id_cita}, 'ausente')">❌ No llegó</button>
+                        `;
+                        break;
+                    case 'presente':
+                        claseEstado = 'estado-presente';
+                        controles = `
+                            <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
+                            <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="saltarASignos(${cita.id_paciente})">🩺 Tomar Signos Vitales</button>
+                        `;
+                        break;
+                    case 'ausente':
+                        claseEstado = 'estado-ausente';
+                        controles = `<span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>`;
+                        break;
+                    default:
+                        claseEstado = 'estado-ausente';
+                        controles = `<span style="color: #666; font-weight: bold; text-align: center; text-transform: capitalize;">${cita.estatus}</span>`;
+                }
+
+                html += `
+                    <div class="tarjeta-paciente ${claseEstado}" id="paciente-${cita.id_cita}">
+                        <div class="info-paciente">
+                            <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">${horaCita} hrs</p>
+                            <p style="font-size: 16px;"><strong>${nombreCompleto}</strong></p>
+                            <p style="font-size: 14px; color: #666;"><strong>ID:</strong> PT-${cita.id_paciente}</p>
+                            <p style="font-size: 14px; color: #0E3B5C; background: #e6f0fa; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-top: 5px;">
+                                👨‍⚕️ <strong>Doctor(a):</strong> ${nombreDoctor}
+                            </p>
+                        </div>
+                        <div class="botones-control" id="controles-${cita.id_cita}">${controles}</div>
+                    </div>
+                `;
+            });
+            contenedor.innerHTML = html;
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay pacientes agendados para hoy.</p>';
+        }
+    } catch (e) {
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la agenda.</p>';
+    }
+};
+
+// --- SALTAR DE AGENDA DE ENFERMERÍA A SIGNOS VITALES ---
+window.saltarASignos = function(id_paciente) {
+    // Usamos el mismo localStorage que usa la agenda del doctor para mantener consistencia
+    localStorage.setItem('pacienteAtenderAhora', id_paciente);
+    window.location.href = '19-signos-vitales.html';
 };

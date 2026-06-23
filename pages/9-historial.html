@@ -3,142 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial Clínico</title>
+    <title>Historial Clínico del Paciente</title>
     <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .tarjeta-estudio {
+            background-color: white;
+            border-left: 5px solid #0E3B5C;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+        }
+        .btn-ver {
+            background-color: #0E3B5C;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <div class="marca-agua"></div>
 
-    <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
+    <div class="pantalla-consulta" style="max-width: 800px; position: relative; z-index: 1;">
         <div class="header-consulta">
-            <p><strong>Buscar Historial Clínico</strong></p>
+            <p><strong>Consulta de Expediente Clínico</strong></p>
             <div class="reloj-salir">
+                <span id="reloj-actual" style="font-weight: bold; color: #0E3B5C;">--:--</span>
                 <button class="btn-salir-rojo" onclick="history.back()">regresar</button>
             </div>
         </div>
 
-        <div class="logo-wrapper-mini" style="margin-bottom: 20px;">
-            <img src="../assets/logocuad.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
-        </div>
-
-        <p style="color: #666; font-size: 14px; text-align: center; margin-bottom: 20px;">
-            Acceda al expediente médico. Puede buscar por ID interno o usando el Nombre y Documento Oficial.
-        </p>
-
-        <div class="id-paciente-section" style="background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C; margin-bottom: 20px;">
-            <label style="color: #0E3B5C; font-weight: bold;">Opción 1: Búsqueda rápida por ID</label>
-            <div class="input-inline" style="margin-top: 10px;">
-                <input type="text" id="busqueda-id" placeholder="Ej. PT-98765" style="width: 100%; padding: 8px;">
-                <button class="btn-ok" onclick="buscarPorID()">Buscar</button>
+        <div class="id-paciente-section" style="margin-top: 15px; background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C;">
+            <label style="color: #0E3B5C; font-weight: bold;">Buscar paciente por Teléfono, CURP o Correo:</label>
+            <div class="input-inline" style="margin-top: 5px;">
+                <input type="text" id="id-busqueda-ver-estudio" placeholder="Ingrese dato del paciente..." style="width: 100%; padding: 8px;">
+                <button type="button" class="btn-ok" onclick="buscarEstudiosPaciente()">Buscar</button>
             </div>
         </div>
 
-        <div style="text-align: center; color: #991D27; font-weight: bold; margin-bottom: 20px;">- O -</div>
-
-        <div class="id-paciente-section" style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px dashed #666;">
-            <label style="color: #0E3B5C; font-weight: bold;">Opción 2: Búsqueda por Nombre y Documento</label>
-            
-            <div class="campo" style="margin-top: 10px;">
-                <label>Nombre Completo (Obligatorio):</label>
-                <input type="text" id="busqueda-nombre" placeholder="Nombre(s) y Apellidos" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
-            </div>
-
-            <div class="campo" style="margin-top: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label id="label-documento">CURP (Obligatorio):</label>
-                    <a href="https://www.gob.mx/curp/" target="_blank" id="link-curp" style="font-size: 11px; color: #0E3B5C; text-decoration: underline;">¿No conoces tu CURP? Consúltala aquí</a>
-                </div>
-                <input type="text" id="busqueda-documento" placeholder="18 caracteres" maxlength="18" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-transform: uppercase;" oninput="if(!document.getElementById('chk-extranjero').checked) { let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); this.value = v; const span = document.getElementById('curp-error'); if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ span.style.display='block'; } else { span.style.display='none'; } }">
-                <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
-            </div>
-
-            <div style="margin-top: 10px; display: flex; align-items: center; gap: 5px;">
-                <input type="checkbox" id="chk-extranjero" onchange="toggleExtranjero()">
-                <label for="chk-extranjero" style="font-size: 13px; color: #666; cursor: pointer;">Soy paciente extranjero / No tengo CURP</label>
-            </div>
-
-            <button class="btn-accion-verde" style="width: 100%; margin-top: 15px; padding: 10px;" onclick="buscarPorNombre()">Buscar en Historial</button>
+        <div id="resultados-historial" style="margin-top: 20px;">
+            <h3 id="nombre-paciente-ver" style="color: #0E3B5C; text-align: center; margin-bottom: 15px;"></h3>
+            <div id="contenedor-consultas"></div>
+            <div id="contenedor-estudios"></div>
         </div>
-
-        <div id="alerta-no-encontrado" style="display: none; background-color: #fff3f4; color: #991D27; padding: 15px; border-left: 4px solid #991D27; margin-top: 20px; border-radius: 4px;">
-            <strong>⚠️ Paciente no encontrado.</strong><br>
-            Verifique que los datos sean correctos. Si el paciente es de primera vez, solicite su registro en Administración.
-        </div>
-
     </div>
-
-    <script>
-        async function buscarPorID() {
-            const id = document.getElementById('busqueda-id').value.trim();
-            if(id === "") {
-                alert("Ingrese un ID válido.");
-                return;
-            }
-            try {
-                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${id}`);
-                const data = await res.json();
-                if(data.success) {
-                    document.getElementById('alerta-no-encontrado').style.display = 'none';
-                    localStorage.setItem('pacienteBuscadoHistorial', data.paciente.id_paciente);
-                    window.location.href = '15-mostrar-estudios.html';
-                } else {
-                    document.getElementById('alerta-no-encontrado').style.display = 'block';
-                }
-            } catch(e) {
-                alert("Error de conexión al buscar.");
-            }
-        }
-
-        async function buscarPorNombre() {
-            const nombre = document.getElementById('busqueda-nombre').value.trim();
-            const documento = document.getElementById('busqueda-documento').value.trim();
-            const esExtranjero = document.getElementById('chk-extranjero').checked;
-
-            if(nombre === "" || documento === "") {
-                alert("Para esta opción es obligatorio ingresar el Nombre Completo y el Documento (CURP o Pasaporte).");
-                return;
-            }
-
-            if(!esExtranjero && documento.length < 18) {
-                alert("La CURP debe tener 18 caracteres. Si es extranjero, marque la casilla correspondiente abajo.");
-                return;
-            }
-
-            try {
-                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${documento}`);
-                const data = await res.json();
-                if(data.success) {
-                    document.getElementById('alerta-no-encontrado').style.display = 'none';
-                    localStorage.setItem('pacienteBuscadoHistorial', data.paciente.id_paciente);
-                    window.location.href = '15-mostrar-estudios.html';
-                } else {
-                    document.getElementById('alerta-no-encontrado').style.display = 'block';
-                }
-            } catch(e) {
-                alert("Error de conexión al buscar.");
-            }
-        }
-
-        // Esta función cambia la vista si eligen "Extranjero"
-        function toggleExtranjero() {
-            const isChecked = document.getElementById('chk-extranjero').checked;
-            const labelDoc = document.getElementById('label-documento');
-            const inputDoc = document.getElementById('busqueda-documento');
-            const linkCurp = document.getElementById('link-curp');
-
-            if(isChecked) {
-                labelDoc.textContent = "Pasaporte / Identificación Alterna (Obligatorio):";
-                inputDoc.placeholder = "Ingrese su número de pasaporte o ID oficial";
-                inputDoc.removeAttribute('maxlength'); // Quitamos el límite de 18
-                linkCurp.style.display = 'none'; // Ocultamos el link de la CURP
-            } else {
-                labelDoc.textContent = "CURP (Obligatorio):";
-                inputDoc.placeholder = "18 caracteres";
-                inputDoc.setAttribute('maxlength', '18'); // Regresamos el límite
-                linkCurp.style.display = 'inline'; // Mostramos el link
-            }
-        }
-    </script>
     <script src="../js/app.js"></script>
 </body>
 </html>

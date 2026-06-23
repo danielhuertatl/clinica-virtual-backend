@@ -339,6 +339,26 @@ app.put('/api/citas/cancelar', async (req, res) => {
     }
 });
 
+// 18. OBTENER TODAS LAS CITAS DE UNA FECHA (PARA ENFERMERÍA/RECEPCIÓN)
+app.get('/api/citas/fecha/:fecha', async (req, res) => {
+    const { fecha } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT c.id_cita, c.hora, c.estatus, p.id_paciente, p.nombre, p.apellido_paterno, p.apellido_materno,
+                    doc.nombre as doctor_nombre, doc.apellido_paterno as doctor_apellido
+             FROM citas c
+             JOIN pacientes p ON c.id_paciente = p.id_paciente
+             LEFT JOIN personal doc ON c.cedula_doctor = doc.cedula_id
+             WHERE c.fecha = $1
+             ORDER BY c.hora ASC`,
+            [fecha]
+        );
+        res.json({ success: true, citas: result.rows });
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: 'Error al obtener citas del día.' });
+    }
+});
+
 // 18. SOLICITUD DE RECUPERACIÓN DE CONTRASEÑA
 app.post('/api/recuperar-password', async (req, res) => {
     const { correo } = req.body;

@@ -60,34 +60,8 @@
             <span style="font-size: 14px; color: #666; font-weight: bold;" id="fecha-hoy"></span>
         </div>
 
-        <div class="tarjeta-paciente" id="paciente-1">
-            <div class="info-paciente">
-                <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">13:43 hrs</p>
-                <p style="font-size: 16px;"><strong>Paciente Registrado</strong></p>
-                <p style="font-size: 14px; color: #666;"><strong>ID:</strong> Asignado</p>
-                <p style="font-size: 14px; color: #0E3B5C; background: #e6f0fa; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-top: 5px;">
-                    👨‍⚕️ <strong>Doctor(a):</strong> Médico de Guardia
-                </p>
-            </div>
-            <div class="botones-control" id="controles-1">
-                <button class="btn-accion-verde" style="padding: 8px;" onclick="marcarAsistencia(1, 'presente')">✅ Sí llegó</button>
-                <button class="btn-accion-rojo" style="padding: 8px;" onclick="marcarAsistencia(1, 'ausente')">❌ No llegó</button>
-            </div>
-        </div>
-
-        <div class="tarjeta-paciente" id="paciente-2">
-            <div class="info-paciente">
-                <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">14:30 hrs</p>
-                <p style="font-size: 16px;"><strong>María Fernanda López</strong></p>
-                <p style="font-size: 14px; color: #666;"><strong>ID:</strong> PT-10023</p>
-                <p style="font-size: 14px; color: #0E3B5C; background: #e6f0fa; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-top: 5px;">
-                    👨‍⚕️ <strong>Doctor:</strong> Dr. Juan Pérez
-                </p>
-            </div>
-            <div class="botones-control" id="controles-2">
-                <button class="btn-accion-verde" style="padding: 8px;" onclick="marcarAsistencia(2, 'presente')">✅ Sí llegó</button>
-                <button class="btn-accion-rojo" style="padding: 8px;" onclick="marcarAsistencia(2, 'ausente')">❌ No llegó</button>
-            </div>
+        <div id="contenedor-agenda-enfermeria">
+            <!-- Las tarjetas de pacientes se cargarán aquí dinámicamente -->
         </div>
 
     </div>
@@ -96,27 +70,6 @@
         // Poner la fecha de hoy automáticamente
         const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         document.getElementById('fecha-hoy').textContent = new Date().toLocaleDateString('es-MX', opciones);
-
-        // Lógica para cambiar el estado de la tarjeta
-        function marcarAsistencia(idTarjeta, estado) {
-            const tarjeta = document.getElementById(`paciente-${idTarjeta}`);
-            const controles = document.getElementById(`controles-${idTarjeta}`);
-
-            if (estado === 'presente') {
-                tarjeta.classList.add('estado-presente');
-                controles.innerHTML = `
-                    <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
-                    <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="window.location.href='19-signos-vitales.html'">🩺 Tomar Signos Vitales</button>
-                `;
-            } else if (estado === 'ausente') {
-                if(confirm("¿Estás seguro de marcar a este paciente como NO LLEGÓ?")) {
-                    tarjeta.classList.add('estado-ausente');
-                    controles.innerHTML = `
-                        <span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>
-                    `;
-                }
-            }
-        }
     </script>
     <script src="../js/app.js"></script>
 </body>
