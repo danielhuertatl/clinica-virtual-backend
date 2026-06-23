@@ -494,8 +494,8 @@ textarea.receta-expandida {
 .card-menu:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-    background-color: #f8fafd;
-    color: #0E3B5C; /* Mantiene el color del texto en hover */
+    background-color: #0E3B5C; /* Fondo azul oscuro al pasar el mouse */
+    color: white; /* El texto principal se vuelve blanco */
 }
 
 .card-menu .icon-box {
@@ -514,6 +514,7 @@ textarea.receta-expandida {
     margin: 0;
     color: #0E3B5C;
     font-size: 17px;
+    transition: color 0.3s ease;
 }
 
 .card-menu .text-box p {
@@ -521,5 +522,13 @@ textarea.receta-expandida {
     color: #666;
     font-size: 13px;
     font-weight: normal;
+    transition: color 0.3s ease;
+}
+
+/* Cuando se pasa el mouse, los textos internos también cambian a blanco */
+.card-menu:hover .text-box h3,
+.card-menu:hover .text-box p,
+.card-menu:hover .icon-box {
+    color: white;
 }
 }
