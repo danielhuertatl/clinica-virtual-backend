@@ -514,11 +514,15 @@ window.buscarPacienteConsulta = async function() {
             document.getElementById('id-busqueda').dataset.idReal = p.id_paciente;
 
             // --- NUEVO: Cargar signos de enfermería si existen ---
+            const alertaSignos = document.getElementById('alerta-signos-faltantes');
+            const camposSignos = ['input-peso', 'input-talla', 'input-fc', 'input-fr', 'input-sato2'];
+
             try {
                 const resSignos = await fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${p.id_paciente}`);
                 const dataSignos = await resSignos.json();
 
                 if (dataSignos.success) {
+                    alertaSignos.style.display = 'none'; // Ocultamos la alerta porque sí hay signos
                     const signos = dataSignos.signos;
                     
                     const inputPeso = document.getElementById('input-peso');
@@ -543,7 +547,13 @@ window.buscarPacienteConsulta = async function() {
                     
                     alert("✅ Datos del paciente y SIGNOS VITALES de enfermería cargados correctamente.");
                 } else {
-                    alert("✅ Datos del paciente cargados correctamente. (Sin signos vitales previos)");
+                    // Si no hay signos, mostramos la alerta y limpiamos los campos
+                    alertaSignos.style.display = 'block';
+                    camposSignos.forEach(id => {
+                        const campo = document.getElementById(id);
+                        if (campo) campo.value = '';
+                    });
+                    if (document.getElementById('input-imc')) document.getElementById('input-imc').value = '';
                 }
             } catch(e) {
                 alert("✅ Datos del paciente cargados. (No se pudo conectar a los signos vitales)");
