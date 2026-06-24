@@ -115,7 +115,7 @@ body {
 }
 
 .input-group label {
-    display: none; /* Ocultamos las etiquetas, los placeholders son suficientes */
+    /* display: none; */ /* REVERTIDO: Mostramos las etiquetas de nuevo */
 }
 
 .input-group input {

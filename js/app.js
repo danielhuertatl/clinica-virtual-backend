@@ -1013,17 +1013,24 @@ window.saltarASignos = function(id_paciente) {
 
 // --- MARCAR ASISTENCIA (PANTALLA 28) ---
 window.marcarAsistencia = async function(id_cita, estatus, id_paciente) {
-    if (estatus === 'ausente' && !confirm("¿Estás seguro de marcar a este paciente como NO LLEGÓ?")) {
+    if (estatus === 'ausente' && !confirm("¿Está seguro de marcar a este paciente como AUSENTE? Esta acción no se puede deshacer.")) {
         return;
     }
     try {
-        // Aquí iría una llamada a la API para actualizar el estatus en la BD
-        // await fetch('/api/citas/estatus', { method: 'PUT', ... })
-        console.log(`Marcando cita ${id_cita} como ${estatus}`);
-        
-        // Por ahora, solo recargamos para simular el cambio
-        cargarAgendaEnfermeria();
-        
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/estatus', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_cita, estatus })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            // Si el paciente llegó, lo mandamos directo a tomarle los signos
+            if (estatus === 'presente') saltarASignos(id_paciente);
+            else cargarAgendaEnfermeria(); // Si fue ausente, solo refrescamos la lista
+        } else {
+            alert("❌ " + data.mensaje);
+        }
     } catch (e) {
         alert("Error al actualizar el estatus de la cita.");
     }
@@ -1058,7 +1065,7 @@ window.cargarHorarioDoctor = async function() {
             // Al final, recorremos todos para aplicar el estado visual correcto
             for (let i = 0; i < 7; i++) {
                 toggleDia(document.getElementById(`chk-${i}`));
-            });
+            }
         }
     } catch (e) {
         console.error("Error al cargar horario", e);

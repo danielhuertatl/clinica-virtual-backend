@@ -428,6 +428,20 @@ app.get('/api/citas/fecha/:fecha', async (req, res) => {
     }
 });
 
+// 19. ACTUALIZAR ESTATUS DE UNA CITA (PARA ENFERMERÍA)
+app.put('/api/citas/estatus', async (req, res) => {
+    const { id_cita, estatus } = req.body;
+    try {
+        await pool.query(
+            `UPDATE citas SET estatus = $1 WHERE id_cita = $2`,
+            [estatus, id_cita]
+        );
+        res.json({ success: true, mensaje: 'Estatus de la cita actualizado.' });
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar el estatus.' });
+    }
+});
+
 // 18. SOLICITUD DE RECUPERACIÓN DE CONTRASEÑA
 app.post('/api/recuperar-password', async (req, res) => {
     const { correo } = req.body;
