@@ -131,13 +131,20 @@
                 const guardado = await guardarSignosEnBD();
                 if (guardado) {
                     const nombre = document.getElementById('nombre-paciente').value;
-                    const hayDoctorLibre = Math.random() > 0.3; 
-
-                    if (hayDoctorLibre) {
-                        alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al consultorio del médico en turno.`);
-                        window.location.href = '4-enfermero.html';
-                    } else {
-                        alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nTodos los consultorios están llenos.`);
+                    
+                    try {
+                        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores/disponibilidad');
+                        const data = await res.json();
+                        if (data.success) {
+                            const doc = data.doctor;
+                            const nombreDoc = `Dr(a). ${doc.nombre} ${doc.apellido_paterno}`.trim();
+                            alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al ${nombreDoc}, quien tiene la menor carga de trabajo en este momento.`);
+                            window.location.href = '4-enfermero.html';
+                        } else {
+                            alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nNo se encontraron doctores activos en el sistema para atender al paciente.`);
+                        }
+                    } catch(e) {
+                        alert("❌ Error de conexión al verificar la disponibilidad de doctores.");
                     }
                 }
             }

@@ -349,6 +349,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('28-agenda-enfermero.html')) {
         cargarAgendaEnfermeria();
     }
+
+    // --- AUTO-CARGAR HORARIO DEL DOCTOR (PANTALLA 25) ---
+    if (window.location.pathname.includes('25-editar-horario.html')) {
+        cargarHorarioDoctor();
+    }
 });
 
 // --- FUNCIÓN DE BÚSQUEDA (Global para el botón onclick) ---
@@ -1004,4 +1009,69 @@ window.saltarASignos = function(id_paciente) {
     // Usamos el mismo localStorage que usa la agenda del doctor para mantener consistencia
     localStorage.setItem('pacienteAtenderAhora', id_paciente);
     window.location.href = '19-signos-vitales.html';
+};
+
+// --- CARGAR Y GUARDAR HORARIO DEL DOCTOR (PANTALLA 25) ---
+window.cargarHorarioDoctor = async function() {
+    const cedula = localStorage.getItem('cedulaUsuario');
+    if (!cedula) return;
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`);
+        const data = await res.json();
+
+        if (data.success && data.horario.length > 0) {
+            // Primero desactivamos todos
+            for (let i = 0; i < 7; i++) {
+                const chk = document.getElementById(`chk-${i}`);
+                if (chk) {
+                    chk.checked = false;
+                    toggleDia(chk);
+                }
+            }
+            // Activamos y llenamos solo los que vienen de la BD
+            data.horario.forEach(h => {
+                const chk = document.getElementById(`chk-${h.dia_semana}`);
+                const inicio = document.getElementById(`inicio-${h.dia_semana}`);
+                const fin = document.getElementById(`fin-${h.dia_semana}`);
+                if (chk && inicio && fin) {
+                    chk.checked = true;
+                    inicio.value = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
+                    fin.value = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
+                    toggleDia(chk);
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error al cargar horario", e);
+    }
+};
+
+window.guardarHorarioDoctor = async function() {
+    const cedula = localStorage.getItem('cedulaUsuario');
+    if (!cedula) return alert("No se pudo identificar al doctor.");
+
+    const horarios = [];
+    for (let i = 0; i < 7; i++) {
+        if (document.getElementById(`chk-${i}`).checked) {
+            horarios.push({
+                dia_semana: i,
+                hora_inicio: document.getElementById(`inicio-${i}`).value || null,
+                hora_fin: document.getElementById(`fin-${i}`).value || null
+            });
+        }
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(horarios)
+        });
+        const data = await res.json();
+        alert(data.mensaje);
+        if (data.success) window.location.href = '7-agenda.html';
+    } catch (e) {
+        alert("Error de conexión al guardar el horario.");
+    }
 };

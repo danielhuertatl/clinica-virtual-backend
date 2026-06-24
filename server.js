@@ -29,6 +29,18 @@ pool.query(`
     )
 `).catch(err => console.error("Error creando tabla signos_vitales_pendientes:", err));
 
+// CREAR TABLA DE HORARIOS DE DOCTORES AUTOMÁTICAMENTE SI NO EXISTE
+pool.query(`
+    CREATE TABLE IF NOT EXISTS horarios_doctores (
+        id_horario SERIAL PRIMARY KEY,
+        cedula_doctor VARCHAR(20) NOT NULL,
+        dia_semana INTEGER NOT NULL, -- 0=Domingo, 1=Lunes, ..., 6=Sábado
+        hora_inicio TIME,
+        hora_fin TIME,
+        UNIQUE(cedula_doctor, dia_semana)
+    )
+`).catch(err => console.error("Error creando tabla horarios_doctores:", err));
+
 // SERVIR LOS ARCHIVOS FRONTEND (HTML, CSS, JS) DESDE EL MISMO SERVIDOR
 app.use(express.static(__dirname));
 
@@ -289,6 +301,27 @@ app.get('/api/doctores', async (req, res) => {
     }
 });
 
+// 15. OBTENER DOCTOR CON MAYOR DISPONIBILIDAD (MENOS CITAS HOY)
+app.get('/api/doctores/disponibilidad', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT
+                p.cedula_id, p.nombre, p.apellido_paterno, COUNT(c.id_cita) as num_citas
+             FROM personal p
+             LEFT JOIN citas c ON p.cedula_id = c.cedula_doctor AND c.fecha = CURRENT_DATE
+             WHERE p.puesto = 'doctor' AND p.activo = true
+             GROUP BY p.cedula_id, p.nombre, p.apellido_paterno
+             ORDER BY num_citas ASC
+             LIMIT 1`
+        );
+        if (result.rows.length > 0) {
+            res.json({ success: true, doctor: result.rows[0] });
+        } else {
+            res.json({ success: false, mensaje: 'No hay doctores activos en el sistema.' });
+        }
+    } catch (error) { res.status(500).json({ success: false, mensaje: 'Error de servidor al buscar disponibilidad.' }); }
+});
+
 // 15. AGENDAR UNA NUEVA CITA
 app.post('/api/citas', async (req, res) => {
     const d = req.body;
@@ -336,6 +369,42 @@ app.put('/api/citas/cancelar', async (req, res) => {
     } catch (error) {
         console.error('Error al cancelar cita:', error);
         res.status(500).json({ success: false, mensaje: 'Error al cancelar la cita.' });
+    }
+});
+
+// 18. OBTENER HORARIO DE UN DOCTOR
+app.get('/api/horarios/:cedula', async (req, res) => {
+    const { cedula } = req.params;
+    try {
+        const result = await pool.query('SELECT dia_semana, hora_inicio, hora_fin FROM horarios_doctores WHERE cedula_doctor = $1', [cedula]);
+        res.json({ success: true, horario: result.rows });
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: 'Error al obtener el horario.' });
+    }
+});
+
+// 19. ACTUALIZAR HORARIO DE UN DOCTOR
+app.put('/api/horarios/:cedula', async (req, res) => {
+    const { cedula } = req.params;
+    const horarios = req.body; // Se espera un array de objetos {dia_semana, hora_inicio, hora_fin}
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Primero borramos el horario viejo para evitar conflictos
+        await client.query('DELETE FROM horarios_doctores WHERE cedula_doctor = $1', [cedula]);
+        // Insertamos el nuevo horario
+        for (const h of horarios) {
+            await client.query('INSERT INTO horarios_doctores (cedula_doctor, dia_semana, hora_inicio, hora_fin) VALUES ($1, $2, $3, $4)', [cedula, h.dia_semana, h.hora_inicio, h.hora_fin]);
+        }
+        await client.query('COMMIT');
+        res.json({ success: true, mensaje: 'Horario actualizado con éxito.' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error al actualizar horario:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al guardar el horario.' });
+    } finally {
+        client.release();
     }
 });
 
