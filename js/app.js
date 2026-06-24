@@ -1076,6 +1076,13 @@ window.guardarHorarioDoctor = async function() {
     const cedula = localStorage.getItem('cedulaUsuario');
     if (!cedula) return alert("No se pudo identificar al doctor.");
 
+    // Nueva validación de 40 horas
+    const totalHoras = calcularTotalHoras(); // Llama a la función del HTML
+    if (totalHoras < 40) {
+        alert("⚠️ No se puede guardar el horario.\n\nDebe cubrir un mínimo de 40 horas laborales a la semana.");
+        return;
+    }
+
     const horarios = [];
     for (let i = 0; i < 7; i++) {
         if (document.getElementById(`chk-${i}`).checked) {

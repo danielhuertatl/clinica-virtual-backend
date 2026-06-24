@@ -71,92 +71,95 @@
             Seleccione los días laborales y establezca su hora de entrada y salida. Estos horarios se reflejarán en la aplicación de los pacientes.
         </p>
 
-        <div class="fila-horario">
-            <div class="dia-toggle">
-                <input type="checkbox" checked id="chk-lunes">
-                <label for="chk-lunes">Lunes</label>
-            </div>
-            <div class="controles-tiempo">
-                <input type="time" class="input-hora" value="09:00">
-                <span>a</span>
-                <input type="time" class="input-hora" value="18:00">
-            </div>
-        </div>
+        <div id="contenedor-horarios"></div>
 
-        <div class="fila-horario">
-            <div class="dia-toggle">
-                <input type="checkbox" checked id="chk-martes">
-                <label for="chk-martes">Martes</label>
-            </div>
-            <div class="controles-tiempo">
-                <input type="time" class="input-hora" value="09:00">
-                <span>a</span>
-                <input type="time" class="input-hora" value="18:00">
-            </div>
-        </div>
-
-        <div class="fila-horario">
-            <div class="dia-toggle">
-                <input type="checkbox" checked id="chk-miercoles">
-                <label for="chk-miercoles">Miércoles</label>
-            </div>
-            <div class="controles-tiempo">
-                <input type="time" class="input-hora" value="09:00">
-                <span>a</span>
-                <input type="time" class="input-hora" value="18:00">
-            </div>
-        </div>
-
-        <div class="fila-horario">
-            <div class="dia-toggle">
-                <input type="checkbox" checked id="chk-jueves">
-                <label for="chk-jueves">Jueves</label>
-            </div>
-            <div class="controles-tiempo">
-                <input type="time" class="input-hora" value="09:00">
-                <span>a</span>
-                <input type="time" class="input-hora" value="14:00">
-            </div>
-        </div>
-
-        <div class="fila-horario">
-            <div class="dia-toggle">
-                <input type="checkbox" checked id="chk-viernes">
-                <label for="chk-viernes">Viernes</label>
-            </div>
-            <div class="controles-tiempo">
-                <input type="time" class="input-hora" value="09:00">
-                <span>a</span>
-                <input type="time" class="input-hora" value="17:00">
-            </div>
-        </div>
-
-        <div class="fila-horario inactivo">
-            <div class="dia-toggle">
-                <input type="checkbox" id="chk-sabado">
-                <label for="chk-sabado" style="color: #666;">Sábado</label>
-            </div>
-            <div class="controles-tiemla spo">
-                <span style="font-size: 14px; color: #991D27; font-weight: bold; margin-right: 25px;">Descanso</span>
-            </div>
-        </div>
-
-        <div class="fila-horario inactivo">
-            <div class="dia-toggle">
-                <input type="checkbox" id="chk-domingo">
-                <label for="chk-domingo" style="color: #666;">Domingo</label>
-            </div>
-            <div class="controles-tiempo">
-                <span style="font-size: 14px; color: #991D27; font-weight: bold; margin-right: 25px;">Descanso</span>
-            </div>
+        <div id="contador-horas-wrapper" style="text-align: center; margin-top: 20px; padding: 15px; background: #f0f4f8; border-radius: 8px; border: 1px solid #ccc;">
+            <h4 style="color: #0E3B5C; margin: 0;">Total de Horas Semanales:</h4>
+            <p id="contador-horas" style="font-size: 24px; font-weight: bold; color: #991D27; margin-top: 5px;">0 / 40 hrs</p>
+            <p id="mensaje-horas" style="font-size: 12px; color: #666;">
+                Debe cubrir un mínimo de 40 horas semanales para poder guardar.
+            </p>
         </div>
 
         <div style="margin-top: 30px;">
-            <button class="btn-accion-verde" style="width: 100%; padding: 15px;" onclick="alert('Horario actualizado con éxito. Los pacientes ahora verán esta disponibilidad.'); window.location.href='7-agenda.html'">Guardar Configuración</button>
+            <button class="btn-accion-verde" style="width: 100%; padding: 15px;" onclick="guardarHorarioDoctor()">Guardar Configuración</button>
         </div>
 
     </div>
 
+    <script>
+        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const contenedor = document.getElementById('contenedor-horarios');
+
+        // Dibuja el esqueleto del formulario
+        dias.forEach((dia, index) => {
+            const checked = (index > 0 && index < 6) ? 'checked' : ''; // Lunes a Viernes por defecto
+
+            contenedor.innerHTML += `
+                <div class="fila-horario" id="fila-${index}">
+                    <div class="dia-toggle">
+                        <label class="switch">
+                            <input type="checkbox" id="chk-${index}" data-dia="${index}" onchange="toggleDia(this); calcularTotalHoras();" ${checked}>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="chk-${index}" style="cursor:pointer;">${dia}</label>
+                    </div>
+                    <div class="controles-tiempo" id="inputs-tiempo-${index}">
+                        <input type="time" class="input-hora" id="inicio-${index}" value="09:00" onchange="calcularTotalHoras()">
+                        <span>a</span>
+                        <input type="time" class="input-hora" id="fin-${index}" value="18:00" onchange="calcularTotalHoras()">
+                    </div>
+                    <div class="mensaje-descanso" id="descanso-${index}">
+                        <span style="font-size: 14px; color: #991D27; font-weight: bold;">Descanso</span>
+                    </div>
+                </div>
+            `;
+            // Aplicar estado inicial
+            toggleDia(document.getElementById(`chk-${index}`));
+        });
+
+        function toggleDia(checkbox) {
+            const diaIndex = checkbox.dataset.dia;
+            const fila = document.getElementById(`fila-${diaIndex}`);
+            fila.classList.toggle('inactivo', !checkbox.checked);
+            document.getElementById(`inputs-tiempo-${diaIndex}`).style.display = checkbox.checked ? 'flex' : 'none';
+            document.getElementById(`descanso-${diaIndex}`).style.display = checkbox.checked ? 'none' : 'block';
+        }
+
+        function calcularTotalHoras() {
+            let totalMinutos = 0;
+            for (let i = 0; i < 7; i++) {
+                if (document.getElementById(`chk-${i}`).checked) {
+                    const inicio = document.getElementById(`inicio-${i}`).value;
+                    const fin = document.getElementById(`fin-${i}`).value;
+
+                    if (inicio && fin && fin > inicio) {
+                        const [hInicio, mInicio] = inicio.split(':').map(Number);
+                        const [hFin, mFin] = fin.split(':').map(Number);
+                        
+                        const minutosInicio = hInicio * 60 + mInicio;
+                        const minutosFin = hFin * 60 + mFin;
+                        
+                        totalMinutos += (minutosFin - minutosInicio);
+                    }
+                }
+            }
+            
+            const totalHoras = totalMinutos / 60;
+            const contadorP = document.getElementById('contador-horas');
+            const mensajeP = document.getElementById('mensaje-horas');
+
+            contadorP.textContent = `${totalHoras.toFixed(2)} / 40 hrs`;
+            if (totalHoras >= 40) {
+                contadorP.style.color = '#2D5A27'; // Verde
+                mensajeP.textContent = '¡Mínimo de horas semanales cubierto!';
+            } else {
+                contadorP.style.color = '#991D27'; // Rojo
+                mensajeP.textContent = 'Debe cubrir un mínimo de 40 horas semanales.';
+            }
+            return totalHoras;
+        }
+    </script>
     <script src="../js/app.js"></script>
 </body>
 </html>
