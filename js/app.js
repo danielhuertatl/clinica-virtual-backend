@@ -1023,11 +1023,7 @@ window.cargarHorarioDoctor = async function() {
         if (data.success && data.horario.length > 0) {
             // Primero desactivamos todos
             for (let i = 0; i < 7; i++) {
-                const chk = document.getElementById(`chk-${i}`);
-                if (chk) {
-                    chk.checked = false;
-                    toggleDia(chk);
-                }
+                document.getElementById(`chk-${i}`).checked = false;
             }
             // Activamos y llenamos solo los que vienen de la BD
             data.horario.forEach(h => {
@@ -1038,8 +1034,11 @@ window.cargarHorarioDoctor = async function() {
                     chk.checked = true;
                     inicio.value = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
                     fin.value = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
-                    toggleDia(chk);
                 }
+            });
+            // Al final, recorremos todos para aplicar el estado visual correcto
+            for (let i = 0; i < 7; i++) {
+                toggleDia(document.getElementById(`chk-${i}`));
             });
         }
     } catch (e) {
