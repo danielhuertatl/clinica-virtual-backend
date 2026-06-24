@@ -1011,6 +1011,25 @@ window.saltarASignos = function(id_paciente) {
     window.location.href = '19-signos-vitales.html';
 };
 
+// --- MARCAR ASISTENCIA (PANTALLA 28) ---
+window.marcarAsistencia = async function(id_cita, estatus, id_paciente) {
+    if (estatus === 'ausente' && !confirm("¿Estás seguro de marcar a este paciente como NO LLEGÓ?")) {
+        return;
+    }
+    try {
+        // Aquí iría una llamada a la API para actualizar el estatus en la BD
+        // await fetch('/api/citas/estatus', { method: 'PUT', ... })
+        console.log(`Marcando cita ${id_cita} como ${estatus}`);
+        
+        // Por ahora, solo recargamos para simular el cambio
+        cargarAgendaEnfermeria();
+        
+    } catch (e) {
+        alert("Error al actualizar el estatus de la cita.");
+    }
+};
+
+
 // --- CARGAR Y GUARDAR HORARIO DEL DOCTOR (PANTALLA 25) ---
 window.cargarHorarioDoctor = async function() {
     const cedula = localStorage.getItem('cedulaUsuario');
