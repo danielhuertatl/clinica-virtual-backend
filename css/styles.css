@@ -531,7 +531,6 @@ textarea.receta-expandida {
 .card-menu:hover .icon-box {
     color: white;
 }
-}
 
 /* --- NUEVO: ALERTA PARA SIGNOS VITALES FALTANTES --- */
 .alerta-signos-faltantes {
@@ -541,5 +540,4 @@ textarea.receta-expandida {
     padding: 15px;
     margin-top: 15px;
     border-radius: 5px;
-}
 }
