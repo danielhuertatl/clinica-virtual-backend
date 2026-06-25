@@ -61,9 +61,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FORMATEO Y BLOQUEO DE REPETICIONES EN DIRECCIONES ---
-    const inputsDireccion = ['calle', 'colonia', 'municipio'];
-    inputsDireccion.forEach(id => {
+    // --- FORMATEO STRICTO EN TIEMPO REAL A MAYÚSCULAS ---
+    // Incluye nombres, apellidos y campos de dirección de la pantalla
+    const inputsMayusculas = ['nombre', 'ap-paterno', 'ap-materno', 'calle', 'colonia', 'municipio'];
+    inputsMayusculas.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', (e) => {
+                e.target.value = e.target.value.toUpperCase();
+            });
+        }
+    });
+
+    // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ("111") ---
+    inputsDireccionCampos = ['calle', 'colonia', 'municipio'];
+    inputsDireccionCampos.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
             let errSpan = document.getElementById(`${id}-dir-error`);
@@ -78,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             input.addEventListener('input', (e) => {
-                let texto = e.target.value.toUpperCase();
+                let texto = e.target.value; // Ya se convirtió a MAYÚSCULAS arriba
                 
                 if (/([A-Z0-9áéíóúñÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
@@ -102,10 +114,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- BLINDAJE DEL EMAIL (PURA MINÚSCULA Y RESTRICCIÓN DE PUNTOS REPETIDOS) ---
     const inputEmail = document.getElementById('email');
     if (inputEmail) {
         inputEmail.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toLowerCase().replace(/\s/g, '');
+            let texto = e.target.value.toLowerCase().replace(/\s/g, ''); // Forzar pura minúscula sin espacios
+
+            // Bloquear si el profesor intenta encadenar puntos consecutivos (ej: "..") o letras repetidas basura
+            if (/([a-z0-9._%+-])\1\1/i.test(texto) || /\.\./.test(texto)) {
+                texto = texto.substring(0, texto.length - 1); // Borrar el punto repetido inmediatamente
+                const spanError = document.getElementById('email-error');
+                if (spanError) {
+                    spanError.textContent = "⚠️ Caracteres repetidos o puntos consecutivos inválidos.";
+                    spanError.style.display = 'block';
+                }
+            }
+            e.target.value = texto;
         });
     }
 
@@ -250,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const telefono = document.getElementById('telefono').value;
             const curp = document.getElementById('curp').value.trim().toUpperCase();
             const errorVisible = document.getElementById('curp-error');
+            const errorEmailVisible = document.getElementById('email-error');
 
             const calleVal = document.getElementById('calle').value.trim();
             const coloniaVal = document.getElementById('colonia').value.trim();
@@ -266,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (errorVisible && errorVisible.style.display === 'block') {
+            if ((errorVisible && errorVisible.style.display === 'block') || (errorEmailVisible && errorEmailVisible.style.display === 'block')) {
                 alert('⚠️ Error: No se puede guardar. Corrija las advertencias del formato antes de proceder.');
                 return;
             }
@@ -330,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const huboCambios = Object.keys(datosEditados).some(key => String(datosEditados[key]) !== String(personaOriginal[key]));
-            if (!huboCambios) return alert("ℹ️ No se detectaron cambios. No se requiere actualizar.");
+            if (!huboCambios) return alert("ℹ_ No se detectaron cambios. No se requiere actualizar.");
 
             try {
                 const res = await fetch('https://clinica-virtual-backend.onrender.com/api/personal/update', {
@@ -370,5 +395,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('28-agenda-enfermero.html')) cargarAgendaEnfermeria();
     if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
 });
-
 //
