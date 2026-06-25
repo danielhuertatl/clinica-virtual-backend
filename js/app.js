@@ -2,6 +2,17 @@
 let personaOriginal = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- RELOJ ACTUAL GLOBAL ---
+    setInterval(() => {
+        const reloj = document.getElementById('reloj-actual');
+        if (reloj) {
+            const ahora = new Date();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            reloj.textContent = `${horas}:${minutos}`;
+        }
+    }, 1000);
+
     // --- LÓGICA DE LOGIN ---
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
@@ -61,8 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FORMATEO STRICTO EN TIEMPO REAL A MAYÚSCULAS ---
-    // Incluye nombres, apellidos y campos de dirección de la pantalla
+    // --- FORMATEO ESTRICTO EN TIEMPO REAL A MAYÚSCULAS ---
     const inputsMayusculas = ['nombre', 'ap-paterno', 'ap-materno', 'calle', 'colonia', 'municipio'];
     inputsMayusculas.forEach(id => {
         const input = document.getElementById(id);
@@ -73,8 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ("111") ---
-    inputsDireccionCampos = ['calle', 'colonia', 'municipio'];
+    // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ---
+    const inputsDireccionCampos = ['calle', 'colonia', 'municipio'];
     inputsDireccionCampos.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
@@ -90,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             input.addEventListener('input', (e) => {
-                let texto = e.target.value; // Ya se convirtió a MAYÚSCULAS arriba
+                let texto = e.target.value; 
                 
                 if (/([A-Z0-9áéíóúñÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
@@ -99,37 +109,95 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.target.value = texto;
                     return;
                 }
-
-                if ((id === 'colonia' || id === 'municipio') && /^\d+$/.test(texto) && texto.length > 0) {
-                    texto = "";
-                    errSpan.textContent = "⚠️ Este campo no puede contener solo números.";
-                    errSpan.style.display = 'block';
-                    e.target.value = texto;
-                    return;
-                }
-
                 errSpan.style.display = 'none';
                 e.target.value = texto;
             });
         }
     });
 
-    // --- BLINDAJE DEL EMAIL (PURA MINÚSCULA Y RESTRICCIÓN DE PUNTOS REPETIDOS) ---
-    const inputEmail = document.getElementById('email');
-    if (inputEmail) {
-        inputEmail.addEventListener('input', (e) => {
-            let texto = e.target.value.toLowerCase().replace(/\s/g, ''); // Forzar pura minúscula sin espacios
+    // --- INTEGRACIÓN DE CATÁLOGO AUTOMÁTICO SEPOMEX POR C.P. ---
+    const inputCp = document.getElementById('cp');
+    const inputMunicipio = document.getElementById('municipio');
+    const inputColonia = document.getElementById('colonia');
 
-            // Bloquear si el profesor intenta encadenar puntos consecutivos (ej: "..") o letras repetidas basura
-            if (/([a-z0-9._%+-])\1\1/i.test(texto) || /\.\./.test(texto)) {
-                texto = texto.substring(0, texto.length - 1); // Borrar el punto repetido inmediatamente
-                const spanError = document.getElementById('email-error');
-                if (spanError) {
-                    spanError.textContent = "⚠️ Caracteres repetidos o puntos consecutivos inválidos.";
-                    spanError.style.display = 'block';
+    if (inputCp && inputMunicipio && inputColonia) {
+        inputCp.addEventListener('input', async (e) => {
+            const cp = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = cp;
+
+            if (cp.length === 5) {
+                try {
+                    // Consultamos la API oficial de SEPOMEX mediante Copomex
+                    const response = await fetch(`https://api.copomex.com/query/info_cp/${cp}?token=pruebas`);
+                    const data = await response.json();
+
+                    if (data && data[0] && data[0].error === false) {
+                        const info = data[0].response;
+                        
+                        // Autollenar Municipio / Entidad y bloquear para evitar datos basura
+                        inputMunicipio.value = `${info.municipio.toUpperCase()}, ${info.estado.toUpperCase()}`;
+                        inputMunicipio.readOnly = true;
+                        inputMunicipio.style.backgroundColor = '#eee';
+
+                        // Transformar dinámicamente la caja de texto de Colonia a un Select con datos reales
+                        const selectColonia = document.createElement('select');
+                        selectColonia.id = 'colonia';
+                        selectColonia.style.width = '100%';
+                        selectColonia.style.padding = '5px';
+                        selectColonia.style.height = '33px';
+                        selectColonia.style.border = '1px solid #0E3B5C';
+                        
+                        info.asentamiento.forEach(col => {
+                            const opt = document.createElement('option');
+                            opt.value = col.toUpperCase();
+                            opt.textContent = col.toUpperCase();
+                            selectColonia.appendChild(opt);
+                        });
+
+                        const currentColoniaNode = document.getElementById('colonia');
+                        currentColoniaNode.parentNode.replaceChild(selectColonia, currentColoniaNode);
+                    } else {
+                        inputMunicipio.value = '';
+                        inputMunicipio.placeholder = 'C.P. No encontrado';
+                        inputMunicipio.readOnly = false;
+                        inputMunicipio.style.backgroundColor = '#fff';
+                    }
+                } catch (error) {
+                    console.error("Error al consultar el catálogo postal de SEPOMEX.");
                 }
             }
+        });
+    }
+
+    // --- BLINDAJE DEL EMAIL (PURA MINÚSCULA Y ARROBA AL PERDER FOCO) ---
+    const inputEmail = document.getElementById('email');
+    const spanEmailError = document.getElementById('email-error');
+    if (inputEmail) {
+        inputEmail.addEventListener('input', (e) => {
+            let texto = e.target.value.toLowerCase().replace(/\s/g, ''); 
+
+            if (/([a-z0-9._%+-])\1\1/i.test(texto) || /\.\./.test(texto)) {
+                texto = texto.substring(0, texto.length - 1); 
+                if (spanEmailError) {
+                    spanEmailError.textContent = "⚠️ Caracteres repetidos o puntos consecutivos inválidos.";
+                    spanEmailError.style.display = 'block';
+                }
+            } else {
+                if (spanEmailError) spanEmailError.style.display = 'none';
+            }
             e.target.value = texto;
+        });
+
+        inputEmail.addEventListener('blur', (e) => {
+            const texto = e.target.value;
+            const regexCorreoReal = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (texto.length > 0 && !regexCorreoReal.test(texto)) {
+                if (spanEmailError) {
+                    spanEmailError.textContent = "⚠️ Formato de correo inválido (Falta '@' o dominio real).";
+                    spanEmailError.style.display = 'block';
+                }
+            }
         });
     }
 
@@ -196,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (v.length === 9 && !/^[0-3]$/.test(v[8])) {
                     v = v.substring(0, 8);
-                    spanCurpError.textContent = "⚠️ ¡El formato va incorrecto! El día debe iniciar con un rango de 0 a 3.";
+                    spanCurpError.textContent = "⚠️ ¡El formato va incorrecto! El dia debe iniciar con un rango de 0 a 3.";
                     spanCurpError.style.display = 'block';
                 }
                 if (v.length === 10) {
@@ -265,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- MANEJO DEL SUBMIT CON EVALUACIÓN DE BLOQUEO DE ERRORES ---
+    // --- MANEJO DEL SUBMIT (ENVÍO REESTRUCTURADO PARA MENÚ SELECT DE COLONIA) ---
     const formRegistro = document.getElementById('form-registro');
     if (formRegistro) {
         formRegistro.addEventListener('submit', async (e) => {
@@ -277,14 +345,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorEmailVisible = document.getElementById('email-error');
 
             const calleVal = document.getElementById('calle').value.trim();
-            const coloniaVal = document.getElementById('colonia').value.trim();
+            const coloniaElement = document.getElementById('colonia');
+            const coloniaVal = coloniaElement.value.trim(); // Esto ahora lee correctamente el option seleccionado
             const municipioVal = document.getElementById('municipio').value.trim();
-
-            const regexInvalido = /^([A-Z0-9áéíóúñÑ])\1+$/i; 
-            if (regexInvalido.test(calleVal) || regexInvalido.test(coloniaVal) || regexInvalido.test(municipioVal) || calleVal.length < 4 || coloniaVal.length < 3 || municipioVal.length < 3) {
-                alert('⚠️ Error: La información de la dirección no cumple con los estándares mínimos reales.');
-                return;
-            }
 
             if (telefono.length !== 10) {
                 alert('⚠️ Error: El teléfono debe tener exactamente 10 dígitos.');
@@ -334,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- LÓGICA DE ENVÍO DE EDICIÓN ---
+    // --- MÓDULOS DE EDICIÓN Y AGENDAS ---
     const formEditar = document.getElementById('form-editar-personal');
     if (formEditar) {
         formEditar.addEventListener('submit', async (e) => {
@@ -355,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const huboCambios = Object.keys(datosEditados).some(key => String(datosEditados[key]) !== String(personaOriginal[key]));
-            if (!huboCambios) return alert("ℹ_ No se detectaron cambios. No se requiere actualizar.");
+            if (!huboCambios) return alert("ℹ️ No se detectaron cambios. No se requiere actualizar.");
 
             try {
                 const res = await fetch('https://clinica-virtual-backend.onrender.com/api/personal/update', {
@@ -369,25 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '5-admin.html';
                 } else alert("⚠️ " + resData.mensaje);
             } catch (err) { alert("❌ Error al actualizar."); }
-        });
-    }
-
-    // --- LLENAR RECETA PARA IMPRESIÓN ---
-    const contenidoReceta = document.getElementById('contenido-receta');
-    const fechaReceta = document.getElementById('fecha-receta');
-    
-    if (contenidoReceta && fechaReceta) {
-        contenidoReceta.textContent = localStorage.getItem('recetaTemporal') || 'Sin indicaciones...';
-        fechaReceta.textContent = localStorage.getItem('fechaReceta') || '--/--/----';
-        
-        const campos = ['nombre-paciente-receta', 'nombre-doctor-receta', 'cedula-doctor-receta', 'edad-paciente-receta', 'peso-paciente-receta', 'talla-paciente-receta', 'imc-paciente-receta'];
-        campos.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) {
-                if(id === 'nombre-doctor-receta') el.textContent = 'Dr(a). ' + (localStorage.getItem('nombreUsuario') || 'No especificado');
-                else if(id === 'cedula-doctor-receta') el.textContent = localStorage.getItem('cedulaUsuario') || 'S/N';
-                else el.textContent = localStorage.getItem(id.replace('-receta', '').replace('nombre-paciente', 'pacienteTemporal').replace('edad-paciente', 'edadTemporal').replace('peso-paciente', 'pesoTemporal').replace('talla-paciente', 'tallaTemporal').replace('imc-paciente', 'imcTemporal')) || '--';
-            }
         });
     }
 
