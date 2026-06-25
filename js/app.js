@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reloj) {
             const ahora = new Date();
             const horas = String(ahora.getHours()).padStart(2, '0');
-            const minutos = String(ahora.getMinutes()).padStart(2, '0');
-            reloj.textContent = `${horas}:${minutos}`;
+            const minutes = String(ahora.getMinutes()).padStart(2, '0');
+            reloj.textContent = `${horas}:${minutes}`;
         }
     }, 1000);
 
@@ -72,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FORMATEO EN TIEMPO REAL A MAYÚSCULAS Y ALERTAS DE IDENTIDAD REAL ---
+    // --- FORMATEO ESTRICTO Y ALERTAS DE IDENTIDAD (TIEMPO REAL) ---
+    // Agregados los IDs del formulario de personal (apellido_p, apellido_m) para que se validen igual
     const camposIdentidad = ['nombre', 'ap-paterno', 'ap-materno', 'apellido_p', 'apellido_m'];
     camposIdentidad.forEach(id => {
         const input = document.getElementById(id);
@@ -80,29 +81,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (input) {
             input.addEventListener('input', (e) => {
-                let texto = e.target.value.toUpperCase(); // Forzar mayúsculas automáticamente
+                let texto = e.target.value.toUpperCase();
                 
-                // 1. Bloquear 3 letras idénticas seguidas (ej: SSSS)
+                // 1. Bloquear inmediatamente 3 letras idénticas seguidas (ej: SSSS)
                 if (/([A-ZÁÉÍÓÚÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
                     if (warnSpan) {
                         warnSpan.textContent = "⚠️ No se permiten letras consecutivas repetidas.";
-                        warnSpan.style.color = '#991D27'; // Rojo estricto
                         warnSpan.style.display = 'block';
                     }
                     e.target.value = texto;
                     return;
                 }
 
-                // 2. Alerta naranja preventiva para patrones alternados sospechosos (ej: DKDKDKDK, HCDGJFKBF)
+                // 2. Alertar dinámicamente si hay patrones alternados o acumulación de consonantes basura (ej: DKDKDK, HCDGJFKBF)
                 const textoLimpio = texto.replace(/\s/g, '');
                 let esSospechoso = false;
 
                 if (textoLimpio.length >= 5) {
-                    // Regla A: Acumulación de consonantes seguidas sin vocales intermedias
+                    // Exceso de consonantes seguidas sin vocales intermedias
                     const excesoConsonantes = /[^AEIOUÁÉÍÓÚÜ]{5,}/i.test(textoLimpio);
 
-                    // Regla B: Tasa de variedad de caracteres baja en textos largos (ej: BIUUHWILILIL)
+                    // Poca variedad de caracteres (patrones repetidos tipo DKDKDK o ABAB)
                     const caracteresUnicos = new Set(textoLimpio).size;
                     const bajaVariedad = (textoLimpio.length >= 7 && caracteresUnicos <= 3);
 
@@ -133,20 +133,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('input', (e) => {
-                let texto = e.target.value.toUpperCase();
+                e.target.value = e.target.value.toUpperCase();
+            });
+        }
+    });
+
+    // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ---
+    const inputsDireccionCampos = ['calle', 'colonia', 'municipio', 'colonia_municipio'];
+    inputsDireccionCampos.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            let errSpan = document.getElementById(`${id}-dir-error`);
+            if (!errSpan) {
+                errSpan = document.createElement('span');
+                errSpan.id = `${id}-dir-error`;
+                errSpan.style.color = '#991D27';
+                errSpan.style.fontSize = '11px';
+                errSpan.style.display = 'none';
+                errSpan.style.fontWeight = 'bold';
+                input.parentNode.appendChild(errSpan);
+            }
+
+            input.addEventListener('input', (e) => {
+                let texto = e.target.value; 
+                
                 if (/([A-Z0-9áéíóúñÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
+                    errSpan.textContent = "⚠️ ¡Caracteres repetidos no permitidos!";
+                    errSpan.style.display = 'block';
+                    e.target.value = texto;
+                    return;
                 }
+                errSpan.style.display = 'none';
                 e.target.value = texto;
             });
         }
     });
 
-    // --- CATÁLOGO POSTAL LOCAL SEPOMEX (COMPARTIDO PACIENTES / PERSONAL) ---
+    // --- INTEGRACIÓN DE CATÁLOGO AUTOMÁTICO SEPOMEX POR C.P. ---
     const inputCp = document.getElementById('cp');
     const inputMunicipio = document.getElementById('municipio');
     const inputColonia = document.getElementById('colonia');
-    const contenedorColMun = document.getElementById('contenedor-colonia-municipio'); // Exclusivo de agregar personal
+    const contenedorColMun = document.getElementById('contenedor-colonia-municipio'); // Elemento contenedor en personal
 
     const baseDatosPostales = {
         "56580": {
@@ -178,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 }
 
-                // CASO A: Pantalla de Registro de Pacientes
+                // Si estamos en la pantalla de Pacientes
                 if (inputMunicipio && inputColonia) {
                     inputMunicipio.value = datosPostales.municipio;
                     inputMunicipio.readOnly = true;
@@ -202,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentColoniaNode.parentNode.replaceChild(selectColonia, currentColoniaNode);
                 }
 
-                // CASO B: Pantalla de Registro de Personal (Estructura de Datos)
+                // Si estamos en la pantalla de Agregar Personal
                 if (contenedorColMun) {
                     contenedorColMun.innerHTML = `
                         <input type="text" id="municipio_p" value="${datosPostales.municipio}" style="flex:1; background-color:#eee;" readonly>
@@ -215,15 +243,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- BLINDAJE DEL EMAIL / CORREO INSTITUCIONAL ---
-    const inputsEmail = ['email', 'correo'];
-    inputsEmail.forEach(id => {
-        const inputEmailElement = document.getElementById(id);
+    // --- BLINDAJE DEL EMAIL / CORREO DE PERSONAL ---
+    const inputsEmails = ['email', 'correo'];
+    inputsEmails.forEach(id => {
+        const emailInput = document.getElementById(id);
         const spanEmailError = document.getElementById('email-error');
         
-        if (inputEmailElement) {
-            inputEmailElement.addEventListener('input', (e) => {
+        if (emailInput) {
+            emailInput.addEventListener('input', (e) => {
                 let texto = e.target.value.toLowerCase().replace(/\s/g, ''); 
+
                 if (/([a-z0-9._%+-])\1\1/i.test(texto) || /\.\./.test(texto)) {
                     texto = texto.substring(0, texto.length - 1); 
                     if (spanEmailError) {
@@ -236,9 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.target.value = texto;
             });
 
-            inputEmailElement.addEventListener('blur', (e) => {
+            emailInput.addEventListener('blur', (e) => {
                 const texto = e.target.value;
                 const regexCorreoReal = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                
                 if (texto.length > 0 && !regexCorreoReal.test(texto)) {
                     if (spanEmailError) {
                         spanEmailError.textContent = "⚠️ Formato de correo inválido (Falta '@' o dominio real).";
@@ -249,21 +279,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- VALIDACIÓN DE CURP EN TIEMPO REAL PACIENTES (PANTALLA 10) ---
+    // --- VALIDACIÓN DE CURP EN TIEMPO REAL CARÁCTER POR CARÁCTER (PACIENTES) ---
     const inputCurp = document.getElementById('curp');
     const inputEdad = document.getElementById('edad');
     const spanCurpError = document.getElementById('curp-error');
-    const formPersonal = document.getElementById('form-personal'); // Identificador del formulario de personal
+    const formPersonal = document.getElementById('form-personal'); // Selector exclusivo de personal
 
-    // Ejecutar esta sección de CURP solo si NO estamos en el formulario de personal
+    // Esta validación se ejecuta solo si no es la pantalla de personal
     if (inputCurp && inputEdad && spanCurpError && !formPersonal) {
+        const calcularEdadReal = (yy, mm, dd, char17) => {
+            let year = yy;
+            if (char17 && char17.match(/[0-9]/)) year += 1900;
+            else if (char17 && char17.match(/[A-Z]/)) year += 2000;
+            else {
+                let currentYear = new Date().getFullYear() % 100;
+                year += (yy > currentYear ? 1900 : 2000);
+            }
+            let birthDate = new Date(year, mm - 1, dd);
+            let today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            let monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+            return age;
+        };
+
         inputCurp.addEventListener('input', (e) => {
             let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
             let i = v.length - 1; 
 
             if (i >= 0 && i < 4) { 
                 if (/[0-9]/.test(v[i])) v = v.substring(0, i);
-            } else if (i >= 4 && i < 10) { 
+            }
+            else if (i >= 4 && i < 10) { 
                 if (/[A-Z]/.test(v[i])) v = v.substring(0, i);
                 if (v.length === 7 && !/^[01]$/.test(v[6])) v = v.substring(0, 6);
                 if (v.length === 8) {
@@ -283,29 +330,43 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (testDate.getDate() !== dd) v = v.substring(0, 9);
                     }
                 }
-            } else if (i >= 10 && i < 16) { 
+            }
+            else if (i >= 10 && i < 16) { 
                 if (/[0-9]/.test(v[i])) v = v.substring(0, i);
             }
 
             e.target.value = v;
 
+            if (v.length === 0) {
+                spanCurpError.style.display = 'none';
+                inputEdad.value = '';
+                return;
+            }
+
             if (v.length >= 10) {
                 const yy = parseInt(v.substr(4, 2), 10);
                 const mm = parseInt(v.substr(6, 2), 10);
                 const dd = parseInt(v.substr(8, 2), 10);
-                let currentYear = new Date().getFullYear() % 100;
-                let year = yy + (yy > currentYear ? 1900 : 2000);
-                let birthDate = new Date(year, mm - 1, dd);
-                let today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                let m = today.getMonth() - birthDate.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-                if (!isNaN(age) && age >= 0) inputEdad.value = age;
+                let age = calcularEdadReal(yy, mm, dd, v.charAt(16));
+                if (!isNaN(age) && age >= 0 && age <= 120) inputEdad.value = age;
+
+                if (v.length === 18) {
+                    const regexCURP = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+                    spanCurpError.style.display = regexCURP.test(v) ? 'none' : 'block';
+                    spanCurpError.textContent = "⚠️ Formato de CURP inválido estructuralmente.";
+                } else {
+                    spanCurpError.style.display = 'block';
+                    spanCurpError.textContent = "El CURP debe tener 18 caracteres.";
+                }
+            } else {
+                inputEdad.value = '';
+                spanCurpError.style.display = 'block';
+                spanCurpError.textContent = "El CURP debe tener 18 caracteres.";
             }
         });
     }
 
-    // --- MODULO EXCLUSIVO: BLINDAJE INTEGRADO PARA REGISTRO DE PERSONAL ---
+    // --- SCRIPT EXCLUSIVO: ENVÍO Y VALIDACIONES ESTRICTAS DE REGISTRO DE PERSONAL ---
     if (formPersonal) {
         const inputCurpP = document.getElementById('curp');
         const inputEdadP = document.getElementById('edad');
@@ -372,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Interceptión del submit para empaquetar los datos del personal
         formPersonal.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-personal');
@@ -420,11 +480,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resData.success) history.back();
             } catch (err) {
                 alert("❌ Error de conexión al servidor");
-            } quarters { btn.innerText = "Sincronizar con Base de Datos"; }
+            } finally {
+                btn.innerText = "Sincronizar con Base de Datos";
+            }
         });
     }
 
-    // --- MANEJO DEL SUBMIT DE PACIENTES ---
+    // --- MANEJO DEL SUBMIT PACIENTES ---
     const formRegistro = document.getElementById('form-registro');
     if (formRegistro) {
         formRegistro.addEventListener('submit', async (e) => {
@@ -432,13 +494,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('btn-sync');
             const telefono = document.getElementById('telefono').value;
             const curp = document.getElementById('curp').value.trim().toUpperCase();
+            const errorVisible = document.getElementById('curp-error');
+            const errorEmailVisible = document.getElementById('email-error');
+
+            const calleVal = document.getElementById('calle').value.trim();
+            const coloniaElement = document.getElementById('colonia');
+            const coloniaVal = coloniaElement.value.trim(); 
+            const municipioVal = document.getElementById('municipio').value.trim();
 
             if (telefono.length !== 10) {
                 alert('⚠️ Error: El teléfono debe tener exactamente 10 dígitos.');
                 return;
             }
 
+            if ((errorVisible && errorVisible.style.display === 'block') || (errorEmailVisible && errorEmailVisible.style.display === 'block')) {
+                alert('⚠️ Error: No se puede guardar. Corrija las advertencias del formato antes de proceder.');
+                return;
+            }
+
             btn.innerText = "Sincronizando...";
+
             const datos = {
                 nombre: document.getElementById('nombre').value,
                 apellido_p: document.getElementById('ap-paterno').value,
@@ -448,9 +523,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipo_sangre: document.getElementById('tipo-sangre').value,
                 correo: document.getElementById('email').value,
                 curp: curp || null,
-                calle: document.getElementById('calle').value,
-                colonia: document.getElementById('colonia').value,
-                municipio: document.getElementById('municipio').value,
+                calle: calleVal,
+                colonia: coloniaVal,
+                municipio: municipioVal,
                 cp: document.getElementById('cp').value
             };
 
@@ -464,18 +539,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resData.success) {
                     alert("✅ " + resData.mensaje);
                     history.back();
-                } else alert("⚠️ " + resData.mensaje);
-            } catch (err) { alert("❌ Error de servidor"); }
-            finally { btn.innerText = "Guardar Paciente"; }
+                } else {
+                    alert("⚠️ " + resData.mensaje);
+                }
+            } catch (err) {
+                alert("❌ Error de servidor");
+            } finally {
+                btn.innerText = "Guardar Paciente";
+            }
         });
     }
 
-    // --- LÓGICA DE ENVÍO DE EDICIÓN ---
+    // --- MÓDULOS DE EDICIÓN Y AGENDAS ---
     const formEditar = document.getElementById('form-editar-personal');
     if (formEditar) {
         formEditar.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!personaOriginal) return alert("⚠️ Primero debe buscar y cargar un personal.");
+
             const datosEditados = {
                 cedula: document.getElementById('display-cedula').value,
                 nombre: document.getElementById('nombre').value,
@@ -488,6 +569,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 cp: document.getElementById('cp').value,
                 colonia: document.getElementById('colonia').value
             };
+
+            const huboCambios = Object.keys(datosEditados).some(key => String(datosEditados[key]) !== String(personaOriginal[key]));
+            if (!huboCambios) return alert("ℹ️ No se detectaron cambios. No se requiere actualizar.");
+
             try {
                 const res = await fetch('https://clinica-virtual-backend.onrender.com/api/personal/update', {
                     method: 'PUT',
@@ -506,9 +591,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LLENAR RECETA PARA IMPRESIÓN ---
     const contenidoReceta = document.getElementById('contenido-receta');
     const fechaReceta = document.getElementById('fecha-receta');
+    
     if (contenidoReceta && fechaReceta) {
         contenidoReceta.textContent = localStorage.getItem('recetaTemporal') || 'Sin indicaciones...';
         fechaReceta.textContent = localStorage.getItem('fechaReceta') || '--/--/----';
+        
         const campos = ['nombre-paciente-receta', 'nombre-doctor-receta', 'cedula-doctor-receta', 'edad-paciente-receta', 'peso-paciente-receta', 'talla-paciente-receta', 'imc-paciente-receta'];
         campos.forEach(id => {
             const el = document.getElementById(id);
