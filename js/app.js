@@ -20,8 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const datos = await respuesta.json();
 
-                // Limpiar feedback anterior
-                feedbackDiv.className = 'login-feedback-message';
+                // Limpiar feedback anterior SOLO si el elemento existe en el HTML
+                if (feedbackDiv) {
+                    feedbackDiv.className = 'login-feedback-message';
+                }
 
                 if (datos.success) {
                     // Limpiar datos de sesión anterior
@@ -33,9 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (datos.cedula) localStorage.setItem('cedulaUsuario', datos.cedula);
                     if (datos.id_paciente) localStorage.setItem('idPaciente', datos.id_paciente);
                     
-                    // Mostrar mensaje de éxito integrado
-                    feedbackDiv.textContent = '✅ ¡Acceso concedido! Redirigiendo...';
-                    feedbackDiv.classList.add('success');
+                    // Alerta o mensaje integrado según disponibilidad del HTML
+                    if (feedbackDiv) {
+                        feedbackDiv.textContent = '✅ ¡Acceso concedido! Redirigiendo...';
+                        feedbackDiv.classList.add('success');
+                    } else {
+                        alert('✅ ¡Acceso concedido! Redirigiendo...');
+                    }
 
                     // Esperar un segundo y redirigir
                     setTimeout(() => {
@@ -43,17 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         else if (datos.rol === 'doctor') window.location.href = 'pages/2-doctor.html';
                         else if (datos.rol === 'enfermero') window.location.href = 'pages/4-enfermero.html';
                         else window.location.href = 'pages/3-paciente.html'; 
-                    }, 1000); // 1 segundo de espera
+                    }, 1000);
 
                 } else {
-                    // Mostrar mensaje de error integrado
-                    feedbackDiv.textContent = '⚠️ ' + datos.mensaje;
-                    feedbackDiv.classList.add('error');
+                    // Mostrar mensaje de error integrado o alerta clásica de respaldo
+                    if (feedbackDiv) {
+                        feedbackDiv.textContent = '⚠️ ' + datos.mensaje;
+                        feedbackDiv.classList.add('error');
+                    } else {
+                        alert('⚠️ ' + datos.mensaje);
+                    }
                 }
             } catch (error) {
                 console.error('🛑 Error detallado en fetch (Login):', error);
-                feedbackDiv.textContent = '❌ Error de conexión con el servidor.';
-                feedbackDiv.classList.add('error');
+                if (feedbackDiv) {
+                    feedbackDiv.textContent = '❌ Error de conexión con el servidor.';
+                    feedbackDiv.classList.add('error');
+                } else {
+                    alert('❌ Error de conexión con el servidor.');
+                }
             }
         });
     }
@@ -135,109 +149,237 @@ document.addEventListener('DOMContentLoaded', () => {
         inputTalla.addEventListener('input', calcularIMC);
     }
 
-    // --- NUEVO: VALIDACIÓN INTELIGENTE DE CURP Y CÁLCULO DE EDAD (PANTALLA 10) ---
+    // --- VALIDACIÓN DE CURP COMPLETA Y CÁLCULO DE EDAD ESTRICTO (PANTALLA 10) ---
     const inputCurp = document.getElementById('curp');
     const inputEdad = document.getElementById('edad');
-    const feedbackCurp = document.getElementById('curp-feedback');
+    const spanCurpError = document.getElementById('curp-error');
+    const chkExtranjero = document.getElementById('chk-extranjero-reg');
+    const filaExtranjero = document.getElementById('fila-extranjero');
 
-    if (inputCurp && inputEdad && feedbackCurp) {
+    // Inputs de fecha opcionales para extranjeros
+    const diaNac = document.getElementById('dia-nac');
+    const mesNac = document.getElementById('mes-nac');
+    const anioNac = document.getElementById('anio-nac');
+    const inputNombre = document.getElementById('nombre');
+    const inputApPaterno = document.getElementById('ap-paterno');
+    const inputApMaterno = document.getElementById('ap-materno');
+
+    if (inputCurp && inputEdad && spanCurpError) {
+        
+        // Validador estricto de fechas reales en el calendario
+        const validarFechaRealYCalcularEdad = (yy, mm, dd, char17) => {
+            if (mm < 1 || mm > 12 || dd < 1 || dd > 31) {
+                spanCurpError.style.display = 'block';
+                spanCurpError.textContent = "⚠️ Error: Mes o día inexistente en la CURP.";
+                inputEdad.value = '';
+                return false;
+            }
+
+            let year = yy;
+            if (char17 && char17.match(/[0-9]/)) year += 1900;
+            else if (char17 && char17.match(/[A-Z]/)) year += 2000;
+            else {
+                let currentYear = new Date().getFullYear() % 100;
+                year += (yy > currentYear ? 1900 : 2000);
+            }
+
+            let birthDate = new Date(year, mm - 1, dd);
+            // Evita desbordes automáticos de JS (como aceptar 31 de febrero)
+            if (birthDate.getFullYear() !== year || birthDate.getMonth() !== (mm - 1) || birthDate.getDate() !== dd) {
+                spanCurpError.style.display = 'block';
+                spanCurpError.textContent = "⚠️ Error: Calendario inválido para ese mes/año.";
+                inputEdad.value = '';
+                return false;
+            }
+
+            let today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            let monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+
+            if (!isNaN(age) && age >= 0 && age <= 120) {
+                inputEdad.value = age;
+                spanCurpError.style.display = 'none';
+                return true;
+            } else {
+                spanCurpError.style.display = 'block';
+                spanCurpError.textContent = "⚠️ Error: Edad calculada incoherente.";
+                inputEdad.value = '';
+                return false;
+            }
+        };
+
+        const generarCurpExtranjero = () => {
+            if (!chkExtranjero || !chkExtranjero.checked) return;
+
+            const n = (inputNombre ? inputNombre.value : '').trim().toUpperCase() || 'X';
+            const ap = (inputApPaterno ? inputApPaterno.value : '').trim().toUpperCase() || 'XX';
+            const am = (inputApMaterno ? inputApMaterno.value : '').trim().toUpperCase() || 'X';
+
+            const dStr = (diaNac ? diaNac.value : '').padStart(2, '0');
+            const mStr = (mesNac ? mesNac.value : '').padStart(2, '0');
+            const aStr = (anioNac ? anioNac.value : '');
+
+            if (diaNac && diaNac.value && mesNac && mesNac.value && aStr.length === 4) {
+                const d = parseInt(dStr, 10);
+                const m = parseInt(mStr, 10);
+                const a = parseInt(aStr, 10);
+
+                if (m < 1 || m > 12 || d < 1 || d > 31) {
+                    spanCurpError.style.display = 'block';
+                    spanCurpError.textContent = "⚠️ Error: Fecha extranjera inválida.";
+                    inputEdad.value = '';
+                    inputCurp.value = '';
+                    return;
+                }
+
+                let birthDate = new Date(a, m - 1, d);
+                if (birthDate.getFullYear() !== a || birthDate.getMonth() !== (m - 1) || birthDate.getDate() !== d) {
+                    spanCurpError.style.display = 'block';
+                    spanCurpError.textContent = "⚠️ Error: Calendario extranjero ilógico.";
+                    inputEdad.value = '';
+                    inputCurp.value = '';
+                    return;
+                }
+
+                spanCurpError.style.display = 'none';
+                let today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                let monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+                inputEdad.value = age > 0 ? age : 0;
+
+                let l1 = ap.substring(0, 2).padEnd(2, 'X');
+                let l2 = am.substring(0, 1).padEnd(1, 'X');
+                let l3 = n.substring(0, 1).padEnd(1, 'X');
+                let yy = aStr.substring(2, 4);
+
+                inputCurp.value = `${l1}${l2}${l3}${yy}${mStr}${dStr}XXXXXX00`.toUpperCase();
+            }
+        };
+
+        // Procesamiento en tiempo real de la CURP
         inputCurp.addEventListener('input', (e) => {
-            let curp = e.target.value.toUpperCase();
-            let originalCurp = curp;
-            let validado = "";
+            let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            e.target.value = v;
 
-            // Limpiar feedback y edad al empezar a corregir
-            feedbackCurp.textContent = '';
-            inputEdad.value = '';
+            if (chkExtranjero && chkExtranjero.checked) {
+                spanCurpError.style.display = 'none';
+                return;
+            }
 
-            // 1. Validación dígito por dígito EN TIEMPO REAL
-            for (let i = 0; i < originalCurp.length; i++) {
-                const char = originalCurp[i];
-                let charEsValido = true;
+            if (v.length === 0) {
+                spanCurpError.style.display = 'none';
+                inputEdad.value = '';
+                return;
+            }
 
-                if (i < 4) { // Letras
-                    if (!/[A-Z]/.test(char)) charEsValido = false;
-                } else if (i >= 4 && i < 10) { // Fecha
-                    if (!/[0-9]/.test(char)) charEsValido = false;
-                    else if (i === 6 && !/[01]/.test(char)) charEsValido = false; // Mes no puede empezar con 2-9
-                    else if (i === 7 && validado[6] === '1' && !/[0-2]/.test(char)) charEsValido = false; // Mes no puede ser 13-19
-                    else if (i === 7 && validado[6] === '0' && char === '0') charEsValido = false; // Mes no puede ser 00
-                    else if (i === 8 && !/[0-3]/.test(char)) charEsValido = false; // Día no puede empezar con 4-9
-                    else if (i === 9 && validado[8] === '3' && !/[01]/.test(char)) charEsValido = false; // Día no puede ser 32-39
-                    else if (i === 9 && validado[8] === '0' && char === '0') charEsValido = false; // Día no puede ser 00
-                } else if (i >= 10 && i < 16) { // Letras
-                    if (!/[A-Z]/.test(char)) charEsValido = false;
-                } else if (i >= 16 && i < 18) { // Homoclave
-                    if (!/[A-Z0-9]/.test(char)) charEsValido = false;
+            if (v.length >= 10) {
+                const yy = parseInt(v.substr(4, 2), 10);
+                const mm = parseInt(v.substr(6, 2), 10);
+                const dd = parseInt(v.substr(8, 2), 10);
+                let char17 = v.charAt(16);
+
+                const esFechaValida = validarFechaRealYCalcularEdad(yy, mm, dd, char17);
+
+                if (esFechaValida && v.length === 18) {
+                    const regexCURP = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+                    if (!regexCURP.test(v)) {
+                        spanCurpError.style.display = 'block';
+                        spanCurpError.textContent = "Formato de CURP inválido";
+                    } else {
+                        spanCurpError.style.display = 'none';
+                    }
                 }
-
-                if (charEsValido) validado += char;
-            }
-
-            // Forzamos la corrección en el campo de texto
-            if (originalCurp !== validado) {
-                e.target.value = validado;
-            }
-            curp = validado;
-
-            // 2. Si el CURP está incompleto, mostramos mensaje y salimos
-            if (curp.length < 18) {
-                feedbackCurp.textContent = 'El CURP debe tener 18 caracteres.';
-                feedbackCurp.style.color = '#991D27'; // Rojo
-                return;
-            }
-
-            // 3. Si llegamos aquí, el formato es correcto. Validamos la lógica de la fecha.
-            const anioStr = curp.substring(4, 6);
-            const mesStr = curp.substring(6, 8);
-            const diaStr = curp.substring(8, 10);
-            const mes = parseInt(mesStr, 10);
-            const dia = parseInt(diaStr, 10);
-
-            // Validación de fecha lógica (ej. 31 de Febrero) - AHORA SÍ ES SEGURA
-            const anioCompletoTemp = parseInt(anioStr) >= 90 ? 1900 + parseInt(anioStr) : 2000 + parseInt(anioStr);
-            const fechaTest = new Date(anioCompletoTemp, mes - 1, dia);
-            if (fechaTest.getMonth() !== mes - 1) {
-                feedbackCurp.textContent = `Fecha inválida. El día ${dia} no existe en el mes ${mes}.`;
-                feedbackCurp.style.color = '#991D27';
-                return;
-            }
-
-            // 4. Determinar el siglo
-            const digitoVerificador = curp.charAt(16);
-            if (!/[A-Z0-9]/.test(digitoVerificador)) {
-                feedbackCurp.textContent = 'Dígito verificador de siglo (posición 17) inválido.';
-                feedbackCurp.style.color = '#991D27';
-                return;
-            }
-            const siglo = /[0-9]/.test(digitoVerificador) ? 1900 : 2000;
-            
-            const anioNacimiento = siglo + parseInt(anioStr, 10);
-            const mesNacimiento = mes - 1; // En JS, los meses son de 0 a 11
-            const fechaNacimiento = new Date(anioNacimiento, mesNacimiento, dia);
-
-            // 5. Calcular la edad
-            const hoy = new Date();
-            let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
-            const m = hoy.getMonth() - fechaNacimiento.getMonth();
-            if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
-                edad--;
-            }
-
-            // Si la edad es un número válido, la mostramos.
-            if (!isNaN(edad)) {
-                inputEdad.value = edad;
             } else {
-                inputEdad.value = "";
+                inputEdad.value = '';
+                spanCurpError.style.display = 'block';
+                spanCurpError.textContent = "El CURP debe tener 18 caracteres.";
+            }
+        });
+
+        // Manejo del control de Extranjeros
+        if (chkExtranjero && filaExtranjero) {
+            chkExtranjero.addEventListener('change', () => {
+                if (chkExtranjero.checked) {
+                    filaExtranjero.style.display = 'flex';
+                    inputCurp.readOnly = true;
+                    inputCurp.style.backgroundColor = '#eee';
+                    spanCurpError.style.display = 'none';
+                    generarCurpExtranjero();
+                } else {
+                    filaExtranjero.style.display = 'none';
+                    inputCurp.readOnly = false;
+                    inputCurp.style.backgroundColor = '#fff';
+                    inputCurp.value = '';
+                    inputEdad.value = '';
+                    spanCurpError.style.display = 'none';
+                }
+            });
+
+            if (diaNac) diaNac.addEventListener('input', generarCurpExtranjero);
+            if (mesNac) mesNac.addEventListener('input', generarCurpExtranjero);
+            if (anioNac) anioNac.addEventListener('input', generarCurpExtranjero);
+            if (inputNombre) inputNombre.addEventListener('input', generarCurpExtranjero);
+            if (inputApPaterno) inputApPaterno.addEventListener('input', generarCurpExtranjero);
+            if (inputApMaterno) inputApMaterno.addEventListener('input', generarCurpExtranjero);
+        }
+    }
+
+    // --- MANEJO DEL SUBMIT (ENVÍO DEL REGISTRO DE PACIENTE) ---
+    const formRegistro = document.getElementById('form-registro');
+    if (formRegistro) {
+        formRegistro.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-sync');
+            const telefono = document.getElementById('telefono').value;
+            const curp = document.getElementById('curp').value.trim().toUpperCase();
+            const errorVisible = document.getElementById('curp-error');
+
+            if (telefono.length !== 10) {
+                alert('⚠️ Error: El teléfono debe tener exactamente 10 dígitos.');
+                return;
             }
 
-            // 6. Mostrar mensaje final
-            if (edad > 110 || edad < 0) {
-                feedbackCurp.textContent = 'Edad poco probable. Verifique el CURP.';
-                feedbackCurp.style.color = '#0E3B5C'; // Azul para advertencia
-            } else {
-                feedbackCurp.textContent = 'CURP y edad calculada correctamente.';
-                feedbackCurp.style.color = '#2D5A27'; // Verde para OK
+            if (errorVisible && errorVisible.style.display === 'block') {
+                alert('⚠️ Error: No se puede guardar. Corrija los errores de la CURP o Fecha de nacimiento.');
+                return;
+            }
+
+            btn.innerText = "Sincronizando...";
+
+            const datos = {
+                nombre: document.getElementById('nombre').value,
+                apellido_p: document.getElementById('ap-paterno').value,
+                apellido_m: document.getElementById('ap-materno').value,
+                edad: document.getElementById('edad').value,
+                telefono: telefono,
+                tipo_sangre: document.getElementById('tipo-sangre').value,
+                correo: document.getElementById('email').value,
+                curp: curp || null,
+                calle: document.getElementById('calle').value,
+                colonia: document.getElementById('colonia').value,
+                municipio: document.getElementById('municipio').value,
+                cp: document.getElementById('cp').value
+            };
+
+            try {
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/pacientes', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(datos)
+                });
+                const resData = await res.json();
+                if (resData.success) {
+                    alert("✅ " + resData.mensaje);
+                    history.back();
+                } else {
+                    alert("⚠️ " + resData.mensaje);
+                }
+            } catch (err) {
+                alert("❌ Error de servidor");
+            } finally {
+                btn.innerText = "Guardar Paciente";
             }
         });
     }
@@ -248,8 +390,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const nombrePacienteReceta = document.getElementById('nombre-paciente-receta');
     const nombreDoctorReceta = document.getElementById('nombre-doctor-receta');
     const cedulaDoctorReceta = document.getElementById('cedula-doctor-receta');
-    
-    // --- NUEVOS CAMPOS ---
     const edadPacienteReceta = document.getElementById('edad-paciente-receta');
     const pesoPacienteReceta = document.getElementById('peso-paciente-receta');
     const tallaPacienteReceta = document.getElementById('talla-paciente-receta');
@@ -261,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
         contenidoReceta.textContent = recetaGuardada;
         fechaReceta.textContent = fechaGuardada;
         
-        // Llenar datos dinámicos si existen los campos en el HTML
         if (nombrePacienteReceta) nombrePacienteReceta.textContent = localStorage.getItem('pacienteTemporal') || 'Paciente no registrado';
         if (nombreDoctorReceta) nombreDoctorReceta.textContent = 'Dr(a). ' + (localStorage.getItem('nombreUsuario') || 'No especificado');
         if (cedulaDoctorReceta) cedulaDoctorReceta.textContent = localStorage.getItem('cedulaUsuario') || 'S/N';
@@ -271,7 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tallaPacienteReceta) tallaPacienteReceta.textContent = localStorage.getItem('tallaTemporal') ? localStorage.getItem('tallaTemporal') + ' m' : '--';
         if (imcPacienteReceta) imcPacienteReceta.textContent = localStorage.getItem('imcTemporal') || '--';
         
-        // --- RECETA: ESTUDIOS PENDIENTES ---
         const estudiosPendientesReceta = localStorage.getItem('estudiosPendientesReceta');
         const contPendientesReceta = document.getElementById('contenedor-pendientes-receta');
         const txtPendientesReceta = document.getElementById('texto-pendientes-receta');
@@ -284,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // --- RECETA: ESTUDIOS INTERPRETADOS (RESULTADOS) ---
         const estudiosInterpretadosReceta = localStorage.getItem('estudiosInterpretadosReceta');
         const contInterpretadosReceta = document.getElementById('contenedor-interpretados-receta');
         const txtInterpretadosReceta = document.getElementById('texto-interpretados-receta');
@@ -298,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RELOJ ACTUAL (ACTUALIZA LA HORA CADA SEGUNDO) ---
+    // --- RELOJ ACTUAL ---
     setInterval(() => {
         const reloj = document.getElementById('reloj-actual');
         if (reloj) {
@@ -312,17 +449,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA PARA AMPLIAR RECETA (PANTALLA 6) ---
     const btnExpandir = document.getElementById('btn-expandir');
     const textoReceta = document.getElementById('texto-receta');
-    
     if (btnExpandir && textoReceta) {
         btnExpandir.addEventListener('click', () => {
             textoReceta.classList.toggle('receta-expandida');
             btnExpandir.classList.toggle('btn-flotante');
-            
-            if (textoReceta.classList.contains('receta-expandida')) {
-                btnExpandir.innerText = 'Minimizar ⤢';
-            } else {
-                btnExpandir.innerText = 'Ampliar ⤢';
-            }
+            btnExpandir.innerText = textoReceta.classList.contains('receta-expandida') ? 'Minimizar ⤢' : 'Ampliar ⤢';
         });
     }
 
@@ -343,8 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success && data.citas.length > 0) {
                     data.citas.forEach(cita => {
                         const nombreCompleto = `${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
-                        const horaCita = cita.hora.substring(0, 5); // Ej. "13:43"
-                        
+                        const horaCita = cita.hora.substring(0, 5);
                         contenedorCitasHoy.innerHTML += `
                             <div class="tarjeta-cita">
                                 <div class="info-cita">
@@ -355,8 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <button class="btn-accion" onclick="iniciarConsultaDesdeAgenda(${cita.id_paciente})">Iniciar Consulta</button>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     });
                 } else {
                     contenedorCitasHoy.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No tiene citas programadas para esta fecha.</p>';
@@ -367,18 +496,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        const initAgenda = () => {
-            const hoy = new Date().toISOString().split('T')[0];
-            if (filtroFechaAgenda) {
-                filtroFechaAgenda.value = hoy;
-                filtroFechaAgenda.addEventListener('change', (e) => cargarCitasDoctor(e.target.value));
-            }
-            cargarCitasDoctor(filtroFechaAgenda ? filtroFechaAgenda.value : hoy);
-        };
-        initAgenda();
+        const hoy = new Date().toISOString().split('T')[0];
+        if (filtroFechaAgenda) {
+            filtroFechaAgenda.value = hoy;
+            filtroFechaAgenda.addEventListener('change', (e) => cargarCitasDoctor(e.target.value));
+        }
+        cargarCitasDoctor(filtroFechaAgenda ? filtroFechaAgenda.value : hoy);
     }
 
-    // --- AUTO-CARGAR PACIENTE DESDE LA AGENDA A LA CONSULTA (PANTALLA 6) ---
+    // --- AUTO-CARGAR PACIENTE DESDE LA AGENDA A LA CONSULTA ---
     const inputBusquedaConsulta = document.getElementById('id-busqueda');
     if (inputBusquedaConsulta && window.location.pathname.includes('6-consulta-ahora.html')) {
         const pacienteAgenda = localStorage.getItem('pacienteAtenderAhora');
@@ -387,11 +513,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 if (typeof buscarPacienteConsulta === 'function') buscarPacienteConsulta();
                 localStorage.removeItem('pacienteAtenderAhora'); 
-            }, 300); // Retardo sutil para asegurar que todo el HTML cargó
+            }, 300);
         }
     }
 
-    // --- CARGAR CITAS DEL PACIENTE (PANTALLA 26) ---
+    // --- CARGAR CITAS DEL PACIENTE ---
     const contenedorProximaCita = document.getElementById('contenedor-proxima-cita');
     const contenedorHistorialCitas = document.getElementById('contenedor-historial-citas');
     const mensajeSinCitas = document.getElementById('mensaje-sin-citas');
@@ -416,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.citas.forEach(cita => {
                         const nombreDoctor = `Dr(a). ${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
                         const fechaSolo = cita.fecha.split('T')[0];
-                        const fechaCita = new Date(fechaSolo + 'T12:00:00'); // Evita desfase horario
+                        const fechaCita = new Date(fechaSolo + 'T12:00:00');
                         const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                         const fechaFormateada = fechaCita.toLocaleDateString('es-MX', opcionesFecha);
                         const horaFormateada = cita.hora.substring(0, 5) + ' hrs';
@@ -437,8 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div style="display: flex; gap: 10px;">
                                         <button class="btn-accion-rojo" style="flex: 1;" onclick="cancelarCitaPaciente(${cita.id_cita})">❌ Cancelar Cita</button>
                                     </div>
-                                </div>
-                            `;
+                                </div>`;
                         } else {
                             const colorEstatus = cita.estatus === 'cancelada' ? '#991D27' : '#2D5A27';
                             contenedorHistorialCitas.innerHTML += `
@@ -448,8 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <p><strong>${nombreDoctor}</strong></p>
                                         <p style="font-size: 12px; color: ${colorEstatus}; font-weight: bold; text-transform: uppercase;">${cita.estatus}</p>
                                     </div>
-                                </div>
-                            `;
+                                </div>`;
                         }
                     });
                     mensajeSinCitas.style.display = tieneProxima ? 'none' : 'block';
@@ -461,23 +585,12 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarMisCitas();
     }
 
-    // --- AUTO-CARGAR USUARIOS SI ESTAMOS EN LA PANTALLA 30 ---
-    if (window.location.pathname.includes('30-lista-usuarios.html')) {
-        cargarUsuariosAdmin();
-    }
-
-    // --- AUTO-CARGAR AGENDA DE ENFERMERÍA (PANTALLA 28) ---
-    if (window.location.pathname.includes('28-agenda-enfermero.html')) {
-        cargarAgendaEnfermeria();
-    }
-
-    // --- AUTO-CARGAR HORARIO DEL DOCTOR (PANTALLA 25) ---
-    if (window.location.pathname.includes('25-editar-horario.html')) {
-        cargarHorarioDoctor();
-    }
+    if (window.location.pathname.includes('30-lista-usuarios.html')) cargarUsuariosAdmin();
+    if (window.location.pathname.includes('28-agenda-enfermero.html')) cargarAgendaEnfermeria();
+    if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
 });
 
-// --- FUNCIÓN DE BÚSQUEDA (Global para el botón onclick) ---
+// --- FUNCIÓN DE BÚSQUEDA ---
 window.simularBusqueda = async function() {
     const termino = document.getElementById('buscar-cedula').value.trim();
     if (!termino) return alert("⚠️ Ingrese una Cédula Profesional o Correo Electrónico.");
@@ -488,7 +601,6 @@ window.simularBusqueda = async function() {
 
         if (data.success) {
             const p = data.persona;
-            // Guardamos el original para comparar cambios después
             personaOriginal = {
                 cedula: p.cedula_id,
                 nombre: p.nombre,
@@ -502,7 +614,6 @@ window.simularBusqueda = async function() {
                 colonia: p.direccion_colonia
             };
 
-            // Llenar campos visibles
             document.getElementById('nombre').value = p.nombre;
             document.getElementById('apellido_p').value = p.apellido_paterno;
             document.getElementById('apellido_m').value = p.apellido_materno;
@@ -513,7 +624,6 @@ window.simularBusqueda = async function() {
             document.getElementById('cp').value = p.direccion_cp;
             document.getElementById('colonia').value = p.direccion_colonia;
             
-            // Campos solo lectura
             document.getElementById('display-puesto').value = p.puesto;
             document.getElementById('display-cedula').value = p.cedula_id;
 
@@ -522,14 +632,13 @@ window.simularBusqueda = async function() {
             alert("❌ Personal no encontrado.");
         }
     } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar):', error);
         alert("❌ Error de conexión al buscar.");
     }
 };
 
-// --- CANCELAR CITA DEL PACIENTE (PANTALLA 26) ---
+// --- CANCELAR CITA PACIENTE ---
 window.cancelarCitaPaciente = async function(id_cita) {
-    if (confirm("⚠️ ¿Deseas CANCELAR definitivamente esta cita? Esta acción no se puede deshacer.")) {
+    if (confirm("⚠️ ¿Deseas CANCELAR definitivamente esta cita?")) {
         try {
             const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/cancelar', {
                 method: 'PUT',
@@ -539,7 +648,7 @@ window.cancelarCitaPaciente = async function(id_cita) {
             const data = await res.json();
             if(data.success) {
                 alert("✅ " + data.mensaje);
-                location.reload(); // Recarga la página para mostrar que se canceló
+                location.reload();
             } else {
                 alert("❌ " + data.mensaje);
             }
@@ -549,13 +658,12 @@ window.cancelarCitaPaciente = async function(id_cita) {
     }
 };
 
-// --- FUNCIÓN PARA SALTAR DE AGENDA A CONSULTA ---
 window.iniciarConsultaDesdeAgenda = function(id_paciente) {
     localStorage.setItem('pacienteAtenderAhora', id_paciente);
     window.location.href = '6-consulta-ahora.html';
 };
 
-// --- GUARDAR CONSULTA Y RECETA (PANTALLA 6) ---
+// --- GUARDAR CONSULTA Y RECETA ---
 window.guardarYGenerarReceta = async function() {
     const inputBusqueda = document.getElementById('id-busqueda');
     const idReal = inputBusqueda.dataset.idReal; 
@@ -568,7 +676,7 @@ window.guardarYGenerarReceta = async function() {
 
     const datosConsulta = {
         id_paciente: parseInt(idReal),
-        cedula_doctor: cedulaReal, // Cédula real del doctor logueado
+        cedula_doctor: cedulaReal,
         peso: parseFloat(document.getElementById('input-peso').value) || null,
         talla: parseFloat(document.getElementById('input-talla').value) || null,
         fc: parseInt(document.getElementById('input-fc').value) || null,
@@ -584,15 +692,11 @@ window.guardarYGenerarReceta = async function() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datosConsulta)
         });
-        
         const data = await res.json();
         
         if (data.success) {
-            // NUEVO: Borrar signos pendientes de la BD porque ya se usaron
             try { fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${idReal}`, { method: 'DELETE' }); } catch(e){}
-
             alert("✅ " + data.mensaje);
-            // Guardar en memoria temporal para mostrarlo en la hoja de impresión
             localStorage.setItem('recetaTemporal', receta);
             const ahora = new Date();
             const fechaFormateada = ahora.toLocaleDateString('es-MX') + ' ' + ahora.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
@@ -602,24 +706,20 @@ window.guardarYGenerarReceta = async function() {
             localStorage.setItem('pesoTemporal', document.getElementById('input-peso').value);
             localStorage.setItem('tallaTemporal', document.getElementById('input-talla').value);
             localStorage.setItem('imcTemporal', document.getElementById('input-imc').value);
-            
-            window.location.href = '20-receta.html'; // Te manda a la receta lista
+            window.location.href = '20-receta.html';
         } else {
             alert("❌ " + data.mensaje);
         }
     } catch (error) {
-        console.error('🛑 Error al guardar consulta:', error);
         alert("❌ Error de conexión al guardar la consulta.");
     }
 };
 
-// --- BÚSQUEDA DE PACIENTE EN CONSULTA (PANTALLA 6) ---
+// --- BÚSQUEDA DE PACIENTE EN CONSULTA ---
 window.buscarPacienteConsulta = async function() {
     const idInput = document.getElementById('id-busqueda').value.trim();
     if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-    
-    // Aseguramos que la alerta esté oculta antes de cada nueva búsqueda.
-    document.getElementById('alerta-signos-faltantes').style.display = 'none';
+    if (document.getElementById('alerta-signos-faltantes')) document.getElementById('alerta-signos-faltantes').style.display = 'none';
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
@@ -629,7 +729,6 @@ window.buscarPacienteConsulta = async function() {
             const p = data.paciente;
             const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
             
-            // Si es un paciente diferente, limpiamos las interpretaciones anteriores de la memoria
             const currentId = document.getElementById('id-busqueda').dataset.idReal;
             if (currentId != p.id_paciente) {
                 localStorage.removeItem('estudiosInterpretadosReceta');
@@ -638,11 +737,8 @@ window.buscarPacienteConsulta = async function() {
             document.getElementById('nombre-paciente').value = nombreCompleto;
             document.getElementById('edad-paciente').value = p.edad + " años";
             document.getElementById('sangre-paciente').value = p.tipo_sangre || "No reg.";
-            
-            // Guardamos el ID real oculto para cuando le dé en Finalizar Consulta
             document.getElementById('id-busqueda').dataset.idReal = p.id_paciente;
 
-            // --- NUEVO: Cargar signos de enfermería si existen ---
             const alertaSignos = document.getElementById('alerta-signos-faltantes');
             const camposSignos = ['input-peso', 'input-talla', 'input-fc', 'input-fr', 'input-sato2'];
 
@@ -651,92 +747,65 @@ window.buscarPacienteConsulta = async function() {
                 const dataSignos = await resSignos.json();
 
                 if (dataSignos.success) {
-                    alertaSignos.style.display = 'none'; // Ocultamos la alerta porque sí hay signos
+                    if(alertaSignos) alertaSignos.style.display = 'none';
                     const signos = dataSignos.signos;
+                    if(document.getElementById('input-peso')) document.getElementById('input-peso').value = signos.peso || '';
+                    if(document.getElementById('input-talla')) document.getElementById('input-talla').value = signos.talla || '';
+                    if(document.getElementById('input-fc')) document.getElementById('input-fc').value = signos.fc || '';
+                    if(document.getElementById('input-fr')) document.getElementById('input-fr').value = signos.fr || '';
+                    if(document.getElementById('input-sato2')) document.getElementById('input-sato2').value = signos.sato2 || '';
                     
-                    const inputPeso = document.getElementById('input-peso');
-                    const inputTalla = document.getElementById('input-talla');
-                    
-                    if(inputPeso) inputPeso.value = signos.peso || '';
-                    if(inputTalla) inputTalla.value = signos.talla || '';
-                    
-                    const inputFc = document.getElementById('input-fc');
-                    if(inputFc) inputFc.value = signos.fc || '';
-                    
-                    const inputFr = document.getElementById('input-fr');
-                    if(inputFr) inputFr.value = signos.fr || '';
-                    
-                    const inputSato2 = document.getElementById('input-sato2');
-                    if(inputSato2) inputSato2.value = signos.sato2 || '';
-                    
-                    // Forzar cálculo de IMC automáticamente
-                    if(inputPeso) {
-                        inputPeso.dispatchEvent(new Event('input'));
+                    if(document.getElementById('input-peso')) {
+                        document.getElementById('input-peso').dispatchEvent(new Event('input'));
                     }
-                    
-                    alert("✅ Datos del paciente y SIGNOS VITALES de enfermería cargados correctamente.");
+                    alert("✅ Datos del paciente y SIGNOS VITALES cargados.");
                 } else {
-                    // Si no hay signos, mostramos la alerta y limpiamos los campos
-                    alertaSignos.style.display = 'block';
-                    camposSignos.forEach(id => {
-                        const campo = document.getElementById(id);
-                        if (campo) campo.value = '';
-                    });
+                    if(alertaSignos) alertaSignos.style.display = 'block';
+                    camposSignos.forEach(id => { if (document.getElementById(id)) document.getElementById(id).value = ''; });
                     if (document.getElementById('input-imc')) document.getElementById('input-imc').value = '';
                 }
             } catch(e) {
-                alert("✅ Datos del paciente cargados. (No se pudo conectar a los signos vitales)");
+                alert("✅ Datos del paciente cargados.");
             }
             
-            // --- NUEVO: BUSCAR ESTUDIOS PENDIENTES ---
             const resEstudios = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${p.id_paciente}/pendientes`);
             const dataEstudios = await resEstudios.json();
-            
             const alertaEstudios = document.getElementById('alerta-estudios');
             const listaEstudios = document.getElementById('lista-estudios-pendientes');
             
             if (dataEstudios.success && dataEstudios.estudios.length > 0) {
-                alertaEstudios.style.display = 'block';
+                if(alertaEstudios) alertaEstudios.style.display = 'block';
                 let htmlEstudios = '';
-                let textoPendientesParaReceta = ''; // Se imprimirá en la receta
-                
+                let textoPendientesParaReceta = '';
                 const nombresEstudios = { 'bh': 'Biometría Hemática', 'qs': 'Química Sanguínea (27 elem.)', 'ego': 'Examen General de Orina', 'rx': 'Radiografía (Rayos X)', 'usg': 'Ultrasonido' };
                 
                 dataEstudios.estudios.forEach(est => {
                     const nombreEstudio = nombresEstudios[est.tipo_estudio] || est.tipo_estudio;
                     textoPendientesParaReceta += `- ${nombreEstudio}\n`;
-                    
                     htmlEstudios += `
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
-                            <p style="color: #0E3B5C;"><strong>${nombreEstudio}</strong> <span style="font-size: 11px; color:#666;">(Solicitado el: ${new Date(est.fecha_solicitud).toLocaleDateString('es-MX')})</span></p>
-                            <textarea id="notas-estudio-${est.id_estudio}" rows="2" style="width: 100%; border: 1px solid #ccc; margin-top: 5px; padding: 5px; font-size: 13px;" placeholder="Escriba la interpretación clínica del resultado..."></textarea>
-                            <button type="button" class="btn-accion-verde" style="padding: 5px 10px; font-size: 12px; margin-top: 5px;" onclick="completarEstudio(${est.id_estudio}, '${nombreEstudio}')">Guardar Interpretación y Completar</button>
-                        </div>
-                    `;
+                            <p style="color: #0E3B5C;"><strong>${nombreEstudio}</strong></p>
+                            <textarea id="notas-estudio-${est.id_estudio}" rows="2" style="width: 100%;" placeholder="Interpretación clínica..."></textarea>
+                            <button type="button" class="btn-accion-verde" onclick="completarEstudio(${est.id_estudio}, '${nombreEstudio}')">Guardar</button>
+                        </div>`;
                 });
-                listaEstudios.innerHTML = htmlEstudios;
+                if(listaEstudios) listaEstudios.innerHTML = htmlEstudios;
                 localStorage.setItem('estudiosPendientesReceta', textoPendientesParaReceta);
             } else {
-                alertaEstudios.style.display = 'none';
+                if(alertaEstudios) alertaEstudios.style.display = 'none';
                 localStorage.removeItem('estudiosPendientesReceta');
             }
         } else {
             alert("❌ " + data.mensaje);
-            document.getElementById('nombre-paciente').value = "";
-            document.getElementById('edad-paciente').value = "";
-            document.getElementById('sangre-paciente').value = "";
-            delete document.getElementById('id-busqueda').dataset.idReal;
         }
     } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar Paciente):', error);
         alert("❌ Error de conexión al buscar paciente.");
     }
 };
 
-// --- MARCAR ESTUDIO COMO COMPLETADO (PANTALLA 6) ---
 window.completarEstudio = async function(id_estudio, nombreEstudio) {
     const notas = document.getElementById(`notas-estudio-${id_estudio}`).value.trim();
-    if (!notas) return alert("⚠️ Debe escribir la interpretación clínica antes de marcar el estudio como completado.");
+    if (!notas) return alert("⚠️ Debe escribir la interpretación clínica.");
     
     try {
         const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios/completar', {
@@ -747,1505 +816,50 @@ window.completarEstudio = async function(id_estudio, nombreEstudio) {
         const data = await res.json();
         if (data.success) {
             alert("✅ " + data.mensaje);
-            
             let interpretados = localStorage.getItem('estudiosInterpretadosReceta') || '';
             interpretados += `> ${nombreEstudio}:\n${notas}\n\n`;
             localStorage.setItem('estudiosInterpretadosReceta', interpretados);
-            
-            buscarPacienteConsulta(); // Refresca la pantalla para que la alerta desaparezca
-        } else {
-            alert("❌ " + data.mensaje);
+            buscarPacienteConsulta();
         }
     } catch(e) {
-        alert("❌ Error de conexión al completar el estudio.");
+        alert("❌ Error al completar estudio.");
     }
 };
 
-// --- BÚSQUEDA DE PACIENTE EN ENFERMERÍA (PANTALLA 19) ---
+// --- PACIENTE EN ENFERMERÍA ---
 window.buscarPacienteSignos = async function() {
     const idInput = document.getElementById('id-busqueda-signos').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
+    if (!idInput) return alert("⚠️ Ingrese los datos de búsqueda.");
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
         const data = await res.json();
-
         if (data.success) {
-            const p = data.paciente;
-            const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-            
-            document.getElementById('nombre-paciente').value = nombreCompleto;
-            
-            // Guardamos el ID real oculto para conectar con el doctor
-            document.getElementById('id-busqueda-signos').dataset.idReal = p.id_paciente;
-
-            alert("✅ Paciente encontrado. Proceda a tomar los signos vitales.");
-        } else {
-            alert("❌ " + data.mensaje);
-            document.getElementById('nombre-paciente').value = "";
-            if (document.getElementById('id-busqueda-signos')) {
-                delete document.getElementById('id-busqueda-signos').dataset.idReal;
-            }
-        }
-    } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar Paciente Signos):', error);
-        alert("❌ Error de conexión al buscar paciente.");
-    }
-};
-
-// --- BÚSQUEDA DE PACIENTE PARA ESTUDIOS (PANTALLA 14) ---
-window.buscarPacienteEstudio = async function() {
-    const idInput = document.getElementById('id-busqueda-estudio').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
-        const data = await res.json();
-
-        if (data.success) {
-            const p = data.paciente;
-            const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-            
-            document.getElementById('nombre-paciente-estudio').value = nombreCompleto;
-            
-            // Guardamos el ID real oculto
-            document.getElementById('id-busqueda-estudio').dataset.idReal = p.id_paciente;
-
+            document.getElementById('nombre-paciente').value = `${data.paciente.nombre} ${data.paciente.apellido_paterno}`;
+            document.getElementById('id-busqueda-signos').dataset.idReal = data.paciente.id_paciente;
             alert("✅ Paciente encontrado.");
         } else {
             alert("❌ " + data.mensaje);
-            document.getElementById('nombre-paciente-estudio').value = "";
-            if (document.getElementById('id-busqueda-estudio')) {
-                delete document.getElementById('id-busqueda-estudio').dataset.idReal;
-            }
         }
     } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar Paciente Estudios):', error);
-        alert("❌ Error de conexión al buscar paciente.");
+        alert("❌ Error de conexión.");
     }
 };
 
-// --- SOLICITAR ESTUDIO (PANTALLA 14) ---
-window.solicitarEstudio = async function() {
-    const inputBusqueda = document.getElementById('id-busqueda-estudio');
-    const idReal = inputBusqueda ? inputBusqueda.dataset.idReal : null;
-    const tipoEstudio = document.getElementById('tipo-estudio').value;
-    const indicaciones = document.getElementById('indicaciones-estudio').value.trim();
-
-    if (!idReal) return alert("⚠️ Primero busque un paciente válido.");
-    if (!tipoEstudio) return alert("⚠️ Seleccione un tipo de estudio de la lista.");
-    if (!indicaciones) return alert("⚠️ Escriba las indicaciones o el motivo del estudio.");
-
-        let cedulaReal = localStorage.getItem('cedulaUsuario');
-        if (!cedulaReal || cedulaReal === "undefined") cedulaReal = '14776894';
-
-    const datosEstudio = {
-        id_paciente: parseInt(idReal),
-        cedula_doctor: cedulaReal,
-        tipo_estudio: tipoEstudio,
-        indicaciones: indicaciones
-    };
-
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosEstudio)
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-            alert("✅ " + data.mensaje);
-            window.location.href = '8-consultar-estudios.html'; // Te regresa al menú de estudios
-        } else {
-            alert("❌ " + data.mensaje);
-        }
-    } catch (error) {
-        console.error('🛑 Error al solicitar estudio:', error);
-        alert("❌ Error de conexión al solicitar el estudio.");
-    }
-};
-
-// --- VER ESTUDIOS DE UN PACIENTE (PANTALLA 15) ---
-window.buscarEstudiosPaciente = async function() {
-    const idInput = document.getElementById('id-busqueda-ver-estudio').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-
-    try {
-        // 1. Buscamos primero al paciente para saber su nombre
-        const resPac = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
-        const dataPac = await resPac.json();
-
-        if (!dataPac.success) {
-            return alert("❌ No se encontró paciente con ese ID.");
-        }
-
-        const p = dataPac.paciente;
-        const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-        document.getElementById('nombre-paciente-ver').innerHTML = `<strong>${nombreCompleto}</strong>`;
-
-        // 2. Buscamos los estudios asociados a su ID
-        const resEstudios = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${p.id_paciente}`);
-        const dataEstudios = await resEstudios.json();
-
-        const contenedor = document.getElementById('contenedor-estudios');
-        contenedor.innerHTML = ''; // Limpiamos lo anterior
-
-        if (dataEstudios.success && dataEstudios.estudios.length > 0) {
-            const nombresEstudios = {
-                'bh': 'Biometría Hemática',
-                'qs': 'Química Sanguínea (27 elem.)',
-                'ego': 'Examen General de Orina',
-                'rx': 'Radiografía (Rayos X)',
-                'usg': 'Ultrasonido'
-            };
-
-            dataEstudios.estudios.forEach(est => {
-                const nombreLegible = nombresEstudios[est.tipo_estudio] || est.tipo_estudio;
-                const fechaFormateada = new Date(est.fecha_solicitud).toLocaleDateString('es-MX');
-                const colorEstado = est.estado === 'Pendiente' ? '#991D27' : '#2D5A27';
-                
-                contenedor.innerHTML += `
-                    <div class="tarjeta-estudio" style="flex-direction: column; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <p><strong>${nombreLegible}</strong></p>
-                                <p style="color: #666; font-size: 13px;">Fecha: ${fechaFormateada}</p>
-                            </div>
-                            <p style="color: ${colorEstado}; font-weight: bold; font-size: 14px;">${est.estado}</p>
-                        </div>
-                        <details style="margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                            <summary style="cursor: pointer; color: #0E3B5C; font-weight: bold; font-size: 14px;">Ver Detalles y Resultados</summary>
-                            <p style="font-size: 13px; color: #444; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 5px;"><strong>Indicaciones/Motivo:</strong><br>${est.indicaciones}</p>
-                            ${est.notas_medico ? `<p style="font-size: 13px; color: #0E3B5C; margin-top: 8px; background: #eef5f9; padding: 5px; border-radius: 3px;"><strong>Interpretación Médica:</strong><br>${est.notas_medico}</p>` : ''}
-                            <button class="btn-ver" style="margin-top: 10px; width: 100%; border-radius: 4px;" ${est.estado === 'Pendiente' ? 'disabled style="background-color:#ccc;cursor:not-allowed;"' : 'onclick="alert(\'Descargando PDF del resultado...\')" '}>
-                                ${est.estado === 'Pendiente' ? 'Resultado no disponible' : 'Descargar Resultado (PDF)'}
-                            </button>
-                        </details>
-                    </div>
-                `;
-            });
-        } else {
-            contenedor.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; padding: 20px;">Este paciente no tiene estudios registrados aún.</p>';
-        }
-
-        // 3. Buscamos las consultas previas para el historial completo
-        const resConsultas = await fetch(`https://clinica-virtual-backend.onrender.com/api/consultas/${p.id_paciente}`);
-        const dataConsultas = await resConsultas.json();
-        const contConsultas = document.getElementById('contenedor-consultas');
-        
-        if (contConsultas && dataConsultas.success) {
-            if (dataConsultas.consultas.length > 0) {
-                contConsultas.innerHTML = dataConsultas.consultas.map(c => `
-                    <div class="tarjeta-estudio" style="border-left-color: #2D5A27; flex-direction: column; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                            <p><strong>Fecha:</strong> ${new Date(c.fecha).toLocaleDateString('es-MX')} ${new Date(c.fecha).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'})}</p>
-                            <p style="color: #666; font-size: 13px;"><strong>Atendido por:</strong> Dr(a). ${c.doctor_nombre || 'N/A'} ${c.doctor_apellido || ''}</p>
-                        </div>
-                        <details style="margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                            <summary style="cursor: pointer; color: #0E3B5C; font-weight: bold; font-size: 14px;">Ver Expediente de Consulta</summary>
-                            <p style="font-size: 13px; color: #444; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 5px;"><strong>Signos:</strong> Peso: ${c.peso||'--'}kg | Talla: ${c.talla||'--'}m | FC: ${c.fc||'--'} | FR: ${c.fr||'--'} | SatO2: ${c.sato2||'--'}%</p>
-                            <p style="font-size: 13px; color: #0E3B5C; margin-top: 8px; background: #eef5f9; padding: 5px; border-radius: 3px; width: 100%;"><strong>Receta / Notas Médicas:</strong><br>${c.receta || 'Sin indicaciones.'}</p>
-                        </details>
-                    </div>
-                `).join('');
-            } else {
-                contConsultas.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; padding: 20px;">Este paciente no tiene consultas previas registradas.</p>';
-            }
-        }
-    } catch (error) {
-        console.error('🛑 Error:', error);
-        alert("❌ Error de conexión al consultar el historial.");
-    }
-};
-
-// --- CARGAR LISTA DE USUARIOS (PANTALLA ADMIN) ---
-window.cargarUsuariosAdmin = async function() {
-    const contenedor = document.getElementById('contenedor-usuarios-admin');
-    if (!contenedor) return;
-
-    // Mensaje de carga mientras el servidor de Render responde
-    contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; padding: 20px; font-weight: bold;">⏳ Cargando lista de usuarios... (Si es el primer acceso, el servidor puede tardar unos segundos en despertar)</p>';
-
-    try {
-        // Cambia la URL si pruebas en local: http://localhost:3000/api/admin/usuarios
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
-        const data = await res.json();
-        
-        contenedor.innerHTML = '';
-        
-        if (data.success && data.usuarios.length > 0) {
-            let html = '<table style="width:100%; border-collapse: collapse; margin-top: 15px; background: white;">';
-            html += '<tr style="background-color: #0E3B5C; color: white;">';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">ID</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Nombre</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Rol</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Correo</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Contraseña</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Cédula</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Acciones</th>';
-            html += '</tr>';
-            
-            data.usuarios.forEach(u => {
-                const nombre = u.nombre ? `${u.nombre} ${u.apellido_paterno} ${u.apellido_materno || ''}`.trim() : 'N/A';
-                const cedula = u.cedula_id || 'N/A';
-                const passParaHtml = (u.password_hash || '').replace(/'/g, "\\'");
-                const btnBaja = u.estatus ? 
-                    `<button onclick="darDeBajaUsuario(${u.id_usuario})" class="btn-accion-rojo" style="padding: 5px; font-size: 12px; width: 100%;">Dar de Baja</button>` : 
-                    `<span style="color: #991D27; font-weight: bold; font-size: 12px;">Inactivo</span>`;
-                
-                html += `<tr style="${!u.estatus ? 'opacity: 0.5; background-color: #f8f8f8;' : ''}">
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${u.id_usuario}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${nombre}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center; text-transform: capitalize;">${u.rol}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${u.correo}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center; max-width: 150px;">
-                        <span id="pass-${u.id_usuario}" style="font-size: 14px; color: #000; letter-spacing: 2px;">••••••••</span>
-                        <button onclick="revelarContrasena(${u.id_usuario}, '${passParaHtml}')" style="background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 5px;" title="Mostrar/Ocultar">👁️</button>
-                    </td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${cedula}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${btnBaja}</td>
-                </tr>`;
-            });
-            html += '</table>';
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay usuarios registrados.</p>';
-        }
-    } catch (error) {
-        console.error('Error al cargar usuarios:', error);
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la lista de usuarios.</p>';
-    }
-};
-
-// --- REVELAR CONTRASEÑA CON EL OJITO ---
-window.revelarContrasena = function(id, hash) {
-    const span = document.getElementById(`pass-${id}`);
-    if (span.innerText.includes('••••')) {
-        const pass = prompt("🔒 Por seguridad, ingrese su contraseña de administrador para visualizar este dato:");
-        if (pass !== null && pass.trim() !== "") {
-            // Se muestra el hash encriptado de la base de datos
-            span.innerText = hash;
-            span.style.fontSize = '10px';
-            span.style.color = '#666';
-            span.style.wordWrap = 'break-word';
-            span.style.letterSpacing = 'normal';
-        }
-    } else {
-        span.innerText = '••••••••';
-        span.style.fontSize = '14px';
-        span.style.color = '#000';
-        span.style.letterSpacing = '2px';
-    }
-};
-
-// --- DAR DE BAJA A UN USUARIO (PANTALLA ADMIN) ---
-window.darDeBajaUsuario = async function(id_usuario) {
-    if (!confirm("⚠️ ¿Estás seguro de que deseas dar de baja a este usuario? Ya no podrá iniciar sesión.")) return;
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios/baja', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_usuario })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert("✅ " + data.mensaje);
-            cargarUsuariosAdmin(); // Recargar la tabla para reflejar el cambio
-        } else alert("❌ " + data.mensaje);
-    } catch (e) { alert("❌ Error de conexión al intentar dar de baja."); }
-};
-
-// --- CARGAR AGENDA DE ENFERMERÍA (PANTALLA 28) ---
-window.cargarAgendaEnfermeria = async function() {
-    const contenedor = document.getElementById('contenedor-agenda-enfermeria');
-    if (!contenedor) return;
-
-    contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; padding: 20px; font-weight: bold;">⏳ Cargando agenda del día...</p>';
-    const hoy = new Date().toISOString().split('T')[0];
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/fecha/${hoy}`);
-        const data = await res.json();
-
-        if (data.success && data.citas.length > 0) {
-            let html = '';
-            data.citas.forEach(cita => {
-                const nombreCompleto = `${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
-                const nombreDoctor = `Dr(a). ${cita.doctor_nombre || 'No'} ${cita.doctor_apellido || 'Asignado'}`.trim();
-                const horaCita = cita.hora.substring(0, 5);
-
-                let controles = '';
-                let claseEstado = '';
-
-                switch(cita.estatus) {
-                    case 'agendada':
-                        controles = `
-                            <button class="btn-accion-verde" style="padding: 8px;" onclick="marcarAsistencia(${cita.id_cita}, 'presente', ${cita.id_paciente})">✅ Sí llegó</button>
-                            <button class="btn-accion-rojo" style="padding: 8px;" onclick="marcarAsistencia(${cita.id_cita}, 'ausente')">❌ No llegó</button>
-                        `;
-                        break;
-                    case 'presente':
-                        claseEstado = 'estado-presente';
-                        controles = `
-                            <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
-                            <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="saltarASignos(${cita.id_paciente})">🩺 Tomar Signos Vitales</button>
-                        `;
-                        break;
-                    case 'ausente':
-                        claseEstado = 'estado-ausente';
-                        controles = `<span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>`;
-                        break;
-                    default:
-                        claseEstado = 'estado-ausente';
-                        controles = `<span style="color: #666; font-weight: bold; text-align: center; text-transform: capitalize;">${cita.estatus}</span>`;
-                }
-
-                html += `
-                    <div class="tarjeta-paciente ${claseEstado}" id="paciente-${cita.id_cita}">
-                        <div class="info-paciente">
-                            <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">${horaCita} hrs</p>
-                            <p style="font-size: 16px;"><strong>${nombreCompleto}</strong></p>
-                            <p style="font-size: 14px; color: #666;"><strong>ID:</strong> PT-${cita.id_paciente}</p>
-                            <p style="font-size: 14px; color: #0E3B5C; background: #e6f0fa; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-top: 5px;">
-                                👨‍⚕️ <strong>Doctor(a):</strong> ${nombreDoctor}
-                            </p>
-                        </div>
-                        <div class="botones-control" id="controles-${cita.id_cita}">${controles}</div>
-                    </div>
-                `;
-            });
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay pacientes agendados para hoy.</p>';
-        }
-    } catch (e) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la agenda.</p>';
-    }
-};
-
-// --- SALTAR DE AGENDA DE ENFERMERÍA A SIGNOS VITALES ---
-window.saltarASignos = function(id_paciente) {
-    // Usamos el mismo localStorage que usa la agenda del doctor para mantener consistencia
-    localStorage.setItem('pacienteAtenderAhora', id_paciente);
-    window.location.href = '19-signos-vitales.html';
-};
-
-// --- MARCAR ASISTENCIA (PANTALLA 28) ---
-window.marcarAsistencia = async function(id_cita, estatus, id_paciente) {
-    if (estatus === 'ausente' && !confirm("¿Está seguro de marcar a este paciente como AUSENTE? Esta acción no se puede deshacer.")) {
-        return;
-    }
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/estatus', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_cita, estatus })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            // Si el paciente llegó, lo mandamos directo a tomarle los signos
-            if (estatus === 'presente') {
-                // Actualización visual inmediata sin recargar
-                const tarjeta = document.getElementById(`paciente-${id_cita}`);
-                const controles = document.getElementById(`controles-${id_cita}`);
-                if (tarjeta && controles) {
-                    tarjeta.classList.remove('estado-ausente');
-                    tarjeta.classList.add('estado-presente');
-                    controles.innerHTML = `
-                        <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
-                        <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="saltarASignos(${id_paciente})">🩺 Tomar Signos Vitales</button>
-                    `;
-                }
-                // Opcional: saltar a signos después de un breve momento para que vea el cambio
-                // setTimeout(() => saltarASignos(id_paciente), 500);
-            } else { // Si fue ausente
-                const tarjeta = document.getElementById(`paciente-${id_cita}`);
-                const controles = document.getElementById(`controles-${id_cita}`);
-                if (tarjeta && controles) {
-                    tarjeta.classList.add('estado-ausente');
-                    controles.innerHTML = `<span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>`;
-                }
-            }
-        } else {
-            alert("❌ " + data.mensaje);
-        }
-    } catch (e) {
-        alert("Error al actualizar el estatus de la cita.");
-    }
-};
-
-
-// --- CARGAR Y GUARDAR HORARIO DEL DOCTOR (PANTALLA 25) ---
-window.cargarHorarioDoctor = async function() {
-    const cedula = localStorage.getItem('cedulaUsuario');
-    if (!cedula) return;
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`);
-        const data = await res.json();
-
-        if (data.success && data.horario.length > 0) {
-            // Primero desactivamos todos
-            for (let i = 0; i < 7; i++) {
-                document.getElementById(`chk-${i}`).checked = false;
-            }
-            // Activamos y llenamos solo los que vienen de la BD
-            data.horario.forEach(h => {
-                const chk = document.getElementById(`chk-${h.dia_semana}`);
-                const inicio = document.getElementById(`inicio-${h.dia_semana}`);
-                const fin = document.getElementById(`fin-${h.dia_semana}`);
-                if (chk && inicio && fin) {
-                    chk.checked = true;
-                    inicio.value = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
-                    fin.value = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
-                }
-            });
-            // Al final, recorremos todos para aplicar el estado visual correcto
-            for (let i = 0; i < 7; i++) {
-                toggleDia(document.getElementById(`chk-${i}`));
-            }
-        }
-    } catch (e) {
-        console.error("Error al cargar horario", e);
-    }
-};
-
+// --- GESTIÓN DE HORARIOS ---
 window.guardarHorarioDoctor = async function() {
     const cedula = localStorage.getItem('cedulaUsuario');
     if (!cedula) return alert("No se pudo identificar al doctor.");
 
-    // Nueva validación de 40 horas
-    const totalHoras = calcularTotalHoras(); // Llama a la función del HTML
+    const totalHoras = typeof calcularTotalHoras === 'function' ? calcularTotalHoras() : 40;
     if (totalHoras < 40) {
-        alert("⚠️ No se puede guardar el horario.\n\nDebe cubrir un mínimo de 40 horas laborales a la semana.");
+        alert("⚠️ Debe cubrir un mínimo de 40 horas laborales a la semana.");
         return;
     }
 
     const horarios = [];
     for (let i = 0; i < 7; i++) {
-        if (document.getElementById(`chk-${i}`).checked) {
-            horarios.push({
-                dia_semana: i,
-                hora_inicio: document.getElementById(`inicio-${i}`).value || null,
-                hora_fin: document.getElementById(`fin-${i}`).value || null
-            });
-        }
-    }
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(horarios)
-        });
-        const data = await res.json();
-        alert(data.mensaje);
-        if (data.success) window.location.href = '7-agenda.html';
-    } catch (e) {
-        alert("Error de conexión al guardar el horario.");
-    }
-};
-            inputEdad.value = edad;
-
-            // 7. Mostrar mensaje final
-            if (edad > 110 || edad < 0) {
-                feedbackCurp.textContent = 'Edad poco probable. Verifique el CURP.';
-                feedbackCurp.style.color = '#0E3B5C'; // Azul para advertencia
-            } else {
-                feedbackCurp.textContent = 'CURP y edad calculada correctamente.';
-                feedbackCurp.style.color = '#2D5A27'; // Verde para OK
-            }
-        });
-    }
-
-    // --- LLENAR RECETA PARA IMPRESIÓN (PANTALLA 20) ---
-    const contenidoReceta = document.getElementById('contenido-receta');
-    const fechaReceta = document.getElementById('fecha-receta');
-    const nombrePacienteReceta = document.getElementById('nombre-paciente-receta');
-    const nombreDoctorReceta = document.getElementById('nombre-doctor-receta');
-    const cedulaDoctorReceta = document.getElementById('cedula-doctor-receta');
-    
-    // --- NUEVOS CAMPOS ---
-    const edadPacienteReceta = document.getElementById('edad-paciente-receta');
-    const pesoPacienteReceta = document.getElementById('peso-paciente-receta');
-    const tallaPacienteReceta = document.getElementById('talla-paciente-receta');
-    const imcPacienteReceta = document.getElementById('imc-paciente-receta');
-    
-    if (contenidoReceta && fechaReceta) {
-        const recetaGuardada = localStorage.getItem('recetaTemporal') || 'Sin indicaciones...';
-        const fechaGuardada = localStorage.getItem('fechaReceta') || '--/--/----';
-        contenidoReceta.textContent = recetaGuardada;
-        fechaReceta.textContent = fechaGuardada;
-        
-        // Llenar datos dinámicos si existen los campos en el HTML
-        if (nombrePacienteReceta) nombrePacienteReceta.textContent = localStorage.getItem('pacienteTemporal') || 'Paciente no registrado';
-        if (nombreDoctorReceta) nombreDoctorReceta.textContent = 'Dr(a). ' + (localStorage.getItem('nombreUsuario') || 'No especificado');
-        if (cedulaDoctorReceta) cedulaDoctorReceta.textContent = localStorage.getItem('cedulaUsuario') || 'S/N';
-        
-        if (edadPacienteReceta) edadPacienteReceta.textContent = localStorage.getItem('edadTemporal') || '--';
-        if (pesoPacienteReceta) pesoPacienteReceta.textContent = localStorage.getItem('pesoTemporal') ? localStorage.getItem('pesoTemporal') + ' kg' : '--';
-        if (tallaPacienteReceta) tallaPacienteReceta.textContent = localStorage.getItem('tallaTemporal') ? localStorage.getItem('tallaTemporal') + ' m' : '--';
-        if (imcPacienteReceta) imcPacienteReceta.textContent = localStorage.getItem('imcTemporal') || '--';
-        
-        // --- RECETA: ESTUDIOS PENDIENTES ---
-        const estudiosPendientesReceta = localStorage.getItem('estudiosPendientesReceta');
-        const contPendientesReceta = document.getElementById('contenedor-pendientes-receta');
-        const txtPendientesReceta = document.getElementById('texto-pendientes-receta');
-        if (contPendientesReceta && txtPendientesReceta) {
-            if (estudiosPendientesReceta) {
-                contPendientesReceta.style.display = 'block';
-                txtPendientesReceta.textContent = estudiosPendientesReceta;
-            } else {
-                contPendientesReceta.style.display = 'none';
-            }
-        }
-        
-        // --- RECETA: ESTUDIOS INTERPRETADOS (RESULTADOS) ---
-        const estudiosInterpretadosReceta = localStorage.getItem('estudiosInterpretadosReceta');
-        const contInterpretadosReceta = document.getElementById('contenedor-interpretados-receta');
-        const txtInterpretadosReceta = document.getElementById('texto-interpretados-receta');
-        if (contInterpretadosReceta && txtInterpretadosReceta) {
-            if (estudiosInterpretadosReceta) {
-                contInterpretadosReceta.style.display = 'block';
-                txtInterpretadosReceta.textContent = estudiosInterpretadosReceta;
-            } else {
-                contInterpretadosReceta.style.display = 'none';
-            }
-        }
-    }
-
-    // --- RELOJ ACTUAL (ACTUALIZA LA HORA CADA SEGUNDO) ---
-    setInterval(() => {
-        const reloj = document.getElementById('reloj-actual');
-        if (reloj) {
-            const ahora = new Date();
-            const horas = String(ahora.getHours()).padStart(2, '0');
-            const minutos = String(ahora.getMinutes()).padStart(2, '0');
-            reloj.textContent = `${horas}:${minutos}`;
-        }
-    }, 1000);
-
-    // --- LÓGICA PARA AMPLIAR RECETA (PANTALLA 6) ---
-    const btnExpandir = document.getElementById('btn-expandir');
-    const textoReceta = document.getElementById('texto-receta');
-    
-    if (btnExpandir && textoReceta) {
-        btnExpandir.addEventListener('click', () => {
-            textoReceta.classList.toggle('receta-expandida');
-            btnExpandir.classList.toggle('btn-flotante');
-            
-            if (textoReceta.classList.contains('receta-expandida')) {
-                btnExpandir.innerText = 'Minimizar ⤢';
-            } else {
-                btnExpandir.innerText = 'Ampliar ⤢';
-            }
-        });
-    }
-
-    // --- CARGAR AGENDA DEL DOCTOR (PANTALLA 7) ---
-    const contenedorCitasHoy = document.getElementById('contenedor-citas-hoy-agenda');
-    const filtroFechaAgenda = document.getElementById('filtro-fecha-agenda');
-    
-    if (contenedorCitasHoy) {
-        const cargarCitasDoctor = async (fecha) => {
-            const cedula = localStorage.getItem('cedulaUsuario');
-            if (!cedula || cedula === 'undefined') return;
-
-            try {
-                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/doctor/${cedula}/fecha/${fecha}`);
-                const data = await res.json();
-                contenedorCitasHoy.innerHTML = ''; 
-
-                if (data.success && data.citas.length > 0) {
-                    data.citas.forEach(cita => {
-                        const nombreCompleto = `${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
-                        const horaCita = cita.hora.substring(0, 5); // Ej. "13:43"
-                        
-                        contenedorCitasHoy.innerHTML += `
-                            <div class="tarjeta-cita">
-                                <div class="info-cita">
-                                    <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">${horaCita} hrs</p>
-                                    <p><strong>${nombreCompleto}</strong></p>
-                                    <p style="font-size: 12px; color: #666;">Estatus: ${cita.estatus}</p>
-                                </div>
-                                <div>
-                                    <button class="btn-accion" onclick="iniciarConsultaDesdeAgenda(${cita.id_paciente})">Iniciar Consulta</button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    contenedorCitasHoy.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No tiene citas programadas para esta fecha.</p>';
-                }
-            } catch (error) {
-                console.error('Error al cargar agenda:', error);
-                contenedorCitasHoy.innerHTML = '<p style="text-align: center; color: #991D27;">Error al conectar con la agenda.</p>';
-            }
-        };
-
-        const initAgenda = () => {
-            const hoy = new Date().toISOString().split('T')[0];
-            if (filtroFechaAgenda) {
-                filtroFechaAgenda.value = hoy;
-                filtroFechaAgenda.addEventListener('change', (e) => cargarCitasDoctor(e.target.value));
-            }
-            cargarCitasDoctor(filtroFechaAgenda ? filtroFechaAgenda.value : hoy);
-        };
-        initAgenda();
-    }
-
-    // --- AUTO-CARGAR PACIENTE DESDE LA AGENDA A LA CONSULTA (PANTALLA 6) ---
-    const inputBusquedaConsulta = document.getElementById('id-busqueda');
-    if (inputBusquedaConsulta && window.location.pathname.includes('6-consulta-ahora.html')) {
-        const pacienteAgenda = localStorage.getItem('pacienteAtenderAhora');
-        if (pacienteAgenda) {
-            inputBusquedaConsulta.value = pacienteAgenda;
-            setTimeout(() => {
-                if (typeof buscarPacienteConsulta === 'function') buscarPacienteConsulta();
-                localStorage.removeItem('pacienteAtenderAhora'); 
-            }, 300); // Retardo sutil para asegurar que todo el HTML cargó
-        }
-    }
-
-    // --- CARGAR CITAS DEL PACIENTE (PANTALLA 26) ---
-    const contenedorProximaCita = document.getElementById('contenedor-proxima-cita');
-    const contenedorHistorialCitas = document.getElementById('contenedor-historial-citas');
-    const mensajeSinCitas = document.getElementById('mensaje-sin-citas');
-
-    if (contenedorProximaCita && contenedorHistorialCitas && mensajeSinCitas) {
-        const cargarMisCitas = async () => {
-            const idPaciente = localStorage.getItem('idPaciente');
-            if (!idPaciente) return;
-
-            try {
-                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
-                const data = await res.json();
-                
-                contenedorProximaCita.innerHTML = '';
-                contenedorHistorialCitas.innerHTML = '';
-                
-                if (data.success && data.citas.length > 0) {
-                    let tieneProxima = false;
-                    const hoy = new Date();
-                    hoy.setHours(0,0,0,0);
-
-                    data.citas.forEach(cita => {
-                        const nombreDoctor = `Dr(a). ${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
-                        const fechaSolo = cita.fecha.split('T')[0];
-                        const fechaCita = new Date(fechaSolo + 'T12:00:00'); // Evita desfase horario
-                        const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                        const fechaFormateada = fechaCita.toLocaleDateString('es-MX', opcionesFecha);
-                        const horaFormateada = cita.hora.substring(0, 5) + ' hrs';
-
-                        if (fechaCita >= hoy && cita.estatus === 'agendada') {
-                            tieneProxima = true;
-                            contenedorProximaCita.innerHTML += `
-                                <div class="tarjeta-cita-destacada">
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                                        <div>
-                                            <p style="font-size: 20px; font-weight: bold; color: #0E3B5C; text-transform: capitalize;">${fechaFormateada}</p>
-                                            <p style="font-size: 18px; color: #991D27;">${horaFormateada}</p>
-                                        </div>
-                                        <span style="background-color: #e6f4ea; color: #1e8e3e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">CONFIRMADA</span>
-                                    </div>
-                                    <p style="margin-bottom: 5px;"><strong>Doctor(a):</strong> ${nombreDoctor}</p>
-                                    <p style="font-size: 14px; color: #666; margin-bottom: 20px;"><strong>Ubicación:</strong> Consultorio Asignado</p>
-                                    <div style="display: flex; gap: 10px;">
-                                        <button class="btn-accion-rojo" style="flex: 1;" onclick="cancelarCitaPaciente(${cita.id_cita})">❌ Cancelar Cita</button>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            const colorEstatus = cita.estatus === 'cancelada' ? '#991D27' : '#2D5A27';
-                            contenedorHistorialCitas.innerHTML += `
-                                <div class="tarjeta-cita" style="opacity: 0.7;">
-                                    <div class="info-cita">
-                                        <p style="font-size: 14px; color: #666; text-transform: capitalize;">${fechaFormateada} - ${horaFormateada}</p>
-                                        <p><strong>${nombreDoctor}</strong></p>
-                                        <p style="font-size: 12px; color: ${colorEstatus}; font-weight: bold; text-transform: uppercase;">${cita.estatus}</p>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                    mensajeSinCitas.style.display = tieneProxima ? 'none' : 'block';
-                } else {
-                    mensajeSinCitas.style.display = 'block';
-                }
-            } catch (error) { console.error(error); }
-        };
-        cargarMisCitas();
-    }
-
-    // --- AUTO-CARGAR USUARIOS SI ESTAMOS EN LA PANTALLA 30 ---
-    if (window.location.pathname.includes('30-lista-usuarios.html')) {
-        cargarUsuariosAdmin();
-    }
-
-    // --- AUTO-CARGAR AGENDA DE ENFERMERÍA (PANTALLA 28) ---
-    if (window.location.pathname.includes('28-agenda-enfermero.html')) {
-        cargarAgendaEnfermeria();
-    }
-
-    // --- AUTO-CARGAR HORARIO DEL DOCTOR (PANTALLA 25) ---
-    if (window.location.pathname.includes('25-editar-horario.html')) {
-        cargarHorarioDoctor();
-    }
-});
-
-// --- FUNCIÓN DE BÚSQUEDA (Global para el botón onclick) ---
-window.simularBusqueda = async function() {
-    const termino = document.getElementById('buscar-cedula').value.trim();
-    if (!termino) return alert("⚠️ Ingrese una Cédula Profesional o Correo Electrónico.");
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
-        const data = await res.json();
-
-        if (data.success) {
-            const p = data.persona;
-            // Guardamos el original para comparar cambios después
-            personaOriginal = {
-                cedula: p.cedula_id,
-                nombre: p.nombre,
-                apellido_p: p.apellido_paterno,
-                apellido_m: p.apellido_materno,
-                telefono: p.telefono,
-                correo: p.correo,
-                calle: p.direccion_calle,
-                num_ext: p.direccion_num_ext,
-                cp: p.direccion_cp,
-                colonia: p.direccion_colonia
-            };
-
-            // Llenar campos visibles
-            document.getElementById('nombre').value = p.nombre;
-            document.getElementById('apellido_p').value = p.apellido_paterno;
-            document.getElementById('apellido_m').value = p.apellido_materno;
-            document.getElementById('telefono').value = p.telefono;
-            document.getElementById('email').value = p.correo;
-            document.getElementById('calle').value = p.direccion_calle;
-            document.getElementById('num_ext').value = p.direccion_num_ext;
-            document.getElementById('cp').value = p.direccion_cp;
-            document.getElementById('colonia').value = p.direccion_colonia;
-            
-            // Campos solo lectura
-            document.getElementById('display-puesto').value = p.puesto;
-            document.getElementById('display-cedula').value = p.cedula_id;
-
-            alert("✅ Datos de " + p.nombre + " cargados.");
-        } else {
-            alert("❌ Personal no encontrado.");
-        }
-    } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar):', error);
-        alert("❌ Error de conexión al buscar.");
-    }
-};
-
-// --- CANCELAR CITA DEL PACIENTE (PANTALLA 26) ---
-window.cancelarCitaPaciente = async function(id_cita) {
-    if (confirm("⚠️ ¿Deseas CANCELAR definitivamente esta cita? Esta acción no se puede deshacer.")) {
-        try {
-            const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/cancelar', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_cita })
-            });
-            const data = await res.json();
-            if(data.success) {
-                alert("✅ " + data.mensaje);
-                location.reload(); // Recarga la página para mostrar que se canceló
-            } else {
-                alert("❌ " + data.mensaje);
-            }
-        } catch(e) {
-            alert("❌ Error de conexión al cancelar la cita.");
-        }
-    }
-};
-
-// --- FUNCIÓN PARA SALTAR DE AGENDA A CONSULTA ---
-window.iniciarConsultaDesdeAgenda = function(id_paciente) {
-    localStorage.setItem('pacienteAtenderAhora', id_paciente);
-    window.location.href = '6-consulta-ahora.html';
-};
-
-// --- GUARDAR CONSULTA Y RECETA (PANTALLA 6) ---
-window.guardarYGenerarReceta = async function() {
-    const inputBusqueda = document.getElementById('id-busqueda');
-    const idReal = inputBusqueda.dataset.idReal; 
-    const receta = document.getElementById('texto-receta').value.trim();
-    
-    if (!idReal) return alert("⚠️ Primero busque un paciente válido.");
-    if (!receta) return alert("⚠️ No puede finalizar la consulta sin escribir la receta.");
-
-    const cedulaReal = localStorage.getItem('cedulaUsuario') || '14776894';
-
-    const datosConsulta = {
-        id_paciente: parseInt(idReal),
-        cedula_doctor: cedulaReal, // Cédula real del doctor logueado
-        peso: parseFloat(document.getElementById('input-peso').value) || null,
-        talla: parseFloat(document.getElementById('input-talla').value) || null,
-        fc: parseInt(document.getElementById('input-fc').value) || null,
-        fr: parseInt(document.getElementById('input-fr').value) || null,
-        sato2: parseInt(document.getElementById('input-sato2').value) || null,
-        imc: parseFloat(document.getElementById('input-imc').value) || null,
-        receta: receta
-    };
-
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/consultas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosConsulta)
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-            // NUEVO: Borrar signos pendientes de la BD porque ya se usaron
-            try { fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${idReal}`, { method: 'DELETE' }); } catch(e){}
-
-            alert("✅ " + data.mensaje);
-            // Guardar en memoria temporal para mostrarlo en la hoja de impresión
-            localStorage.setItem('recetaTemporal', receta);
-            const ahora = new Date();
-            const fechaFormateada = ahora.toLocaleDateString('es-MX') + ' ' + ahora.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
-            localStorage.setItem('fechaReceta', fechaFormateada);
-            localStorage.setItem('pacienteTemporal', document.getElementById('nombre-paciente').value);
-            localStorage.setItem('edadTemporal', document.getElementById('edad-paciente').value);
-            localStorage.setItem('pesoTemporal', document.getElementById('input-peso').value);
-            localStorage.setItem('tallaTemporal', document.getElementById('input-talla').value);
-            localStorage.setItem('imcTemporal', document.getElementById('input-imc').value);
-            
-            window.location.href = '20-receta.html'; // Te manda a la receta lista
-        } else {
-            alert("❌ " + data.mensaje);
-        }
-    } catch (error) {
-        console.error('🛑 Error al guardar consulta:', error);
-        alert("❌ Error de conexión al guardar la consulta.");
-    }
-};
-
-// --- BÚSQUEDA DE PACIENTE EN CONSULTA (PANTALLA 6) ---
-window.buscarPacienteConsulta = async function() {
-    const idInput = document.getElementById('id-busqueda').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-    
-    // Aseguramos que la alerta esté oculta antes de cada nueva búsqueda.
-    document.getElementById('alerta-signos-faltantes').style.display = 'none';
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
-        const data = await res.json();
-
-        if (data.success) {
-            const p = data.paciente;
-            const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-            
-            // Si es un paciente diferente, limpiamos las interpretaciones anteriores de la memoria
-            const currentId = document.getElementById('id-busqueda').dataset.idReal;
-            if (currentId != p.id_paciente) {
-                localStorage.removeItem('estudiosInterpretadosReceta');
-            }
-            
-            document.getElementById('nombre-paciente').value = nombreCompleto;
-            document.getElementById('edad-paciente').value = p.edad + " años";
-            document.getElementById('sangre-paciente').value = p.tipo_sangre || "No reg.";
-            
-            // Guardamos el ID real oculto para cuando le dé en Finalizar Consulta
-            document.getElementById('id-busqueda').dataset.idReal = p.id_paciente;
-
-            // --- NUEVO: Cargar signos de enfermería si existen ---
-            const alertaSignos = document.getElementById('alerta-signos-faltantes');
-            const camposSignos = ['input-peso', 'input-talla', 'input-fc', 'input-fr', 'input-sato2'];
-
-            try {
-                const resSignos = await fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${p.id_paciente}`);
-                const dataSignos = await resSignos.json();
-
-                if (dataSignos.success) {
-                    alertaSignos.style.display = 'none'; // Ocultamos la alerta porque sí hay signos
-                    const signos = dataSignos.signos;
-                    
-                    const inputPeso = document.getElementById('input-peso');
-                    const inputTalla = document.getElementById('input-talla');
-                    
-                    if(inputPeso) inputPeso.value = signos.peso || '';
-                    if(inputTalla) inputTalla.value = signos.talla || '';
-                    
-                    const inputFc = document.getElementById('input-fc');
-                    if(inputFc) inputFc.value = signos.fc || '';
-                    
-                    const inputFr = document.getElementById('input-fr');
-                    if(inputFr) inputFr.value = signos.fr || '';
-                    
-                    const inputSato2 = document.getElementById('input-sato2');
-                    if(inputSato2) inputSato2.value = signos.sato2 || '';
-                    
-                    // Forzar cálculo de IMC automáticamente
-                    if(inputPeso) {
-                        inputPeso.dispatchEvent(new Event('input'));
-                    }
-                    
-                    alert("✅ Datos del paciente y SIGNOS VITALES de enfermería cargados correctamente.");
-                } else {
-                    // Si no hay signos, mostramos la alerta y limpiamos los campos
-                    alertaSignos.style.display = 'block';
-                    camposSignos.forEach(id => {
-                        const campo = document.getElementById(id);
-                        if (campo) campo.value = '';
-                    });
-                    if (document.getElementById('input-imc')) document.getElementById('input-imc').value = '';
-                }
-            } catch(e) {
-                alert("✅ Datos del paciente cargados. (No se pudo conectar a los signos vitales)");
-            }
-            
-            // --- NUEVO: BUSCAR ESTUDIOS PENDIENTES ---
-            const resEstudios = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${p.id_paciente}/pendientes`);
-            const dataEstudios = await resEstudios.json();
-            
-            const alertaEstudios = document.getElementById('alerta-estudios');
-            const listaEstudios = document.getElementById('lista-estudios-pendientes');
-            
-            if (dataEstudios.success && dataEstudios.estudios.length > 0) {
-                alertaEstudios.style.display = 'block';
-                let htmlEstudios = '';
-                let textoPendientesParaReceta = ''; // Se imprimirá en la receta
-                
-                const nombresEstudios = { 'bh': 'Biometría Hemática', 'qs': 'Química Sanguínea (27 elem.)', 'ego': 'Examen General de Orina', 'rx': 'Radiografía (Rayos X)', 'usg': 'Ultrasonido' };
-                
-                dataEstudios.estudios.forEach(est => {
-                    const nombreEstudio = nombresEstudios[est.tipo_estudio] || est.tipo_estudio;
-                    textoPendientesParaReceta += `- ${nombreEstudio}\n`;
-                    
-                    htmlEstudios += `
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
-                            <p style="color: #0E3B5C;"><strong>${nombreEstudio}</strong> <span style="font-size: 11px; color:#666;">(Solicitado el: ${new Date(est.fecha_solicitud).toLocaleDateString('es-MX')})</span></p>
-                            <textarea id="notas-estudio-${est.id_estudio}" rows="2" style="width: 100%; border: 1px solid #ccc; margin-top: 5px; padding: 5px; font-size: 13px;" placeholder="Escriba la interpretación clínica del resultado..."></textarea>
-                            <button type="button" class="btn-accion-verde" style="padding: 5px 10px; font-size: 12px; margin-top: 5px;" onclick="completarEstudio(${est.id_estudio}, '${nombreEstudio}')">Guardar Interpretación y Completar</button>
-                        </div>
-                    `;
-                });
-                listaEstudios.innerHTML = htmlEstudios;
-                localStorage.setItem('estudiosPendientesReceta', textoPendientesParaReceta);
-            } else {
-                alertaEstudios.style.display = 'none';
-                localStorage.removeItem('estudiosPendientesReceta');
-            }
-        } else {
-            alert("❌ " + data.mensaje);
-            document.getElementById('nombre-paciente').value = "";
-            document.getElementById('edad-paciente').value = "";
-            document.getElementById('sangre-paciente').value = "";
-            delete document.getElementById('id-busqueda').dataset.idReal;
-        }
-    } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar Paciente):', error);
-        alert("❌ Error de conexión al buscar paciente.");
-    }
-};
-
-// --- MARCAR ESTUDIO COMO COMPLETADO (PANTALLA 6) ---
-window.completarEstudio = async function(id_estudio, nombreEstudio) {
-    const notas = document.getElementById(`notas-estudio-${id_estudio}`).value.trim();
-    if (!notas) return alert("⚠️ Debe escribir la interpretación clínica antes de marcar el estudio como completado.");
-    
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios/completar', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_estudio, notas_medico: notas })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert("✅ " + data.mensaje);
-            
-            let interpretados = localStorage.getItem('estudiosInterpretadosReceta') || '';
-            interpretados += `> ${nombreEstudio}:\n${notas}\n\n`;
-            localStorage.setItem('estudiosInterpretadosReceta', interpretados);
-            
-            buscarPacienteConsulta(); // Refresca la pantalla para que la alerta desaparezca
-        } else {
-            alert("❌ " + data.mensaje);
-        }
-    } catch(e) {
-        alert("❌ Error de conexión al completar el estudio.");
-    }
-};
-
-// --- BÚSQUEDA DE PACIENTE EN ENFERMERÍA (PANTALLA 19) ---
-window.buscarPacienteSignos = async function() {
-    const idInput = document.getElementById('id-busqueda-signos').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
-        const data = await res.json();
-
-        if (data.success) {
-            const p = data.paciente;
-            const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-            
-            document.getElementById('nombre-paciente').value = nombreCompleto;
-            
-            // Guardamos el ID real oculto para conectar con el doctor
-            document.getElementById('id-busqueda-signos').dataset.idReal = p.id_paciente;
-
-            alert("✅ Paciente encontrado. Proceda a tomar los signos vitales.");
-        } else {
-            alert("❌ " + data.mensaje);
-            document.getElementById('nombre-paciente').value = "";
-            if (document.getElementById('id-busqueda-signos')) {
-                delete document.getElementById('id-busqueda-signos').dataset.idReal;
-            }
-        }
-    } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar Paciente Signos):', error);
-        alert("❌ Error de conexión al buscar paciente.");
-    }
-};
-
-// --- BÚSQUEDA DE PACIENTE PARA ESTUDIOS (PANTALLA 14) ---
-window.buscarPacienteEstudio = async function() {
-    const idInput = document.getElementById('id-busqueda-estudio').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
-        const data = await res.json();
-
-        if (data.success) {
-            const p = data.paciente;
-            const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-            
-            document.getElementById('nombre-paciente-estudio').value = nombreCompleto;
-            
-            // Guardamos el ID real oculto
-            document.getElementById('id-busqueda-estudio').dataset.idReal = p.id_paciente;
-
-            alert("✅ Paciente encontrado.");
-        } else {
-            alert("❌ " + data.mensaje);
-            document.getElementById('nombre-paciente-estudio').value = "";
-            if (document.getElementById('id-busqueda-estudio')) {
-                delete document.getElementById('id-busqueda-estudio').dataset.idReal;
-            }
-        }
-    } catch (error) {
-        console.error('🛑 Error detallado en fetch (Buscar Paciente Estudios):', error);
-        alert("❌ Error de conexión al buscar paciente.");
-    }
-};
-
-// --- SOLICITAR ESTUDIO (PANTALLA 14) ---
-window.solicitarEstudio = async function() {
-    const inputBusqueda = document.getElementById('id-busqueda-estudio');
-    const idReal = inputBusqueda ? inputBusqueda.dataset.idReal : null;
-    const tipoEstudio = document.getElementById('tipo-estudio').value;
-    const indicaciones = document.getElementById('indicaciones-estudio').value.trim();
-
-    if (!idReal) return alert("⚠️ Primero busque un paciente válido.");
-    if (!tipoEstudio) return alert("⚠️ Seleccione un tipo de estudio de la lista.");
-    if (!indicaciones) return alert("⚠️ Escriba las indicaciones o el motivo del estudio.");
-
-        let cedulaReal = localStorage.getItem('cedulaUsuario');
-        if (!cedulaReal || cedulaReal === "undefined") cedulaReal = '14776894';
-
-    const datosEstudio = {
-        id_paciente: parseInt(idReal),
-        cedula_doctor: cedulaReal,
-        tipo_estudio: tipoEstudio,
-        indicaciones: indicaciones
-    };
-
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosEstudio)
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-            alert("✅ " + data.mensaje);
-            window.location.href = '8-consultar-estudios.html'; // Te regresa al menú de estudios
-        } else {
-            alert("❌ " + data.mensaje);
-        }
-    } catch (error) {
-        console.error('🛑 Error al solicitar estudio:', error);
-        alert("❌ Error de conexión al solicitar el estudio.");
-    }
-};
-
-// --- VER ESTUDIOS DE UN PACIENTE (PANTALLA 15) ---
-window.buscarEstudiosPaciente = async function() {
-    const idInput = document.getElementById('id-busqueda-ver-estudio').value.trim();
-    if (!idInput) return alert("⚠️ Ingrese un Teléfono, CURP o Correo del paciente.");
-
-    try {
-        // 1. Buscamos primero al paciente para saber su nombre
-        const resPac = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${idInput}`);
-        const dataPac = await resPac.json();
-
-        if (!dataPac.success) {
-            return alert("❌ No se encontró paciente con ese ID.");
-        }
-
-        const p = dataPac.paciente;
-        const nombreCompleto = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-        document.getElementById('nombre-paciente-ver').innerHTML = `<strong>${nombreCompleto}</strong>`;
-
-        // 2. Buscamos los estudios asociados a su ID
-        const resEstudios = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${p.id_paciente}`);
-        const dataEstudios = await resEstudios.json();
-
-        const contenedor = document.getElementById('contenedor-estudios');
-        contenedor.innerHTML = ''; // Limpiamos lo anterior
-
-        if (dataEstudios.success && dataEstudios.estudios.length > 0) {
-            const nombresEstudios = {
-                'bh': 'Biometría Hemática',
-                'qs': 'Química Sanguínea (27 elem.)',
-                'ego': 'Examen General de Orina',
-                'rx': 'Radiografía (Rayos X)',
-                'usg': 'Ultrasonido'
-            };
-
-            dataEstudios.estudios.forEach(est => {
-                const nombreLegible = nombresEstudios[est.tipo_estudio] || est.tipo_estudio;
-                const fechaFormateada = new Date(est.fecha_solicitud).toLocaleDateString('es-MX');
-                const colorEstado = est.estado === 'Pendiente' ? '#991D27' : '#2D5A27';
-                
-                contenedor.innerHTML += `
-                    <div class="tarjeta-estudio" style="flex-direction: column; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <p><strong>${nombreLegible}</strong></p>
-                                <p style="color: #666; font-size: 13px;">Fecha: ${fechaFormateada}</p>
-                            </div>
-                            <p style="color: ${colorEstado}; font-weight: bold; font-size: 14px;">${est.estado}</p>
-                        </div>
-                        <details style="margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                            <summary style="cursor: pointer; color: #0E3B5C; font-weight: bold; font-size: 14px;">Ver Detalles y Resultados</summary>
-                            <p style="font-size: 13px; color: #444; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 5px;"><strong>Indicaciones/Motivo:</strong><br>${est.indicaciones}</p>
-                            ${est.notas_medico ? `<p style="font-size: 13px; color: #0E3B5C; margin-top: 8px; background: #eef5f9; padding: 5px; border-radius: 3px;"><strong>Interpretación Médica:</strong><br>${est.notas_medico}</p>` : ''}
-                            <button class="btn-ver" style="margin-top: 10px; width: 100%; border-radius: 4px;" ${est.estado === 'Pendiente' ? 'disabled style="background-color:#ccc;cursor:not-allowed;"' : 'onclick="alert(\'Descargando PDF del resultado...\')" '}>
-                                ${est.estado === 'Pendiente' ? 'Resultado no disponible' : 'Descargar Resultado (PDF)'}
-                            </button>
-                        </details>
-                    </div>
-                `;
-            });
-        } else {
-            contenedor.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; padding: 20px;">Este paciente no tiene estudios registrados aún.</p>';
-        }
-
-        // 3. Buscamos las consultas previas para el historial completo
-        const resConsultas = await fetch(`https://clinica-virtual-backend.onrender.com/api/consultas/${p.id_paciente}`);
-        const dataConsultas = await resConsultas.json();
-        const contConsultas = document.getElementById('contenedor-consultas');
-        
-        if (contConsultas && dataConsultas.success) {
-            if (dataConsultas.consultas.length > 0) {
-                contConsultas.innerHTML = dataConsultas.consultas.map(c => `
-                    <div class="tarjeta-estudio" style="border-left-color: #2D5A27; flex-direction: column; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                            <p><strong>Fecha:</strong> ${new Date(c.fecha).toLocaleDateString('es-MX')} ${new Date(c.fecha).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'})}</p>
-                            <p style="color: #666; font-size: 13px;"><strong>Atendido por:</strong> Dr(a). ${c.doctor_nombre || 'N/A'} ${c.doctor_apellido || ''}</p>
-                        </div>
-                        <details style="margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                            <summary style="cursor: pointer; color: #0E3B5C; font-weight: bold; font-size: 14px;">Ver Expediente de Consulta</summary>
-                            <p style="font-size: 13px; color: #444; margin-top: 8px; border-top: 1px dashed #ccc; padding-top: 5px;"><strong>Signos:</strong> Peso: ${c.peso||'--'}kg | Talla: ${c.talla||'--'}m | FC: ${c.fc||'--'} | FR: ${c.fr||'--'} | SatO2: ${c.sato2||'--'}%</p>
-                            <p style="font-size: 13px; color: #0E3B5C; margin-top: 8px; background: #eef5f9; padding: 5px; border-radius: 3px; width: 100%;"><strong>Receta / Notas Médicas:</strong><br>${c.receta || 'Sin indicaciones.'}</p>
-                        </details>
-                    </div>
-                `).join('');
-            } else {
-                contConsultas.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; padding: 20px;">Este paciente no tiene consultas previas registradas.</p>';
-            }
-        }
-    } catch (error) {
-        console.error('🛑 Error:', error);
-        alert("❌ Error de conexión al consultar el historial.");
-    }
-};
-
-// --- CARGAR LISTA DE USUARIOS (PANTALLA ADMIN) ---
-window.cargarUsuariosAdmin = async function() {
-    const contenedor = document.getElementById('contenedor-usuarios-admin');
-    if (!contenedor) return;
-
-    // Mensaje de carga mientras el servidor de Render responde
-    contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; padding: 20px; font-weight: bold;">⏳ Cargando lista de usuarios... (Si es el primer acceso, el servidor puede tardar unos segundos en despertar)</p>';
-
-    try {
-        // Cambia la URL si pruebas en local: http://localhost:3000/api/admin/usuarios
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
-        const data = await res.json();
-        
-        contenedor.innerHTML = '';
-        
-        if (data.success && data.usuarios.length > 0) {
-            let html = '<table style="width:100%; border-collapse: collapse; margin-top: 15px; background: white;">';
-            html += '<tr style="background-color: #0E3B5C; color: white;">';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">ID</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Nombre</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Rol</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Correo</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Contraseña</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Cédula</th>';
-            html += '<th style="padding: 10px; border: 1px solid #ccc;">Acciones</th>';
-            html += '</tr>';
-            
-            data.usuarios.forEach(u => {
-                const nombre = u.nombre ? `${u.nombre} ${u.apellido_paterno} ${u.apellido_materno || ''}`.trim() : 'N/A';
-                const cedula = u.cedula_id || 'N/A';
-                const passParaHtml = (u.password_hash || '').replace(/'/g, "\\'");
-                const btnBaja = u.estatus ? 
-                    `<button onclick="darDeBajaUsuario(${u.id_usuario})" class="btn-accion-rojo" style="padding: 5px; font-size: 12px; width: 100%;">Dar de Baja</button>` : 
-                    `<span style="color: #991D27; font-weight: bold; font-size: 12px;">Inactivo</span>`;
-                
-                html += `<tr style="${!u.estatus ? 'opacity: 0.5; background-color: #f8f8f8;' : ''}">
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${u.id_usuario}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${nombre}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center; text-transform: capitalize;">${u.rol}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc;">${u.correo}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center; max-width: 150px;">
-                        <span id="pass-${u.id_usuario}" style="font-size: 14px; color: #000; letter-spacing: 2px;">••••••••</span>
-                        <button onclick="revelarContrasena(${u.id_usuario}, '${passParaHtml}')" style="background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 5px;" title="Mostrar/Ocultar">👁️</button>
-                    </td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${cedula}</td>
-                    <td style="padding: 10px; border: 1px solid #ccc; text-align: center;">${btnBaja}</td>
-                </tr>`;
-            });
-            html += '</table>';
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay usuarios registrados.</p>';
-        }
-    } catch (error) {
-        console.error('Error al cargar usuarios:', error);
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la lista de usuarios.</p>';
-    }
-};
-
-// --- REVELAR CONTRASEÑA CON EL OJITO ---
-window.revelarContrasena = function(id, hash) {
-    const span = document.getElementById(`pass-${id}`);
-    if (span.innerText.includes('••••')) {
-        const pass = prompt("🔒 Por seguridad, ingrese su contraseña de administrador para visualizar este dato:");
-        if (pass !== null && pass.trim() !== "") {
-            // Se muestra el hash encriptado de la base de datos
-            span.innerText = hash;
-            span.style.fontSize = '10px';
-            span.style.color = '#666';
-            span.style.wordWrap = 'break-word';
-            span.style.letterSpacing = 'normal';
-        }
-    } else {
-        span.innerText = '••••••••';
-        span.style.fontSize = '14px';
-        span.style.color = '#000';
-        span.style.letterSpacing = '2px';
-    }
-};
-
-// --- DAR DE BAJA A UN USUARIO (PANTALLA ADMIN) ---
-window.darDeBajaUsuario = async function(id_usuario) {
-    if (!confirm("⚠️ ¿Estás seguro de que deseas dar de baja a este usuario? Ya no podrá iniciar sesión.")) return;
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios/baja', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_usuario })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert("✅ " + data.mensaje);
-            cargarUsuariosAdmin(); // Recargar la tabla para reflejar el cambio
-        } else alert("❌ " + data.mensaje);
-    } catch (e) { alert("❌ Error de conexión al intentar dar de baja."); }
-};
-
-// --- CARGAR AGENDA DE ENFERMERÍA (PANTALLA 28) ---
-window.cargarAgendaEnfermeria = async function() {
-    const contenedor = document.getElementById('contenedor-agenda-enfermeria');
-    if (!contenedor) return;
-
-    contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; padding: 20px; font-weight: bold;">⏳ Cargando agenda del día...</p>';
-    const hoy = new Date().toISOString().split('T')[0];
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/fecha/${hoy}`);
-        const data = await res.json();
-
-        if (data.success && data.citas.length > 0) {
-            let html = '';
-            data.citas.forEach(cita => {
-                const nombreCompleto = `${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}`.trim();
-                const nombreDoctor = `Dr(a). ${cita.doctor_nombre || 'No'} ${cita.doctor_apellido || 'Asignado'}`.trim();
-                const horaCita = cita.hora.substring(0, 5);
-
-                let controles = '';
-                let claseEstado = '';
-
-                switch(cita.estatus) {
-                    case 'agendada':
-                        controles = `
-                            <button class="btn-accion-verde" style="padding: 8px;" onclick="marcarAsistencia(${cita.id_cita}, 'presente', ${cita.id_paciente})">✅ Sí llegó</button>
-                            <button class="btn-accion-rojo" style="padding: 8px;" onclick="marcarAsistencia(${cita.id_cita}, 'ausente')">❌ No llegó</button>
-                        `;
-                        break;
-                    case 'presente':
-                        claseEstado = 'estado-presente';
-                        controles = `
-                            <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
-                            <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="saltarASignos(${cita.id_paciente})">🩺 Tomar Signos Vitales</button>
-                        `;
-                        break;
-                    case 'ausente':
-                        claseEstado = 'estado-ausente';
-                        controles = `<span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>`;
-                        break;
-                    default:
-                        claseEstado = 'estado-ausente';
-                        controles = `<span style="color: #666; font-weight: bold; text-align: center; text-transform: capitalize;">${cita.estatus}</span>`;
-                }
-
-                html += `
-                    <div class="tarjeta-paciente ${claseEstado}" id="paciente-${cita.id_cita}">
-                        <div class="info-paciente">
-                            <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">${horaCita} hrs</p>
-                            <p style="font-size: 16px;"><strong>${nombreCompleto}</strong></p>
-                            <p style="font-size: 14px; color: #666;"><strong>ID:</strong> PT-${cita.id_paciente}</p>
-                            <p style="font-size: 14px; color: #0E3B5C; background: #e6f0fa; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-top: 5px;">
-                                👨‍⚕️ <strong>Doctor(a):</strong> ${nombreDoctor}
-                            </p>
-                        </div>
-                        <div class="botones-control" id="controles-${cita.id_cita}">${controles}</div>
-                    </div>
-                `;
-            });
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay pacientes agendados para hoy.</p>';
-        }
-    } catch (e) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27; padding: 20px;">Error de conexión al cargar la agenda.</p>';
-    }
-};
-
-// --- SALTAR DE AGENDA DE ENFERMERÍA A SIGNOS VITALES ---
-window.saltarASignos = function(id_paciente) {
-    // Usamos el mismo localStorage que usa la agenda del doctor para mantener consistencia
-    localStorage.setItem('pacienteAtenderAhora', id_paciente);
-    window.location.href = '19-signos-vitales.html';
-};
-
-// --- MARCAR ASISTENCIA (PANTALLA 28) ---
-window.marcarAsistencia = async function(id_cita, estatus, id_paciente) {
-    if (estatus === 'ausente' && !confirm("¿Está seguro de marcar a este paciente como AUSENTE? Esta acción no se puede deshacer.")) {
-        return;
-    }
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/estatus', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_cita, estatus })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            // Si el paciente llegó, lo mandamos directo a tomarle los signos
-            if (estatus === 'presente') {
-                // Actualización visual inmediata sin recargar
-                const tarjeta = document.getElementById(`paciente-${id_cita}`);
-                const controles = document.getElementById(`controles-${id_cita}`);
-                if (tarjeta && controles) {
-                    tarjeta.classList.remove('estado-ausente');
-                    tarjeta.classList.add('estado-presente');
-                    controles.innerHTML = `
-                        <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
-                        <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="saltarASignos(${id_paciente})">🩺 Tomar Signos Vitales</button>
-                    `;
-                }
-                // Opcional: saltar a signos después de un breve momento para que vea el cambio
-                // setTimeout(() => saltarASignos(id_paciente), 500);
-            } else { // Si fue ausente
-                const tarjeta = document.getElementById(`paciente-${id_cita}`);
-                const controles = document.getElementById(`controles-${id_cita}`);
-                if (tarjeta && controles) {
-                    tarjeta.classList.add('estado-ausente');
-                    controles.innerHTML = `<span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>`;
-                }
-            }
-        } else {
-            alert("❌ " + data.mensaje);
-        }
-    } catch (e) {
-        alert("Error al actualizar el estatus de la cita.");
-    }
-};
-
-
-// --- CARGAR Y GUARDAR HORARIO DEL DOCTOR (PANTALLA 25) ---
-window.cargarHorarioDoctor = async function() {
-    const cedula = localStorage.getItem('cedulaUsuario');
-    if (!cedula) return;
-
-    try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`);
-        const data = await res.json();
-
-        if (data.success && data.horario.length > 0) {
-            // Primero desactivamos todos
-            for (let i = 0; i < 7; i++) {
-                document.getElementById(`chk-${i}`).checked = false;
-            }
-            // Activamos y llenamos solo los que vienen de la BD
-            data.horario.forEach(h => {
-                const chk = document.getElementById(`chk-${h.dia_semana}`);
-                const inicio = document.getElementById(`inicio-${h.dia_semana}`);
-                const fin = document.getElementById(`fin-${h.dia_semana}`);
-                if (chk && inicio && fin) {
-                    chk.checked = true;
-                    inicio.value = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
-                    fin.value = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
-                }
-            });
-            // Al final, recorremos todos para aplicar el estado visual correcto
-            for (let i = 0; i < 7; i++) {
-                toggleDia(document.getElementById(`chk-${i}`));
-            }
-        }
-    } catch (e) {
-        console.error("Error al cargar horario", e);
-    }
-};
-
-window.guardarHorarioDoctor = async function() {
-    const cedula = localStorage.getItem('cedulaUsuario');
-    if (!cedula) return alert("No se pudo identificar al doctor.");
-
-    // Nueva validación de 40 horas
-    const totalHoras = calcularTotalHoras(); // Llama a la función del HTML
-    if (totalHoras < 40) {
-        alert("⚠️ No se puede guardar el horario.\n\nDebe cubrir un mínimo de 40 horas laborales a la semana.");
-        return;
-    }
-
-    const horarios = [];
-    for (let i = 0; i < 7; i++) {
-        if (document.getElementById(`chk-${i}`).checked) {
+        if (document.getElementById(`chk-${i}`) && document.getElementById(`chk-${i}`).checked) {
             horarios.push({
                 dia_semana: i,
                 hora_inicio: document.getElementById(`inicio-${i}`).value || null,

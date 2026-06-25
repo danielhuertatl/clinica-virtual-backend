@@ -43,15 +43,15 @@
             <div class="campo-fila">
                 <div>
                     <label>Nombre(s):</label> 
-                    <input type="text" id="nombre" placeholder="Ej. Daniel" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ''); generarCurpExtranjero();">
+                    <input type="text" id="nombre" placeholder="Ej. Daniel" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
                 </div>
                 <div>
                     <label>Ap. Paterno:</label> 
-                    <input type="text" id="ap-paterno" placeholder="Ej. Huerta" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ''); generarCurpExtranjero();">
+                    <input type="text" id="ap-paterno" placeholder="Ej. Huerta" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
                 </div>
                 <div>
                     <label>Ap. Materno:</label> 
-                    <input type="text" id="ap-materno" placeholder="Ej. Tehuacatl" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ''); generarCurpExtranjero();">
+                    <input type="text" id="ap-materno" placeholder="Ej. Tehuacatl" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
                 </div>
             </div>
 
@@ -94,13 +94,11 @@
                 </div>
                 <div style="flex: 1;">
                     <label>CURP (Opcional):</label> 
-                    <input type="text" id="curp" placeholder="18 CARACTERES" maxlength="18" 
-                           style="text-transform: uppercase; width: 100%;"
-                           oninput="procesarCurp(this)">
-                    <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
+                    <input type="text" id="curp" placeholder="18 CARACTERES" maxlength="18" style="text-transform: uppercase; width: 100%;">
+                    <span id="curp-error" style="color: #991D27; font-size: 11px; display: none; font-weight: bold; margin-top: 4px;">Formato de CURP inválido</span>
                     
                     <div style="margin-top: 5px;">
-                        <input type="checkbox" id="chk-extranjero-reg" onchange="toggleExtranjeroReg()">
+                        <input type="checkbox" id="chk-extranjero-reg">
                         <label for="chk-extranjero-reg" style="font-size: 13px; color: #666; cursor: pointer;">¿Paciente extranjero? (Sin CURP)</label>
                     </div>
                 </div>
@@ -109,15 +107,15 @@
             <div class="campo-fila" id="fila-extranjero" style="display: none; background-color: #f0f4f8; padding: 10px; border-radius: 5px; margin-top: -10px; margin-bottom: 10px; border: 1px dashed #0E3B5C;">
                 <div>
                     <label style="font-size: 12px;">Día Nac (DD):</label>
-                    <input type="number" id="dia-nac" placeholder="Ej. 30" min="1" max="31" oninput="generarCurpExtranjero()">
+                    <input type="number" id="dia-nac" placeholder="Ej. 30" min="1" max="31">
                 </div>
                 <div>
                     <label style="font-size: 12px;">Mes Nac (MM):</label>
-                    <input type="number" id="mes-nac" placeholder="Ej. 06" min="1" max="12" oninput="generarCurpExtranjero()">
+                    <input type="number" id="mes-nac" placeholder="Ej. 06" min="1" max="12">
                 </div>
                 <div>
                     <label style="font-size: 12px;">Año Nac (AAAA):</label>
-                    <input type="number" id="anio-nac" placeholder="Ej. 2000" min="1900" max="2026" oninput="generarCurpExtranjero()">
+                    <input type="number" id="anio-nac" placeholder="Ej. 2000" min="1900" max="2026">
                 </div>
             </div>
 
@@ -151,151 +149,6 @@
         </form>
     </div>
 
-    <script>
-        function procesarCurp(input) {
-            let v = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            input.value = v;
-            const span = document.getElementById('curp-error');
-            
-            if(document.getElementById('chk-extranjero-reg').checked) {
-                span.style.display = 'none';
-                return;
-            }
-
-            if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ 
-                span.style.display='block'; 
-            } else { 
-                span.style.display='none'; 
-            }
-
-            if (v.length >= 10) {
-                const yy = parseInt(v.substr(4, 2));
-                const mm = parseInt(v.substr(6, 2));
-                const dd = parseInt(v.substr(8, 2));
-                let char17 = v.charAt(16);
-                let year = yy;
-                if (char17 && char17.match(/[0-9]/)) year += 1900;
-                else if (char17 && char17.match(/[A-Z]/)) year += 2000;
-                else {
-                    let currentYear = new Date().getFullYear() % 100;
-                    year += (yy > currentYear ? 1900 : 2000);
-                }
-                let birthDate = new Date(year, mm - 1, dd);
-                let today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                let monthDiff = today.getMonth() - birthDate.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
-                if(!isNaN(age)) document.getElementById('edad').value = age > 0 ? age : 0;
-            } else {
-                document.getElementById('edad').value = '';
-            }
-        }
-
-        function toggleExtranjeroReg() {
-            const chk = document.getElementById('chk-extranjero-reg').checked;
-            const fila = document.getElementById('fila-extranjero');
-            const curpInput = document.getElementById('curp');
-            if(chk) {
-                fila.style.display = 'flex';
-                curpInput.readOnly = true;
-                curpInput.style.backgroundColor = '#eee';
-                generarCurpExtranjero();
-            } else {
-                fila.style.display = 'none';
-                curpInput.readOnly = false;
-                curpInput.style.backgroundColor = '#fff';
-                curpInput.value = '';
-                document.getElementById('edad').value = '';
-            }
-        }
-
-        function generarCurpExtranjero() {
-            if(!document.getElementById('chk-extranjero-reg').checked) return;
-            
-            const n = document.getElementById('nombre').value.trim().toUpperCase() || 'X';
-            const ap = document.getElementById('ap-paterno').value.trim().toUpperCase() || 'XX';
-            const am = document.getElementById('ap-materno').value.trim().toUpperCase() || 'X';
-            
-            const d = document.getElementById('dia-nac').value.padStart(2, '0');
-            const m = document.getElementById('mes-nac').value.padStart(2, '0');
-            const a = document.getElementById('anio-nac').value;
-            
-            if(document.getElementById('dia-nac').value && document.getElementById('mes-nac').value && a.length === 4) {
-                let birthDate = new Date(a, parseInt(m) - 1, parseInt(d));
-                let today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                let monthDiff = today.getMonth() - birthDate.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
-                document.getElementById('edad').value = age > 0 ? age : 0;
-
-                let l1 = ap.substring(0, 2).padEnd(2, 'X');
-                let l2 = am.substring(0, 1).padEnd(1, 'X');
-                let l3 = n.substring(0, 1).padEnd(1, 'X');
-                let yy = a.substring(2, 4);
-                
-                let curpDummy = `${l1}${l2}${l3}${yy}${m}${d}XXXXXX00`.toUpperCase();
-                document.getElementById('curp').value = curpDummy;
-                document.getElementById('curp-error').style.display = 'none';
-            }
-        }
-
-        document.getElementById('form-registro').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-sync');
-            const telefono = document.getElementById('telefono').value;
-            const curp = document.getElementById('curp').value.trim().toUpperCase();
-
-            // TUS VALIDACIONES ORIGINALES
-            if (telefono.length !== 10) {
-                alert('⚠️ Error: El teléfono debe tener exactamente 10 dígitos.');
-                return;
-            }
-
-            const esExtranjero = document.getElementById('chk-extranjero-reg').checked;
-            if (curp !== "" && !esExtranjero) {
-                const regexCURP = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
-                if (!regexCURP.test(curp)) {
-                    alert('⚠️ Error: La CURP no tiene un formato válido.');
-                    return;
-                }
-            }
-
-            btn.innerText = "Sincronizando...";
-
-            const datos = {
-                nombre: document.getElementById('nombre').value,
-                apellido_p: document.getElementById('ap-paterno').value,
-                apellido_m: document.getElementById('ap-materno').value,
-                edad: document.getElementById('edad').value,
-                telefono: telefono,
-                tipo_sangre: document.getElementById('tipo-sangre').value,
-                correo: document.getElementById('email').value,
-                curp: curp || null,
-                calle: document.getElementById('calle').value,
-                colonia: document.getElementById('colonia').value,
-                municipio: document.getElementById('municipio').value,
-                cp: document.getElementById('cp').value
-            };
-
-            try {
-                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/pacientes', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(datos)
-                });
-                const resData = await res.json();
-                if (resData.success) {
-                    alert("✅ " + resData.mensaje);
-                    history.back();
-                } else {
-                    alert("⚠️ " + resData.mensaje);
-                }
-            } catch (err) {
-                alert("❌ Error de servidor");
-            } finally {
-                btn.innerText = "Guardar Paciente";
-            }
-        });
-    </script>
+    <script src="../js/app.js"></script>
 </body>
 </html>
