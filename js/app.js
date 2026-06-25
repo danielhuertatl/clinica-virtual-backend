@@ -145,9 +145,39 @@ document.addEventListener('DOMContentLoaded', () => {
         inputCurp.addEventListener('input', () => {
             const curp = inputCurp.value.toUpperCase();
             inputCurp.value = curp; // Forzamos a mayúsculas
+        inputCurp.addEventListener('input', (e) => {
+            let curp = e.target.value.toUpperCase();
+            let originalCurp = curp;
+            let validado = "";
 
             // 1. Validación de formato básico (18 caracteres)
             if (curp.length !== 18) {
+            // Limpiar feedback y edad al empezar a corregir
+            feedbackCurp.textContent = '';
+            inputEdad.value = '';
+
+            // 1. Validación dígito por dígito
+            for (let i = 0; i < curp.length; i++) {
+                const char = curp[i];
+                if (i < 4) { // Primeras 4 letras
+                    if (/[A-Z]/.test(char)) validado += char;
+                } else if (i >= 4 && i < 10) { // 6 dígitos de fecha
+                    if (/[0-9]/.test(char)) validado += char;
+                } else if (i < 16) { // Letras de sexo, entidad, consonantes
+                    if (/[A-Z]/.test(char)) validado += char;
+                } else { // Últimos 2 dígitos (homoclave)
+                    if (/[A-Z0-9]/.test(char)) validado += char;
+                }
+            }
+            
+            // Si se corrigió algo, actualizamos el input
+            if (originalCurp !== validado) {
+                e.target.value = validado;
+            }
+            curp = validado; // Usamos el valor limpio para el resto de validaciones
+
+            // 2. Si el CURP está incompleto, solo mostramos mensaje y salimos
+            if (curp.length < 18) {
                 feedbackCurp.textContent = 'El CURP debe tener 18 caracteres.';
                 feedbackCurp.style.color = '#991D27'; // Rojo
                 inputEdad.value = '';
@@ -155,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 2. Extraer fecha de nacimiento del CURP
+            // 3. Si llegamos aquí, el formato es correcto. Ahora validamos la lógica de la fecha.
             const anioStr = curp.substring(4, 6);
             const mesStr = curp.substring(6, 8);
             const diaStr = curp.substring(8, 10);
@@ -179,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fin de la nueva validación
 
             // 3. Determinar el siglo (19xx o 20xx)
+            // 4. Determinar el siglo y construir la fecha
             const digitoVerificador = curp.charAt(16);
             let siglo;
             if (/[0-9]/.test(digitoVerificador)) {
@@ -187,6 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 siglo = 2000; // Nacidos a partir del 2000
             } else {
                 feedbackCurp.textContent = 'Formato de CURP inválido (dígito de siglo).';
+            if (/[0-9]/.test(digitoVerificador)) siglo = 1900;
+            else if (/[A-Z]/.test(digitoVerificador)) siglo = 2000;
+            else {
+                feedbackCurp.textContent = 'Dígito verificador de siglo (posición 17) inválido.';
                 feedbackCurp.style.color = '#991D27';
                 inputEdad.value = '';
                 return;
@@ -200,12 +236,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const fechaNacimiento = new Date(anioNacimiento, mesNacimiento, diaNacimiento);
             if (fechaNacimiento.getFullYear() !== anioNacimiento || fechaNacimiento.getMonth() !== mesNacimiento || fechaNacimiento.getDate() !== diaNacimiento) { // Esta validación ahora es un doble seguro
                 feedbackCurp.textContent = 'La fecha en el CURP es inválida (ej: mes 34).';
+            // 5. Validar que la fecha sea REAL (ej. no 31 de Febrero)
+            const fechaNacimiento = new Date(anioNacimiento, mesNacimiento, dia);
+            if (fechaNacimiento.getFullYear() !== anioNacimiento || fechaNacimiento.getMonth() !== mesNacimiento || fechaNacimiento.getDate() !== dia) {
+                feedbackCurp.textContent = 'La fecha en el CURP es inválida (ej: 31 de Feb).';
                 feedbackCurp.style.color = '#991D27';
                 inputEdad.value = '';
                 return;
             }
 
             // 5. Calcular la edad
+            // 6. Si todo es válido, calculamos la edad
             const hoy = new Date();
             let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
             const m = hoy.getMonth() - fechaNacimiento.getMonth();
@@ -217,6 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // 6. Mostrar advertencia si la edad es improbable
             feedbackCurp.textContent = (edad > 100 || edad < 0) ? 'Edad poco probable. Verifique el CURP.' : 'CURP y edad calculada correctamente.';
             feedbackCurp.style.color = (edad > 100 || edad < 0) ? '#0E3B5C' : '#2D5A27'; // Azul para advertencia, Verde para OK
+            // 7. Mostrar mensaje final de éxito o advertencia de edad
+            if (edad > 110 || edad < 0) {
+                feedbackCurp.textContent = 'Edad poco probable. Verifique el CURP.';
+                feedbackCurp.style.color = '#0E3B5C'; // Azul para advertencia
+            } else {
+                feedbackCurp.textContent = 'CURP y edad calculada correctamente.';
+                feedbackCurp.style.color = '#2D5A27'; // Verde para OK
+            }
         });
     }
 
