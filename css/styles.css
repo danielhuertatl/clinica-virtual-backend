@@ -197,6 +197,29 @@ body {
     content: '🔒';
 } */
 /* Estilos para los menús principales */
+
+/* --- NUEVO: ESTILOS PARA MENSAJES DE FEEDBACK EN LOGIN --- */
+.login-feedback-message {
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    display: none; /* Oculto por defecto */
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+.login-feedback-message.success {
+    display: block;
+    background-color: #e9f7ef;
+    color: #2D5A27;
+}
+.login-feedback-message.error {
+    display: block;
+    background-color: #fff3f4;
+    color: #991D27;
+}
+
 .pantalla-menu {
     width: 100%;
     max-width: 450px;

@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DE LOGIN ---
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
+        const feedbackDiv = document.getElementById('login-feedback');
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const usuarioInput = document.getElementById('usuario').value;
@@ -19,6 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const datos = await respuesta.json();
 
+                // Limpiar feedback anterior
+                feedbackDiv.style.display = 'none';
+                feedbackDiv.className = 'login-feedback-message';
+
                 if (datos.success) {
                     // Limpiar datos de sesión anterior
                     localStorage.removeItem('cedulaUsuario');
@@ -28,18 +33,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('rolUsuario', datos.rol); 
                     if (datos.cedula) localStorage.setItem('cedulaUsuario', datos.cedula);
                     if (datos.id_paciente) localStorage.setItem('idPaciente', datos.id_paciente);
-                    alert('¡Acceso concedido! Entrando como: ' + datos.rol);
                     
-                    if (datos.rol === 'admin') window.location.href = 'pages/5-admin.html';
-                    else if (datos.rol === 'doctor') window.location.href = 'pages/2-doctor.html';
-                    else if (datos.rol === 'enfermero') window.location.href = 'pages/4-enfermero.html';
-                    else window.location.href = 'pages/3-paciente.html'; 
+                    // Mostrar mensaje de éxito integrado
+                    feedbackDiv.textContent = '✅ ¡Acceso concedido! Redirigiendo...';
+                    feedbackDiv.classList.add('success');
+
+                    // Esperar un segundo y redirigir
+                    setTimeout(() => {
+                        if (datos.rol === 'admin') window.location.href = 'pages/5-admin.html';
+                        else if (datos.rol === 'doctor') window.location.href = 'pages/2-doctor.html';
+                        else if (datos.rol === 'enfermero') window.location.href = 'pages/4-enfermero.html';
+                        else window.location.href = 'pages/3-paciente.html'; 
+                    }, 1000); // 1 segundo de espera
+
                 } else {
-                    alert('⚠️ ' + datos.mensaje);
+                    // Mostrar mensaje de error integrado
+                    feedbackDiv.textContent = '⚠️ ' + datos.mensaje;
+                    feedbackDiv.classList.add('error');
                 }
             } catch (error) {
                 console.error('🛑 Error detallado en fetch (Login):', error);
-                alert('❌ Error de conexión.');
+                feedbackDiv.textContent = '❌ Error de conexión con el servidor.';
+                feedbackDiv.classList.add('error');
             }
         });
     }
@@ -1026,8 +1041,28 @@ window.marcarAsistencia = async function(id_cita, estatus, id_paciente) {
 
         if (data.success) {
             // Si el paciente llegó, lo mandamos directo a tomarle los signos
-            if (estatus === 'presente') saltarASignos(id_paciente);
-            else cargarAgendaEnfermeria(); // Si fue ausente, solo refrescamos la lista
+            if (estatus === 'presente') {
+                // Actualización visual inmediata sin recargar
+                const tarjeta = document.getElementById(`paciente-${id_cita}`);
+                const controles = document.getElementById(`controles-${id_cita}`);
+                if (tarjeta && controles) {
+                    tarjeta.classList.remove('estado-ausente');
+                    tarjeta.classList.add('estado-presente');
+                    controles.innerHTML = `
+                        <span style="color: #2D5A27; font-weight: bold; text-align: center; margin-bottom: 5px;">En Sala de Espera</span>
+                        <button class="btn-accion" style="padding: 10px; font-size: 12px;" onclick="saltarASignos(${id_paciente})">🩺 Tomar Signos Vitales</button>
+                    `;
+                }
+                // Opcional: saltar a signos después de un breve momento para que vea el cambio
+                // setTimeout(() => saltarASignos(id_paciente), 500);
+            } else { // Si fue ausente
+                const tarjeta = document.getElementById(`paciente-${id_cita}`);
+                const controles = document.getElementById(`controles-${id_cita}`);
+                if (tarjeta && controles) {
+                    tarjeta.classList.add('estado-ausente');
+                    controles.innerHTML = `<span style="color: #991D27; font-weight: bold; text-align: center;">Paciente No Asistió</span>`;
+                }
+            }
         } else {
             alert("❌ " + data.mensaje);
         }
