@@ -22,10 +22,6 @@
             <img src="../assets/logocuad.png" alt="Logo" class="logo-mini" style="max-width: 120px;">
         </div>
 
-        <div style="background-color: #eef5f9; color: #0E3B5C; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #b8daff; text-align: justify; border-radius: 4px;">
-            <strong>Aviso de Privacidad:</strong> Le recordamos al paciente que sus datos están protegidos por la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
-        </div>
-
         <div style="background-color: #fff3cd; color: #d35400; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #ffeeba; text-align: justify; border-radius: 4px;">
             <strong>Atención:</strong> La CURP es requerida para calcular la edad exacta y para asegurar que, en caso de direccionamiento, este dato se almacene de forma íntegra en su historial clínico ofrecido por "Clínica Virtual".
         </div>
@@ -43,15 +39,18 @@
             <div class="campo-fila">
                 <div>
                     <label>Nombre(s):</label> 
-                    <input type="text" id="nombre" placeholder="Ej. Daniel" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
+                    <input type="text" id="nombre" placeholder="Ej. DANIEL" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
+                    <span id="nombre-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
                 <div>
                     <label>Ap. Paterno:</label> 
-                    <input type="text" id="ap-paterno" placeholder="Ej. Huerta" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
+                    <input type="text" id="ap-paterno" placeholder="Ej. HUERTA" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
+                    <span id="ap-paterno-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
                 <div>
                     <label>Ap. Materno:</label> 
-                    <input type="text" id="ap-materno" placeholder="Ej. Tehuacatl" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
+                    <input type="text" id="ap-materno" placeholder="Ej. TEHUACATL" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');">
+                    <span id="ap-materno-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
             </div>
 
@@ -117,7 +116,6 @@
                 </div>
             </div>
 
-            <!-- --- NUEVA TARJETA INFORMATIVA PARA EL C.P. --- -->
             <div style="background-color: #e3f2fd; color: #0d47a1; padding: 12px; margin-top: 20px; margin-bottom: 5px; font-size: 12.5px; border: 1px solid #90caf9; text-align: justify; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
                 <span>ℹ️ <strong>Sincronización Postal:</strong> Solicite el Código Postal al paciente e ingréselo abajo. El sistema consultará el catálogo oficial de SEPOMEX para determinar la Entidad, el Municipio y desplegar las Colonias válidas automáticamente.</span>
             </div>
@@ -128,7 +126,7 @@
                 <div style="flex: 1;">
                     <label>C.P.:</label>
                     <input type="text" id="cp" placeholder="5 dígitos" maxlength="5" required 
-                           style="border: 2px solid #0E3B5C; font-weight: bold;"
+                           style="border: 2px solid #0E3C5C; font-weight: bold;"
                            onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
@@ -145,11 +143,14 @@
                 </div>
                 <div>
                     <label>Colonia:</label>
-                    <!-- El script de app.js cambiará automáticamente este input por un select dinámico al ingresar un CP válido -->
                     <input type="text" id="colonia" placeholder="Se llena por C.P." required readonly>
                 </div>
             </div>
             
+            <div style="background-color: #eef5f9; color: #0E3B5C; padding: 10px; margin-top: 25px; margin-bottom: -15px; font-size: 12px; border: 1px solid #b8daff; text-align: justify; border-radius: 4px; width: 100%;">
+                <strong>Aviso de Privacidad:</strong> Le recordamos al paciente que sus datos están protegidos por la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+            </div>
+
             <button type="submit" id="btn-sync" class="btn-enviar-consulta" style="margin-top: 30px; background-color: #0E3B5C;">Guardar Paciente</button>
         </form>
     </div>

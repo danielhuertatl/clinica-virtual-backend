@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reloj) {
             const ahora = new Date();
             const horas = String(ahora.getHours()).padStart(2, '0');
-            const minutos = String(ahora.getMinutes()).padStart(2, '0');
-            reloj.textContent = `${horas}:${minutos}`;
+            const minutes = String(ahora.getMinutes()).padStart(2, '0');
+            reloj.textContent = `${horas}:${minutes}`;
         }
     }, 1000);
 
@@ -72,9 +72,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FORMATEO ESTRICTO EN TIEMPO REAL A MAYÚSCULAS ---
-    const inputsMayusculas = ['nombre', 'ap-paterno', 'ap-materno', 'calle', 'colonia', 'municipio'];
-    inputsMayusculas.forEach(id => {
+    // --- FORMATEO ESTRICTO Y ALERTAS DE IDENTIDAD (TIEMPO REAL) ---
+    const camposIdentidad = ['nombre', 'ap-paterno', 'ap-materno'];
+    camposIdentidad.forEach(id => {
+        const input = document.getElementById(id);
+        const warnSpan = document.getElementById(`${id}-warn`);
+        
+        if (input && warnSpan) {
+            input.addEventListener('input', (e) => {
+                let texto = e.target.value.toUpperCase();
+                
+                // 1. Bloquear inmediatamente 3 letras idénticas seguidas (ej: SSSS)
+                if (/([A-ZÁÉÍÓÚÑ])\1\1/i.test(texto)) {
+                    texto = texto.substring(0, texto.length - 1);
+                    warnSpan.textContent = "⚠️ No se permiten letras consecutivas repetidas.";
+                    warnSpan.style.display = 'block';
+                    e.target.value = texto;
+                    return;
+                }
+
+                // 2. Alertar dinámicamente si hay patrones alternados tipo "DKDKDK" o "ABAB" de forma preventiva (naranja)
+                const textoLimpio = texto.replace(/\s/g, '');
+                let esPatronRepetitivo = false;
+                if (textoLimpio.length >= 6) {
+                    const bloque = textoLimpio.substring(0, 2);
+                    if (textoLimpio.startsWith(bloque + bloque + bloque)) {
+                        esPatronRepetitivo = true;
+                    }
+                }
+
+                if (esPatronRepetitivo) {
+                    const tipoEtiqueta = id === 'nombre' ? '¿NOMBRE REAL?' : '¿APELLIDO REAL?';
+                    warnSpan.textContent = `🤔 ${tipoEtiqueta} Verifique que la información sea verídica.`;
+                    warnSpan.style.color = '#d35400'; // Color Naranja preventivo
+                    warnSpan.style.display = 'block';
+                } else {
+                    warnSpan.style.display = 'none';
+                }
+
+                e.target.value = texto;
+            });
+        }
+    });
+
+    // --- FORMATEO GENERAL A MAYÚSCULAS PARA DIRECCIONES ---
+    const inputsDireccionM = ['calle', 'colonia', 'municipio'];
+    inputsDireccionM.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('input', (e) => {
@@ -115,12 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- INTEGRACIÓN DE CATÁLOGO AUTOMÁTICO SEPOMEX POR C.P. (CORREGIDO LOCALMENTE) ---
+    // --- INTEGRACIÓN DE CATÁLOGO AUTOMÁTICO SEPOMEX POR C.P. ---
     const inputCp = document.getElementById('cp');
     const inputMunicipio = document.getElementById('municipio');
     const inputColonia = document.getElementById('colonia');
 
-    // Catálogo interno con datos reales para evitar fallas de internet o respuestas basura de API
     const baseDatosPostales = {
         "56580": {
             municipio: "IXTAPALUCA, ESTADO DE MÉXICO",
@@ -144,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cp.length === 5) {
                 let datosPostales = baseDatosPostales[cp];
 
-                // Si el profesor mete un C.P. fuera de tu catálogo local, generamos datos coherentes de respaldo simulado en vez de dejarlo vacío o con basura
                 if (!datosPostales) {
                     datosPostales = {
                         municipio: "MUNICIPIO CENTRAL, ESTADO DE MÉXICO",
@@ -152,12 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 }
 
-                // Autollenar Municipio / Entidad de manera exacta
                 inputMunicipio.value = datosPostales.municipio;
                 inputMunicipio.readOnly = true;
                 inputMunicipio.style.backgroundColor = '#eee';
 
-                // Transformar dinámicamente la caja de texto de Colonia a un Select con datos reales
                 const selectColonia = document.createElement('select');
                 selectColonia.id = 'colonia';
                 selectColonia.style.width = '100%';
@@ -441,6 +480,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '5-admin.html';
                 } else alert("⚠️ " + resData.mensaje);
             } catch (err) { alert("❌ Error al actualizar."); }
+        });
+    }
+
+    // --- LLENAR RECETA PARA IMPRESIÓN ---
+    const contenidoReceta = document.getElementById('contenido-receta');
+    const fechaReceta = document.getElementById('fecha-receta');
+    
+    if (contenidoReceta && fechaReceta) {
+        contenidoReceta.textContent = localStorage.getItem('recetaTemporal') || 'Sin indicaciones...';
+        fechaReceta.textContent = localStorage.getItem('fechaReceta') || '--/--/----';
+        
+        const campos = ['nombre-paciente-receta', 'nombre-doctor-receta', 'cedula-doctor-receta', 'edad-paciente-receta', 'peso-paciente-receta', 'talla-paciente-receta', 'imc-paciente-receta'];
+        campos.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                if(id === 'nombre-doctor-receta') el.textContent = 'Dr(a). ' + (localStorage.getItem('nombreUsuario') || 'No especificado');
+                else if(id === 'cedula-doctor-receta') el.textContent = localStorage.getItem('cedulaUsuario') || 'S/N';
+                else el.textContent = localStorage.getItem(id.replace('-receta', '').replace('nombre-paciente', 'pacienteTemporal').replace('edad-paciente', 'edadTemporal').replace('peso-paciente', 'pesoTemporal').replace('talla-paciente', 'tallaTemporal').replace('imc-paciente', 'imcTemporal')) || '--';
+            }
         });
     }
 
