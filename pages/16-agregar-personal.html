@@ -13,6 +13,7 @@
         <div class="header-consulta">
             <p><strong>Registro de Personal (Estructura de Datos)</strong></p>
             <div class="reloj-salir">
+                <span id="reloj-actual" style="font-weight: bold; color: #0E3B5C;">--:--</span>
                 <button class="btn-salir-rojo" onclick="history.back()">salir</button>
             </div>
         </div>
@@ -37,9 +38,18 @@
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left;">Datos de Identidad</h4>
             
             <div class="campo-fila">
-                <input type="text" id="nombre" placeholder="Nombre(s)" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
-                <input type="text" id="apellido_p" placeholder="Apellido Paterno" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
-                <input type="text" id="apellido_m" placeholder="Apellido Materno" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                <div>
+                    <input type="text" id="nombre" placeholder="Nombre(s)" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                    <span id="nombre-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
+                </div>
+                <div>
+                    <input type="text" id="apellido_p" placeholder="Apellido Paterno" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                    <span id="apellido_p-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
+                </div>
+                <div>
+                    <input type="text" id="apellido_m" placeholder="Apellido Materno" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                    <span id="apellido_m-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
+                </div>
             </div>
 
             <div class="campo-fila">
@@ -56,18 +66,22 @@
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1;">
             </div>
 
+            <div style="background-color: #e3f2fd; color: #0d47a1; padding: 12px; margin-top: 20px; margin-bottom: 5px; font-size: 12.5px; border: 1px solid #90caf9; text-align: justify; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                <span>ℹ️ <strong>Sincronización Postal:</strong> Al capturar los 5 dígitos del CP, el sistema buscará en el catálogo de SEPOMEX para rellenar de manera íntegra y oficial la Colonia y el Municipio.</span>
+            </div>
+
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left; margin-top: 15px;">Dirección</h4>
             
             <div class="campo-fila">
-                <input type="text" id="calle" placeholder="Calle" required style="flex: 2;">
-                <input type="text" id="num_ext" placeholder="Núm Ext" required style="flex: 1;">
                 <input type="text" id="cp" placeholder="CP (5 dígitos)" maxlength="5" required 
                        onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
-                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1;">
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1; border: 2px solid #0E3B5C; font-weight: bold;">
+                <input type="text" id="calle" placeholder="Calle" required style="flex: 2;">
+                <input type="text" id="num_ext" placeholder="Núm Ext" required style="flex: 1;">
             </div>
 
-            <div class="campo-fila">
-                <input type="text" id="colonia_municipio" placeholder="Colonia / Municipio" required style="width: 100%;">
+            <div class="campo-fila" id="contenedor-colonia-municipio">
+                <input type="text" id="colonia_municipio" placeholder="Colonia / Municipio (Se autollena con el CP)" required style="width: 100%; background-color: #eee;" readonly>
             </div>
 
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left; margin-top: 15px;">Legal</h4>
@@ -80,100 +94,15 @@
                     <input type="text" id="cedula" placeholder="Cédula Profesional" required style="width: 100%;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div style="flex: 1; position: relative;">
-                    <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required 
-                           style="width: 100%; text-transform: uppercase;"
-                           oninput="procesarCurpPersonal(this)">
-                    <span id="curp-error" style="color: #991D27; font-size: 11px; display: none;">Formato de CURP inválido</span>
+                    <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required style="width: 100%; text-transform: uppercase;">
+                    <span id="curp-error" style="color: #991D27; font-size: 11px; display: none; font-weight: bold; margin-top: 4px;">Formato de CURP inválido</span>
                 </div>
             </div>
             
-            <button type="submit" id="btn-personal" class="btn-enviar-consulta" style="margin-top: 30px;">Sincronizar con Base de Datos</button>
+            <button type="submit" id="btn-personal" class="btn-enviar-consulta" style="margin-top: 30px; background-color: #0E3B5C;">Sincronizar con Base de Datos</button>
         </form>
     </div>
 
-    <script>
-        function procesarCurpPersonal(input) {
-            let v = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            input.value = v;
-            const span = document.getElementById('curp-error');
-
-            if(v.length > 0 && !/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/.test(v)){ 
-                span.style.display='block'; 
-            } else { 
-                span.style.display='none'; 
-            }
-
-            if (v.length >= 10 && /^[A-Z]{4}\d{6}/.test(v)) {
-                const yy = parseInt(v.substr(4, 2));
-                const mm = parseInt(v.substr(6, 2));
-                const dd = parseInt(v.substr(8, 2));
-                let year = yy + (yy > new Date().getFullYear() % 100 ? 1900 : 2000);
-                let birthDate = new Date(year, mm - 1, dd);
-                let age = new Date().getFullYear() - birthDate.getFullYear();
-                let m = new Date().getMonth() - birthDate.getMonth();
-                if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) age--;
-                if(!isNaN(age)) document.getElementById('edad').value = age > 0 ? age : 0;
-            } else document.getElementById('edad').value = '';
-        }
-
-        document.getElementById('form-personal').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const btn = document.getElementById('btn-personal');
-            const telefono = document.getElementById('telefono').value;
-            const curp = document.getElementById('curp').value.toUpperCase();
-            const cp = document.getElementById('cp').value;
-
-            // VALIDACIONES DE VUELTA
-            if (telefono.length !== 10) {
-                alert('⚠️ El teléfono debe tener 10 dígitos.');
-                return;
-            }
-
-            if (cp.length !== 5) {
-                alert('⚠️ El Código Postal debe tener 5 dígitos.');
-                return;
-            }
-
-            const regexCURP = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
-            if (!regexCURP.test(curp)) {
-                alert('⚠️ Formato de CURP inválido.');
-                return;
-            }
-
-            btn.innerText = "Sincronizando...";
-
-            const datos = {
-                nombre: document.getElementById('nombre').value,
-                apellido_p: document.getElementById('apellido_p').value,
-                apellido_m: document.getElementById('apellido_m').value,
-                correo: document.getElementById('correo').value,
-                password: document.getElementById('password').value,
-                puesto: document.getElementById('puesto').value,
-                telefono: telefono,
-                calle: document.getElementById('calle').value,
-                num_ext: document.getElementById('num_ext').value,
-                cp: cp,
-                colonia: document.getElementById('colonia_municipio').value,
-                cedula: document.getElementById('cedula').value,
-                curp: curp
-            };
-
-            try {
-                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/personal', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(datos)
-                });
-                const resData = await res.json();
-                alert("✅ " + resData.mensaje);
-                if (resData.success) history.back();
-            } catch (err) {
-                alert("❌ Error de conexión al servidor");
-            } finally {
-                btn.innerText = "Sincronizar con Base de Datos";
-            }
-        });
-    </script>
+    <script src="../js/app.js"></script>
 </body>
 </html>
