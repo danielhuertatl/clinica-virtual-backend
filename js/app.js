@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const datos = await respuesta.json();
 
                 // Limpiar feedback anterior
-                feedbackDiv.style.display = 'none';
                 feedbackDiv.className = 'login-feedback-message';
 
                 if (datos.success) {
