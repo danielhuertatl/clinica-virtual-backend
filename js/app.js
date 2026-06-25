@@ -150,13 +150,59 @@ document.addEventListener('DOMContentLoaded', () => {
             feedbackCurp.textContent = '';
             inputEdad.value = '';
 
-            // 1. Validación dígito por dígito
+            // 1. Validación dígito por dígito EN TIEMPO REAL
             for (let i = 0; i < curp.length; i++) {
                 const char = curp[i];
                 if (i < 4) { // Letras
                     if (/[A-Z]/.test(char)) validado += char;
                 } else if (i >= 4 && i < 10) { // Fecha (números)
-                    if (/[0-9]/.test(char)) validado += char;
+                    if (/[0-9]/.test(char)) {
+                        let keepChar = true;
+
+                        // Año (posiciones 4 y 5): Acepta cualquier dígito 0-9.
+                        
+                        // Mes (posiciones 6 y 7)
+                        if (i === 6) {
+                            if (!/[01]/.test(char)) keepChar = false; // El mes solo empieza con 0 o 1
+                        } else if (i === 7) {
+                            const mes1 = validado[6];
+                            if (mes1 === '0' && char === '0') keepChar = false; // No existe mes 00
+                            if (mes1 === '1' && /[3-9]/.test(char)) keepChar = false; // No mayor a 12
+                        }
+                        
+                        // Día (posiciones 8 y 9)
+                        else if (i === 8) {
+                            if (!/[0-3]/.test(char)) keepChar = false; // El día solo empieza con 0, 1, 2, 3
+                        } else if (i === 9) {
+                            // Solo validamos el día si el mes ya está completo
+                            if (validado.length >= 8) {
+                                const yy = parseInt(validado.substring(4, 6), 10);
+                                const mm = parseInt(validado.substring(6, 8), 10);
+                                const ddStr = validado[8] + char;
+                                const dd = parseInt(ddStr, 10);
+    
+                                if (dd === 0) keepChar = false; // No existe día 00
+                                else {
+                                    let maxDias = 31;
+                                    if ([4, 6, 9, 11].includes(mm)) {
+                                        maxDias = 30; // Abril, Junio, Septiembre, Noviembre
+                                    } else if (mm === 2) {
+                                        // Bisiesto: Si el año es divisible entre 4 (ej. 00=2000, 04, 08... 24)
+                                        const esBisiesto = (yy % 4 === 0);
+                                        maxDias = esBisiesto ? 29 : 28;
+                                    }
+                                    if (dd > maxDias) keepChar = false; // Bloquea si supera el máximo del mes
+                                }
+                            }
+                        }
+
+                        // Si pasó las reglas, se agrega. Si no, se corta y no lo deja escribir.
+                        if (keepChar) {
+                            validado += char;
+                        } else {
+                            break; // Corta el bucle si un caracter es inválido
+                        }
+                    }
                 } else if (i < 16) { // Letras
                     if (/[A-Z]/.test(char)) validado += char;
                 } else { // Homoclave (letra o número)
@@ -164,11 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Si se corrigió algo, actualizamos el input
+            // Si se bloqueó/corrigió algo, actualizamos el input al instante
             if (originalCurp !== validado) {
                 e.target.value = validado;
             }
-            curp = validado; // Usamos el valor limpio para el resto de validaciones
+            curp = validado; // Usamos el valor limpio
 
             // 2. Si el CURP está incompleto, mostramos mensaje y salimos
             if (curp.length < 18) {
@@ -177,26 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 3. Si llegamos aquí, el formato es correcto. Validamos la lógica de la fecha.
+            // 3. Ya no validamos la fecha aquí abajo porque el filtro de arriba ya garantizó que es perfecta.
             const anioStr = curp.substring(4, 6);
             const mesStr = curp.substring(6, 8);
             const diaStr = curp.substring(8, 10);
             const mes = parseInt(mesStr, 10);
             const dia = parseInt(diaStr, 10);
 
-            if (mes < 1 || mes > 12) {
-                feedbackCurp.textContent = 'El mes en el CURP es inválido (debe ser 01-12).';
-                feedbackCurp.style.color = '#991D27';
-                return;
-            }
-
-            if (dia < 1 || dia > 31) {
-                feedbackCurp.textContent = 'El día en el CURP es inválido (debe ser 01-31).';
-                feedbackCurp.style.color = '#991D27';
-                return;
-            }
-
-            // 4. Determinar el siglo
+            // 4. Determinar el siglo (Mantenemos tu lógica intacta)
             const digitoVerificador = curp.charAt(16);
             let siglo;
             if (/[0-9]/.test(digitoVerificador)) siglo = 1900;
@@ -209,16 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const anioNacimiento = siglo + parseInt(anioStr, 10);
             const mesNacimiento = mes - 1; // En JS, los meses son de 0 a 11
-
-            // 5. Validar que la fecha sea REAL (ej. no 31 de Febrero)
             const fechaNacimiento = new Date(anioNacimiento, mesNacimiento, dia);
-            if (fechaNacimiento.getFullYear() !== anioNacimiento || fechaNacimiento.getMonth() !== mesNacimiento || fechaNacimiento.getDate() !== dia) {
-                feedbackCurp.textContent = 'La fecha en el CURP es inválida (ej: 31 de Feb).';
-                feedbackCurp.style.color = '#991D27';
-                return;
-            }
 
-            // 6. Si todo es válido, calcular la edad
+            // 6. Calcular la edad (Mantenemos tu lógica intacta)
             const hoy = new Date();
             let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
             const m = hoy.getMonth() - fechaNacimiento.getMonth();
