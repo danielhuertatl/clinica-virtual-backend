@@ -135,6 +135,72 @@ document.addEventListener('DOMContentLoaded', () => {
         inputTalla.addEventListener('input', calcularIMC);
     }
 
+    // --- NUEVO: VALIDACIÓN INTELIGENTE DE CURP Y CÁLCULO DE EDAD (PANTALLA 10) ---
+    const inputCurp = document.getElementById('curp');
+    const inputEdad = document.getElementById('edad');
+    const feedbackCurp = document.getElementById('curp-feedback');
+
+    if (inputCurp && inputEdad && feedbackCurp) {
+        // Esta función se activa cada vez que el usuario escribe en el campo CURP
+        inputCurp.addEventListener('input', () => {
+            const curp = inputCurp.value.toUpperCase();
+            inputCurp.value = curp; // Forzamos a mayúsculas
+
+            // 1. Validación de formato básico (18 caracteres)
+            if (curp.length !== 18) {
+                feedbackCurp.textContent = 'El CURP debe tener 18 caracteres.';
+                feedbackCurp.style.color = '#991D27'; // Rojo
+                inputEdad.value = '';
+                return;
+            }
+
+            // 2. Extraer fecha de nacimiento del CURP
+            const anioStr = curp.substring(4, 6);
+            const mesStr = curp.substring(6, 8);
+            const diaStr = curp.substring(8, 10);
+
+            // 3. Determinar el siglo (19xx o 20xx)
+            const digitoVerificador = curp.charAt(16);
+            let siglo;
+            if (/[0-9]/.test(digitoVerificador)) {
+                siglo = 1900; // Nacidos antes del 2000
+            } else if (/[A-Z]/.test(digitoVerificador)) {
+                siglo = 2000; // Nacidos a partir del 2000
+            } else {
+                feedbackCurp.textContent = 'Formato de CURP inválido (dígito de siglo).';
+                feedbackCurp.style.color = '#991D27';
+                inputEdad.value = '';
+                return;
+            }
+
+            const anioNacimiento = siglo + parseInt(anioStr, 10);
+            const mesNacimiento = parseInt(mesStr, 10) - 1; // En JS, los meses son de 0 a 11
+            const diaNacimiento = parseInt(diaStr, 10);
+
+            // 4. Validar que la fecha sea real (evita que la app "truene")
+            const fechaNacimiento = new Date(anioNacimiento, mesNacimiento, diaNacimiento);
+            if (fechaNacimiento.getFullYear() !== anioNacimiento || fechaNacimiento.getMonth() !== mesNacimiento || fechaNacimiento.getDate() !== diaNacimiento) {
+                feedbackCurp.textContent = 'La fecha en el CURP es inválida (ej: mes 34).';
+                feedbackCurp.style.color = '#991D27';
+                inputEdad.value = '';
+                return;
+            }
+
+            // 5. Calcular la edad
+            const hoy = new Date();
+            let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+            const m = hoy.getMonth() - fechaNacimiento.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+                edad--;
+            }
+            inputEdad.value = edad;
+
+            // 6. Mostrar advertencia si la edad es improbable
+            feedbackCurp.textContent = (edad > 100 || edad < 0) ? 'Edad poco probable. Verifique el CURP.' : 'CURP y edad calculada correctamente.';
+            feedbackCurp.style.color = (edad > 100 || edad < 0) ? '#0E3B5C' : '#2D5A27'; // Azul para advertencia, Verde para OK
+        });
+    }
+
     // --- LLENAR RECETA PARA IMPRESIÓN (PANTALLA 20) ---
     const contenidoReceta = document.getElementById('contenido-receta');
     const fechaReceta = document.getElementById('fecha-receta');
