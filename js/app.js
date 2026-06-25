@@ -159,6 +159,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const mesStr = curp.substring(6, 8);
             const diaStr = curp.substring(8, 10);
 
+            // 2.1. NUEVO: Validación temprana de la fecha para evitar que la app "truene"
+            const mes = parseInt(mesStr, 10);
+            const dia = parseInt(diaStr, 10);
+
+            if (mes < 1 || mes > 12) {
+                feedbackCurp.textContent = 'El mes en el CURP es inválido (debe ser 01-12).';
+                feedbackCurp.style.color = '#991D27';
+                inputEdad.value = '';
+                return;
+            }
+
+            if (dia < 1 || dia > 31) {
+                feedbackCurp.textContent = 'El día en el CURP es inválido (debe ser 01-31).';
+                feedbackCurp.style.color = '#991D27';
+                inputEdad.value = '';
+                return;
+            }
+            // Fin de la nueva validación
+
             // 3. Determinar el siglo (19xx o 20xx)
             const digitoVerificador = curp.charAt(16);
             let siglo;
@@ -174,12 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const anioNacimiento = siglo + parseInt(anioStr, 10);
-            const mesNacimiento = parseInt(mesStr, 10) - 1; // En JS, los meses son de 0 a 11
-            const diaNacimiento = parseInt(diaStr, 10);
+            const mesNacimiento = mes - 1; // En JS, los meses son de 0 a 11
+            const diaNacimiento = dia;
 
             // 4. Validar que la fecha sea real (evita que la app "truene")
             const fechaNacimiento = new Date(anioNacimiento, mesNacimiento, diaNacimiento);
-            if (fechaNacimiento.getFullYear() !== anioNacimiento || fechaNacimiento.getMonth() !== mesNacimiento || fechaNacimiento.getDate() !== diaNacimiento) {
+            if (fechaNacimiento.getFullYear() !== anioNacimiento || fechaNacimiento.getMonth() !== mesNacimiento || fechaNacimiento.getDate() !== diaNacimiento) { // Esta validación ahora es un doble seguro
                 feedbackCurp.textContent = 'La fecha en el CURP es inválida (ej: mes 34).';
                 feedbackCurp.style.color = '#991D27';
                 inputEdad.value = '';

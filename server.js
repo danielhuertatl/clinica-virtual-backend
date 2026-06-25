@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -7,10 +9,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 👇 aquí usas la variable del .env
 const pool = new Pool({
-    // Conexión directa a tu base de datos en la nube (Neon.tech)
-    connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_KRWps6QMUD2A@ep-frosty-firefly-adls50nb-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require',
-    ssl: { rejectUnauthorized: false }
+    connectionString: process.env.DATABASE_URL,
+    // Esta es la configuración recomendada para servicios como Render.
+    // Si la URL de conexión ya incluye "?ssl=true", esto asegura que se use SSL
+    // sin generar el warning de 'rejectUnauthorized'.
+    ssl: process.env.DATABASE_URL ? true : false
 });
 
 const PORT = process.env.PORT || 3000;
