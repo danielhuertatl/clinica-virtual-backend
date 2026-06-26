@@ -39,31 +39,46 @@
             
             <div class="campo-fila">
                 <div>
+                    <label for="nombre">Nombre(s):</label>
                     <input type="text" id="nombre" placeholder="Nombre(s)" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     <span id="nombre-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
                 <div>
+                    <label for="apellido_p">Apellido Paterno:</label>
                     <input type="text" id="apellido_p" placeholder="Apellido Paterno" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     <span id="apellido_p-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
                 <div>
+                    <label for="apellido_m">Apellido Materno:</label>
                     <input type="text" id="apellido_m" placeholder="Apellido Materno" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     <span id="apellido_m-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
             </div>
 
             <div class="campo-fila">
-                <input type="email" id="correo" placeholder="Correo Institucional" required style="flex: 1.5;">
-                <input type="password" id="password" placeholder="Contraseña Acceso" required style="flex: 1;">
-                <select id="puesto" required style="flex: 1; height: 35px; border: 1px solid #0E3B5C;">
-                    <option value="" disabled selected>Puesto...</option>
-                    <option value="doctor">Doctor(a)</option>
-                    <option value="enfermero">Enfermero(a)</option>
-                    <option value="admin">Administrador(a)</option>
-                </select>
-                <input type="text" id="telefono" placeholder="Teléfono (10 dígitos)" maxlength="10" required 
-                       onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
-                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1;">
+                <div style="flex: 1.5;">
+                    <label for="correo">Correo Institucional:</label>
+                    <input type="email" id="correo" placeholder="Correo Institucional" required>
+                </div>
+                <div>
+                    <label for="password">Contraseña de Acceso:</label>
+                    <input type="password" id="password" placeholder="Contraseña Acceso" required>
+                </div>
+                <div>
+                    <label for="puesto">Puesto:</label>
+                    <select id="puesto" required style="height: 35px; border: 1px solid #0E3B5C;">
+                        <option value="" disabled selected>Puesto...</option>
+                        <option value="doctor">Doctor(a)</option>
+                        <option value="enfermero">Enfermero(a)</option>
+                        <option value="admin">Administrador(a)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="telefono">Teléfono (10 dígitos):</label>
+                    <input type="text" id="telefono" placeholder="Teléfono (10 dígitos)" maxlength="10" required 
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
             </div>
 
             <div style="background-color: #e3f2fd; color: #0d47a1; padding: 12px; margin-top: 20px; margin-bottom: 5px; font-size: 12.5px; border: 1px solid #90caf9; text-align: justify; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
@@ -73,11 +88,14 @@
             <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left; margin-top: 15px;">Dirección</h4>
             
             <div class="campo-fila">
-                <input type="text" id="cp" placeholder="CP (5 dígitos)" maxlength="5" required 
-                       onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
-                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="flex: 1; border: 2px solid #0E3B5C; font-weight: bold;">
-                <input type="text" id="calle" placeholder="Calle" required style="flex: 2;">
-                <input type="text" id="num_ext" placeholder="Núm Ext" required style="flex: 1;">
+                <div style="flex: 1;">
+                    <label for="cp">CP (5 dígitos):</label>
+                    <input type="text" id="cp" placeholder="CP (5 dígitos)" maxlength="5" required 
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="border: 2px solid #0E3B5C; font-weight: bold;">
+                </div>
+                <div style="flex: 2;"><label for="calle">Calle:</label><input type="text" id="calle" placeholder="Calle" required></div>
+                <div style="flex: 1;"><label for="num_ext">Núm. Exterior:</label><input type="text" id="num_ext" placeholder="Núm Ext" required></div>
             </div>
 
             <div class="campo-fila" id="contenedor-colonia-municipio">
@@ -88,13 +106,16 @@
 
             <div class="campo-fila">
                 <div style="flex: 1;">
+                    <label for="edad">Edad (Auto):</label>
                     <input type="number" id="edad" placeholder="Edad (Auto)" readonly style="background-color: #eee; border: 1px solid #ccc;">
                 </div>
                 <div style="flex: 1;">
-                    <input type="text" id="cedula" placeholder="Cédula Profesional" required style="width: 100%;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <label for="cedula">Cédula Profesional:</label>
+                    <input type="text" id="cedula" placeholder="Cédula Profesional" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div style="flex: 1; position: relative;">
-                    <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required style="width: 100%; text-transform: uppercase;">
+                    <label for="curp">CURP:</label>
+                    <input type="text" id="curp" placeholder="CURP (18 caracteres)" maxlength="18" required style="text-transform: uppercase;">
                     <span id="curp-error" style="color: #991D27; font-size: 11px; display: none; font-weight: bold; margin-top: 4px;">Formato de CURP inválido</span>
                 </div>
             </div>
