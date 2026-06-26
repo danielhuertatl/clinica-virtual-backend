@@ -610,6 +610,130 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('30-lista-usuarios.html')) cargarUsuariosAdmin();
     if (window.location.pathname.includes('28-agenda-enfermero.html')) cargarAgendaEnfermeria();
     if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
+    if (window.location.pathname.includes('18-borrar-personal.html')) prepararPaginaBorrado();
 });
 
-//
+async function buscarPersonalParaEditar() {
+    const termino = document.getElementById('buscar-cedula').value.trim();
+    if (!termino) {
+        alert("Por favor, ingrese una cédula o correo para buscar.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
+        const data = await res.json();
+
+        if (data.success) {
+            const p = data.persona;
+            // Guardar los datos originales para comparar al momento de guardar
+            personaOriginal = {
+                cedula: p.cedula_id,
+                nombre: p.nombre,
+                apellido_p: p.apellido_paterno,
+                apellido_m: p.apellido_materno,
+                telefono: p.telefono,
+                correo: p.correo,
+                calle: p.direccion_calle,
+                num_ext: p.direccion_num_ext,
+                cp: p.direccion_cp,
+                colonia: p.direccion_colonia
+            };
+
+            // Llenar el formulario
+            document.getElementById('nombre').value = p.nombre || '';
+            document.getElementById('apellido_p').value = p.apellido_paterno || '';
+            document.getElementById('apellido_m').value = p.apellido_materno || '';
+            document.getElementById('telefono').value = p.telefono || '';
+            document.getElementById('email').value = p.correo || '';
+            document.getElementById('calle').value = p.direccion_calle || '';
+            document.getElementById('num_ext').value = p.direccion_num_ext || '';
+            document.getElementById('cp').value = p.direccion_cp || '';
+            document.getElementById('colonia').value = p.direccion_colonia || '';
+            document.getElementById('display-puesto').value = p.puesto || '';
+            document.getElementById('display-cedula').value = p.cedula_id || '';
+
+            alert("✅ Personal encontrado y cargado en el formulario.");
+
+        } else {
+            alert("⚠️ " + data.mensaje);
+            document.getElementById('form-editar-personal').reset();
+            personaOriginal = null;
+        }
+    } catch (error) {
+        alert("❌ Error de conexión al buscar el personal.");
+        console.error("Error en buscarPersonalParaEditar:", error);
+    }
+}
+
+function prepararPaginaBorrado() {
+    const btnBuscar = document.getElementById('btn-buscar-borrar');
+    if (btnBuscar) {
+        btnBuscar.addEventListener('click', buscarPersonalParaBorrar);
+    }
+}
+
+async function buscarPersonalParaBorrar() {
+    const termino = document.getElementById('termino-borrar').value.trim();
+    const resultadosDiv = document.getElementById('resultados-borrado');
+    resultadosDiv.innerHTML = ''; // Limpiar resultados anteriores
+
+    if (!termino) {
+        alert("Por favor, ingrese una cédula o correo para buscar.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
+        const data = await res.json();
+
+        if (data.success) {
+            const p = data.persona;
+            resultadosDiv.innerHTML = `
+                <div class="tarjeta-paciente" style="border-left-color: #991D27; background-color: #fff3f4; margin-top: 20px;">
+                    <div class="info-paciente">
+                        <p><strong>Nombre:</strong> ${p.nombre} ${p.apellido_paterno}</p>
+                        <p><strong>Cédula:</strong> ${p.cedula_id}</p>
+                        <p><strong>Puesto:</strong> ${p.puesto}</p>
+                        <p><strong>Correo:</strong> ${p.correo}</p>
+                    </div>
+                    <div class="botones-control">
+                        <button class="btn-accion-rojo" onclick="confirmarBorradoPersonal(${p.id_usuario}, '${p.nombre} ${p.apellido_paterno}')">
+                            Confirmar Baja
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultadosDiv.innerHTML = `<p style="text-align: center; color: #991D27; margin-top: 20px;">${data.mensaje}</p>`;
+        }
+    } catch (error) {
+        alert("❌ Error de conexión al buscar el personal.");
+        console.error("Error en buscarPersonalParaBorrar:", error);
+    }
+}
+
+async function confirmarBorradoPersonal(idUsuario, nombreCompleto) {
+    const confirmacion = confirm(`❓ ¿Está completamente seguro de que desea dar de baja a ${nombreCompleto}?\n\nEsta acción es irreversible y el usuario ya no podrá acceder al sistema.`);
+
+    if (confirmacion) {
+        try {
+            const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios/baja', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_usuario: idUsuario })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert("✅ " + data.mensaje);
+                document.getElementById('resultados-borrado').innerHTML = '<p style="text-align: center; color: #2D5A27; margin-top: 20px;">El usuario ha sido dado de baja.</p>';
+            } else {
+                alert("⚠️ " + data.mensaje);
+            }
+        } catch (error) {
+            alert("❌ Error de conexión al intentar dar de baja al usuario.");
+            console.error("Error en confirmarBorradoPersonal:", error);
+        }
+    }
+}
