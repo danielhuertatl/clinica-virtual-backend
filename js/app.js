@@ -613,6 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('18-borrar-personal.html')) prepararPaginaBorrado();
     if (window.location.pathname.includes('15-mostrar-estudios.html')) cargarEstudiosPaciente();
     if (window.location.pathname.includes('13-historial-citas.html')) cargarHistorialCitasPaciente();
+    if (window.location.pathname.includes('9-historial.html')) prepararPaginaHistorial();
 });
 
 async function buscarPersonalParaEditar() {
@@ -776,6 +777,166 @@ async function cargarEstudiosPaciente() {
     } catch (error) {
         console.error('Error al cargar estudios:', error);
         contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Hubo un error de conexión al intentar cargar su historial. Intente más tarde.</p>';
+    }
+}
+
+async function buscarPacienteConsulta() {
+    const termino = document.getElementById('id-busqueda').value.trim();
+    if (!termino) {
+        alert("Por favor, ingrese un dato para buscar al paciente.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${termino}`);
+        const data = await res.json();
+
+        if (data.success) {
+            const p = data.paciente;
+            document.getElementById('nombre-paciente').value = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
+            document.getElementById('edad-paciente').value = p.edad;
+            document.getElementById('sangre-paciente').value = p.tipo_sangre;
+            
+            // Guardamos el ID para usarlo después
+            document.getElementById('nombre-paciente').dataset.idPaciente = p.id_paciente;
+
+            alert("✅ Paciente encontrado.");
+            
+        } else {
+            alert("⚠️ " + data.mensaje);
+            document.querySelector('form.datos-paciente-grid').reset();
+        }
+    } catch (error) {
+        console.error("Error en buscarPacienteConsulta:", error);
+        alert("❌ Error de conexión al buscar el paciente.");
+    }
+}
+
+async function buscarPacienteEstudio() {
+    const termino = document.getElementById('id-busqueda-estudio').value.trim();
+    const nombreInput = document.getElementById('nombre-paciente-estudio');
+    
+    if (!termino) {
+        alert("Por favor, ingrese un dato para buscar al paciente.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${termino}`);
+        const data = await res.json();
+
+        if (data.success) {
+            const p = data.paciente;
+            nombreInput.value = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
+            // Guardamos el ID en el input para usarlo al enviar
+            nombreInput.dataset.idPaciente = p.id_paciente;
+            alert("✅ Paciente encontrado y seleccionado.");
+        } else {
+            alert("⚠️ " + data.mensaje);
+            nombreInput.value = "Esperando paciente...";
+            delete nombreInput.dataset.idPaciente;
+        }
+    } catch (error) {
+        console.error("Error en buscarPacienteEstudio:", error);
+        alert("❌ Error de conexión al buscar el paciente.");
+    }
+}
+
+function prepararPaginaHistorial() {
+    const btnBuscar = document.getElementById('btn-buscar-historial');
+    if (btnBuscar) {
+        btnBuscar.addEventListener('click', buscarHistorialPaciente);
+    }
+}
+
+async function buscarHistorialPaciente() {
+    const termino = document.getElementById('termino-historial').value.trim();
+    const contenedor = document.getElementById('contenedor-historial');
+    contenedor.innerHTML = '<p style="text-align: center; color: #666;">Buscando...</p>';
+
+    if (!termino) {
+        alert("Por favor, ingrese un dato para buscar al paciente.");
+        contenedor.innerHTML = '<p style="text-align: center; color: #666;">Ingrese un Teléfono, CURP o Correo para ver el historial de un paciente.</p>';
+        return;
+    }
+
+    try {
+        // 1. Buscar al paciente para obtener su ID
+        const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${termino}`);
+        const dataPaciente = await resPaciente.json();
+
+        if (!dataPaciente.success) {
+            contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${dataPaciente.mensaje}</p>`;
+            return;
+        }
+
+        const idPaciente = dataPaciente.paciente.id_paciente;
+        const nombrePaciente = `${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
+
+        // 2. Con el ID, buscar su historial de consultas
+        const resConsultas = await fetch(`https://clinica-virtual-backend.onrender.com/api/consultas/${idPaciente}`);
+        const dataConsultas = await resConsultas.json();
+
+        if (dataConsultas.success && dataConsultas.consultas.length > 0) {
+            contenedor.innerHTML = `<h3 style="color: #0E3B5C; margin-bottom: 15px;">Historial de: ${nombrePaciente}</h3>`;
+            dataConsultas.consultas.forEach(c => {
+                const fecha = new Date(c.fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+                const tarjeta = `
+                    <div class="tarjeta-historial">
+                        <div class="fecha-historial">${fecha}</div>
+                        <div class="detalle-historial">
+                            <p><strong>Atendido por:</strong> Dr(a). ${c.doctor_nombre} ${c.doctor_apellido}</p>
+                            <p><strong>Signos Vitales:</strong> Peso: ${c.peso}kg, Talla: ${c.talla}m, FC: ${c.fc}ppm, FR: ${c.fr}rpm, SatO2: ${c.sato2}%</p>
+                            <div class="receta-historial">
+                                <strong>Receta / Indicaciones:</strong>
+                                <pre>${c.receta || 'Sin indicaciones.'}</pre>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                contenedor.innerHTML += tarjeta;
+            });
+        } else {
+            contenedor.innerHTML = `<p style="text-align: center; color: #0E3B5C;">El paciente <strong>${nombrePaciente}</strong> fue encontrado, pero no tiene consultas registradas en su historial.</p>`;
+        }
+
+    } catch (error) {
+        console.error("Error en buscarHistorialPaciente:", error);
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al buscar el historial.</p>';
+    }
+}
+
+async function solicitarEstudio() {
+    const idPaciente = document.getElementById('nombre-paciente-estudio').dataset.idPaciente;
+    const cedulaDoctor = localStorage.getItem('cedulaUsuario');
+    const tipoEstudio = document.getElementById('tipo-estudio').value;
+    const indicaciones = document.getElementById('indicaciones-estudio').value;
+
+    if (!idPaciente) {
+        alert("⚠️ Primero debe buscar y seleccionar un paciente.");
+        return;
+    }
+    if (!tipoEstudio) {
+        alert("⚠️ Debe seleccionar un tipo de estudio.");
+        return;
+    }
+
+    const datosEstudio = { id_paciente: idPaciente, cedula_doctor: cedulaDoctor, tipo_estudio: tipoEstudio, indicaciones: indicaciones };
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosEstudio)
+        });
+        const data = await res.json();
+        alert(data.success ? `✅ ${data.mensaje}` : `⚠️ ${data.mensaje}`);
+        if (data.success) {
+            history.back();
+        }
+    } catch (error) {
+        console.error("Error en solicitarEstudio:", error);
+        alert("❌ Error de conexión al solicitar el estudio.");
     }
 }
 

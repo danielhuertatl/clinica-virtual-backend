@@ -3,51 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial Clínico del Paciente</title>
+    <title>Historial Clínico</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
-        .tarjeta-estudio {
+        .tarjeta-historial {
             background-color: white;
-            border-left: 5px solid #0E3B5C;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
             display: flex;
         }
-        .btn-ver {
+        .fecha-historial {
             background-color: #0E3B5C;
             color: white;
-            padding: 8px 12px;
-            border: none;
-            cursor: pointer;
+            padding: 20px 15px;
+            text-align: center;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+        }
+        .detalle-historial {
+            padding: 15px;
+            flex-grow: 1;
+        }
+        .detalle-historial p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .receta-historial {
+            margin-top: 10px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .receta-historial pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
     <div class="marca-agua"></div>
-
     <div class="pantalla-consulta" style="max-width: 800px; position: relative; z-index: 1;">
         <div class="header-consulta">
-            <p><strong>Consulta de Expediente Clínico</strong></p>
+            <p><strong>Consulta de Historial Clínico</strong></p>
             <div class="reloj-salir">
-                <span id="reloj-actual" style="font-weight: bold; color: #0E3B5C;">--:--</span>
                 <button class="btn-salir-rojo" onclick="history.back()">regresar</button>
             </div>
         </div>
-
-        <div class="id-paciente-section" style="margin-top: 15px; background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C;">
-            <label style="color: #0E3B5C; font-weight: bold;">Buscar paciente por Teléfono, CURP o Correo:</label>
-            <div class="input-inline" style="margin-top: 5px;">
-                <input type="text" id="id-busqueda-ver-estudio" placeholder="Ingrese dato del paciente..." style="width: 100%; padding: 8px;">
-                <button type="button" class="btn-ok" onclick="buscarEstudiosPaciente()">Buscar</button>
+        <div class="id-paciente-section" style="margin-top: 20px;">
+            <label>Ingrese Teléfono, CURP o Correo del paciente:</label>
+            <div class="input-inline">
+                <input type="text" id="termino-historial" placeholder="Buscar paciente...">
+                <button type="button" id="btn-buscar-historial" class="btn-ok">Buscar</button>
             </div>
         </div>
-
-        <div id="resultados-historial" style="margin-top: 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <h3 id="nombre-paciente-ver" style="color: #0E3B5C; text-align: center; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Busque un paciente para ver su historial</h3>
-            <div id="contenedor-consultas" style="margin-top: 15px;"></div>
-            <div id="contenedor-estudios" style="margin-top: 15px;"></div>
+        <div id="contenedor-historial" style="margin-top: 30px;">
+            <p style="text-align: center; color: #666;">Ingrese un Teléfono, CURP o Correo para ver el historial de un paciente.</p>
         </div>
     </div>
     <script src="../js/app.js"></script>
