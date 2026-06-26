@@ -611,6 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('28-agenda-enfermero.html')) cargarAgendaEnfermeria();
     if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
     if (window.location.pathname.includes('18-borrar-personal.html')) prepararPaginaBorrado();
+    if (window.location.pathname.includes('15-mostrar-estudios.html')) cargarEstudiosPaciente();
+    if (window.location.pathname.includes('13-historial-citas.html')) cargarHistorialCitasPaciente();
 });
 
 async function buscarPersonalParaEditar() {
@@ -735,5 +737,84 @@ async function confirmarBorradoPersonal(idUsuario, nombreCompleto) {
             alert("❌ Error de conexión al intentar dar de baja al usuario.");
             console.error("Error en confirmarBorradoPersonal:", error);
         }
+    }
+}
+
+async function cargarEstudiosPaciente() {
+    const idPaciente = localStorage.getItem('idPaciente');
+    const contenedor = document.getElementById('contenedor-estudios');
+
+    if (!idPaciente) {
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error: No se encontró identificador de paciente. Por favor, inicie sesión de nuevo.</p>';
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${idPaciente}`);
+        const data = await res.json();
+
+        if (data.success && data.estudios.length > 0) {
+            contenedor.innerHTML = ''; // Limpiar el mensaje de "Cargando..."
+            data.estudios.forEach(estudio => {
+                const fecha = new Date(estudio.fecha_solicitud).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+                const estadoClass = estudio.estado.toLowerCase() === 'pendiente' ? 'pendiente' : 'completado';
+
+                const tarjetaHTML = `
+                    <div class="tarjeta-estudio">
+                        <p><strong>Tipo de Estudio:</strong> ${estudio.tipo_estudio}</p>
+                        <p><strong>Fecha de Solicitud:</strong> ${fecha}</p>
+                        <p><strong>Estado:</strong> <span class="estado ${estadoClass}">${estudio.estado}</span></p>
+                        <p><strong>Indicaciones:</strong> ${estudio.indicaciones || 'Sin indicaciones adicionales.'}</p>
+                        ${estudio.estado.toLowerCase() === 'completado' ? `<p style="background-color: #eef5f9; padding: 8px; border-radius: 4px; margin-top: 8px;"><strong>Notas del Médico:</strong> ${estudio.notas_medico || 'Sin notas.'}</p>` : ''}
+                    </div>
+                `;
+                contenedor.innerHTML += tarjetaHTML;
+            });
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; margin-top: 20px;">No tiene estudios médicos registrados en su historial.</p>';
+        }
+    } catch (error) {
+        console.error('Error al cargar estudios:', error);
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Hubo un error de conexión al intentar cargar su historial. Intente más tarde.</p>';
+    }
+}
+
+async function cargarHistorialCitasPaciente() {
+    const idPaciente = localStorage.getItem('idPaciente');
+    const contenedor = document.getElementById('contenedor-citas-historial');
+
+    if (!idPaciente) {
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error: No se encontró identificador de paciente. Por favor, inicie sesión de nuevo.</p>';
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
+        const data = await res.json();
+
+        if (data.success && data.citas.length > 0) {
+            contenedor.innerHTML = ''; // Limpiar el mensaje de "Cargando..."
+            data.citas.forEach(cita => {
+                const fecha = new Date(cita.fecha).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const estadoClass = cita.estatus.toLowerCase();
+
+                const tarjetaHTML = `
+                    <div class="tarjeta-cita-historial">
+                        <p><strong>Fecha:</strong> ${fecha} a las <strong>${cita.hora}</strong></p>
+                        <p><strong>Médico:</strong> Dr(a). ${cita.nombre} ${cita.apellido_paterno}</p>
+                        <p><strong>Estado:</strong> <span class="estatus ${estadoClass}">${cita.estatus}</span></p>
+                        ${cita.estatus.toLowerCase() === 'cancelada' ? `<p style="font-size: 12px; color: #666;"><em>Cita cancelada.</em></p>` : ''}
+                    </div>
+                `;
+                contenedor.innerHTML += tarjetaHTML;
+            });
+        } else if (data.success) {
+            contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; margin-top: 20px;">No tiene citas registradas en su historial.</p>';
+        } else {
+            contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${data.mensaje}</p>`;
+        }
+    } catch (error) {
+        console.error('Error al cargar historial de citas:', error);
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Hubo un error de conexión al intentar cargar su historial. Intente más tarde.</p>';
     }
 }

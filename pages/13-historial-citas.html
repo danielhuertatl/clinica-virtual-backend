@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Estudios Médicos</title>
+    <title>Mi Historial de Citas</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
-        .tarjeta-estudio {
+        .tarjeta-cita-historial {
             background-color: white;
             border-left: 5px solid #0E3B5C;
             padding: 15px;
@@ -14,10 +14,12 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .tarjeta-estudio p { margin: 4px 0; font-size: 14px; }
-        .tarjeta-estudio .estado { font-weight: bold; }
-        .estado.pendiente { color: #d35400; }
-        .estado.completado { color: #2D5A27; }
+        .tarjeta-cita-historial p { margin: 4px 0; font-size: 14px; }
+        .tarjeta-cita-historial .estatus { font-weight: bold; text-transform: capitalize; }
+        .estatus.agendada { color: #0E3B5C; }
+        .estatus.completada { color: #2D5A27; }
+        .estatus.cancelada { color: #991D27; opacity: 0.7; }
+        .estatus.ausente { color: #d35400; }
     </style>
 </head>
 <body>
@@ -26,7 +28,7 @@
     <div class="pantalla-consulta" style="max-width: 700px; position: relative; z-index: 1;">
         
         <div class="header-consulta">
-            <p><strong>Historial de Estudios Médicos</strong></p>
+            <p><strong>Mi Historial de Citas Médicas</strong></p>
             <div class="reloj-salir">
                 <button class="btn-salir-rojo" onclick="history.back()">regresar</button>
             </div>
@@ -36,8 +38,8 @@
             <img src="../assets/logocuad.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
         </div>
 
-        <div id="contenedor-estudios">
-            <p style="text-align: center; color: #666; margin-top: 20px;">Cargando historial de estudios...</p>
+        <div id="contenedor-citas-historial">
+            <p style="text-align: center; color: #666; margin-top: 20px;">Cargando historial de citas...</p>
         </div>
 
     </div>
