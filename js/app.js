@@ -1104,26 +1104,31 @@ function prepararPaginaHistorial() {
         if (titulo) titulo.textContent = 'Mi Historial de Consultas';
 
         buscarHistorialPaciente(idPaciente); // Llamamos a la función con el ID del paciente
-    } else {
+    } else if (rol === 'doctor' || rol === 'admin' || rol === 'enfermero') {
         // Si es personal médico, mantenemos la funcionalidad de búsqueda
         const btn = document.getElementById('btn-buscar-historial');
         if (btn) btn.addEventListener('click', () => buscarHistorialPaciente());
     }
 }
 
-async function buscarHistorialPaciente() {
-    const term = document.getElementById('termino-historial').value.trim();
+async function buscarHistorialPaciente(idPacienteDirecto) {
+    // Determina si se usará el ID directo (paciente) o el campo de texto (médico)
+    const terminoDeBusqueda = idPacienteDirecto 
+        ? String(idPacienteDirecto) 
+        : document.getElementById('termino-historial').value.trim();
+
     const cont = document.getElementById('contenedor-historial');
     if (!cont) return;
     cont.innerHTML = '<p style="text-align: center;">Buscando...</p>';
 
-    if (!term) {
+    if (!terminoDeBusqueda) {
         cont.innerHTML = '<p style="text-align: center;">Ingrese un Teléfono, CURP o Correo.</p>';
-        return alert("Por favor, rellene el campo.");
+        if (!idPacienteDirecto) alert("Por favor, rellene el campo de búsqueda."); // Solo alerta al médico
+        return;
     }
 
     try {
-        const resP = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(term)}`);
+        const resP = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(terminoDeBusqueda)}`);
         const dataP = await resP.json();
 
         if (!dataP.success) {
