@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DE LOGIN ---
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        const usuarioInput = document.getElementById('usuario');
+        const usuarioInput = document.getElementById('correo'); // CORRECCIÓN: El ID del input es 'correo', no 'usuario'.
         const contrasenaInput = document.getElementById('contrasena');
         const feedbackDiv = document.getElementById('login-feedback');
         const capsLockWarning = document.getElementById('caps-lock-warning');
@@ -1633,4 +1633,115 @@ async function enviarSolicitudRecuperacion(e) {
         feedback.textContent = '❌ Error de conexión con el servidor.';
         feedback.className = 'login-feedback-message error';
     }
+}
+
+/**
+ * Genera una lista de intervalos de tiempo de 30 minutos entre una hora de inicio y fin.
+ * @param {string} inicio - Hora de inicio en formato "HH:MM:SS".
+ * @param {string} fin - Hora de fin en formato "HH:MM:SS".
+ * @returns {string[]} Un array de strings con los horarios en formato "HH:MM".
+ */
+function generarSlotsDeTiempo(inicio, fin) {
+    const slots = [];
+    let [h, m] = inicio.split(':').map(Number);
+    const [hFin, mFin] = fin.split(':').map(Number);
+
+    const fechaActual = new Date();
+    fechaActual.setHours(h, m, 0, 0);
+
+    const fechaFin = new Date();
+    fechaFin.setHours(hFin, mFin, 0, 0);
+
+    while (fechaActual < fechaFin) {
+        slots.push(fechaActual.toTimeString().substring(0, 5));
+        fechaActual.setMinutes(fechaActual.getMinutes() + 30);
+    }
+    return slots;
+}
+
+/**
+ * Carga la disponibilidad de horarios para un doctor en la página de agendar cita.
+ * Se activa al seleccionar un doctor o una fecha.
+ */
+async function cargarDisponibilidadParaAgendar() {
+    const selectDoctor = document.getElementById('doctor-cita');
+    const selectFecha = document.getElementById('fecha-cita');
+    const divHorarios = document.getElementById('horarios-disponibles');
+    const idPaciente = localStorage.getItem('idPaciente');
+
+    if (!selectDoctor || !selectFecha || !divHorarios || !idPaciente) {
+        return; // No estamos en la página correcta, no hacemos nada.
+    }
+
+    // 1. Cargar la lista de doctores en el menú desplegable.
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
+        const data = await res.json();
+        if (data.success) {
+            selectDoctor.innerHTML = '<option value="">-- Seleccione un especialista --</option>';
+            data.doctores.forEach(doc => {
+                selectDoctor.innerHTML += `<option value="${doc.cedula_id}">Dr(a). ${doc.nombre} ${doc.apellido_paterno}</option>`;
+            });
+        }
+    } catch (error) {
+        selectDoctor.innerHTML = '<option value="">Error al cargar doctores</option>';
+    }
+
+    // 2. Función que se ejecuta cada vez que cambia el doctor o la fecha.
+    const mostrarHorarios = async () => {
+        const cedulaDoctor = selectDoctor.value;
+        const fechaSeleccionada = selectFecha.value;
+
+        if (!cedulaDoctor || !fechaSeleccionada) {
+            divHorarios.innerHTML = '<p class="alerta-info">Seleccione un doctor y una fecha para ver los horarios.</p>';
+            return;
+        }
+
+        // El día de la semana se calcula correctamente sin importar la zona horaria.
+        const diaSemana = new Date(fechaSeleccionada + 'T12:00:00Z').getUTCDay();
+
+        divHorarios.innerHTML = '<p>Buscando horarios disponibles...</p>';
+
+        try {
+            const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedulaDoctor}`);
+            const data = await res.json();
+
+            if (data.success && data.horario.length > 0) {
+                const horarioDelDia = data.horario.find(h => h.dia_semana === diaSemana);
+
+                if (horarioDelDia && horarioDelDia.hora_inicio && horarioDelDia.hora_fin) {
+                    const slots = generarSlotsDeTiempo(horarioDelDia.hora_inicio, horarioDelDia.hora_fin);
+                    if (slots.length > 0) {
+                        divHorarios.innerHTML = slots.map(slot => `
+                            <button class="btn-horario" data-hora="${slot}">${slot}</button>
+                        `).join('');
+
+                        // Añadir evento a los botones de horario para confirmar y agendar.
+                        document.querySelectorAll('.btn-horario').forEach(btn => {
+                            btn.addEventListener('click', async () => {
+                                const horaSeleccionada = btn.dataset.hora;
+                                if (confirm(`¿Desea confirmar su cita a las ${horaSeleccionada} con el doctor seleccionado?`)) {
+                                    // Aquí iría la lógica para enviar la cita al backend.
+                                    alert(`Cita agendada (simulación) para el ${fechaSeleccionada} a las ${horaSeleccionada}.`);
+                                    // Por ejemplo: window.location.href = '26-mis-citas.html';
+                                }
+                            });
+                        });
+                    } else {
+                        divHorarios.innerHTML = '<p class="alerta-error">No hay horarios disponibles en el rango del doctor para este día.</p>';
+                    }
+                } else {
+                    divHorarios.innerHTML = '<p class="alerta-error">El doctor no tiene un horario definido para el día de la semana seleccionado.</p>';
+                }
+            } else {
+                divHorarios.innerHTML = '<p class="alerta-error">Este doctor aún no ha configurado su horario de trabajo.</p>';
+            }
+        } catch (error) {
+            divHorarios.innerHTML = '<p class="alerta-error">Error de conexión al intentar obtener el horario del doctor.</p>';
+        }
+    };
+
+    // 3. Asignar los eventos a los menús desplegables.
+    selectDoctor.addEventListener('change', mostrarHorarios);
+    selectFecha.addEventListener('change', mostrarHorarios);
 }
