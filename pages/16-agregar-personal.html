@@ -50,7 +50,7 @@
                 </div>
                 <div>
                     <label for="apellido_m">Apellido Materno:</label>
-                    <input type="text" id="apellido_m" placeholder="Apellido Materno" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
+                    <input type="text" id="apellido_m" placeholder="Apellido Materno" required oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')">
                     <span id="apellido_m-warn" style="color: #d35400; font-size: 11px; display: none; font-weight: bold; margin-top: 3px;"></span>
                 </div>
             </div>
@@ -62,7 +62,7 @@
                 </div>
                 <div>
                     <label for="password">Contraseña de Acceso:</label>
-                    <input type="password" id="password" placeholder="Contraseña Acceso" required>
+                    <input type="password" id="password" placeholder="Min. 8 carac, 1 Mayús, 1 Núm" required>
                 </div>
                 <div>
                     <label for="puesto">Puesto:</label>
@@ -90,12 +90,18 @@
             <div class="campo-fila">
                 <div style="flex: 1;">
                     <label for="cp">CP (5 dígitos):</label>
-                    <input type="text" id="cp" placeholder="CP (5 dígitos)" maxlength="5" required 
+                    <input type="text" id="cp" placeholder="5 dígitos" maxlength="5" required 
                            onkeypress="return event.charCode >= 48 && event.charCode <= 57" 
                            oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="border: 2px solid #0E3B5C; font-weight: bold;">
                 </div>
-                <div style="flex: 2;"><label for="calle">Calle:</label><input type="text" id="calle" placeholder="Calle" required></div>
-                <div style="flex: 1;"><label for="num_ext">Núm. Exterior:</label><input type="text" id="num_ext" placeholder="Núm Ext" required></div>
+                <div style="flex: 2;">
+                    <label for="calle">Calle:</label>
+                    <input type="text" id="calle" placeholder="Letras y números" required oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s#.-]/g, '')">
+                </div>
+                <div style="flex: 1;">
+                    <label for="num_ext">Núm. Exterior:</label>
+                    <input type="text" id="num_ext" placeholder="Debe contener números" required oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '')">
+                </div>
             </div>
 
             <div class="campo-fila" id="contenedor-colonia-municipio">
@@ -107,11 +113,11 @@
             <div class="campo-fila">
                 <div style="flex: 1;">
                     <label for="edad">Edad (Auto):</label>
-                    <input type="number" id="edad" placeholder="Edad (Auto)" readonly style="background-color: #eee; border: 1px solid #ccc;">
+                    <input type="number" id="edad" placeholder="Calculado de CURP" readonly style="background-color: #eee; border: 1px solid #ccc;">
                 </div>
                 <div style="flex: 1;">
                     <label for="cedula">Cédula Profesional:</label>
-                    <input type="text" id="cedula" placeholder="Cédula Profesional" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <input type="text" id="cedula" placeholder="7 u 8 dígitos" maxlength="8" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div style="flex: 1; position: relative;">
                     <label for="curp">CURP:</label>

@@ -21,14 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const feedbackDiv = document.getElementById('login-feedback');
         const capsLockWarning = document.getElementById('caps-lock-warning');
 
-        // 1. Forzar minúsculas en el campo de correo en tiempo real.
         if (usuarioInput) {
             usuarioInput.addEventListener('input', (e) => {
                 e.target.value = e.target.value.toLowerCase();
             });
         }
 
-        // 2. Detectar si el bloqueo de mayúsculas está activado en el campo de contraseña.
         if (contrasenaInput && capsLockWarning) {
             contrasenaInput.addEventListener('keyup', (e) => {
                 if (e.getModifierState('CapsLock')) {
@@ -103,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('input', (e) => {
                 let texto = e.target.value.toUpperCase();
                 
-                // 1. Bloquear inmediatamente 3 letras idénticas seguidas (ej: SSSS)
+                // Bloquear inmediatamente 3 letras idénticas seguidas (ej: SSSS)
                 if (/([A-ZÁÉÍÓÚÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
                     if (warnSpan) {
@@ -114,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // 2. Alertar dinámicamente si hay patrones alternados o consonantes basura
+                // Alertar dinámicamente si hay patrones alternados o consonantes basura
                 const textoLimpio = texto.replace(/\s/g, '');
                 let esSospechoso = false;
 
@@ -143,6 +141,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    // --- CÁLCULO DE IMC EN TIEMPO REAL (PANTALLA DE CONSULTA MÉDICA) ---
+    const pInput = document.getElementById('input-peso');
+    const tInput = document.getElementById('input-talla');
+    const imcInput = document.getElementById('input-imc');
+    if (pInput && tInput && imcInput) {
+        const calcularIMC = () => {
+            const peso = parseFloat(pInput.value);
+            const talla = parseFloat(tInput.value);
+            if (peso > 0 && talla > 0) {
+                const imc = peso / (talla * talla);
+                imcInput.value = imc.toFixed(2);
+            } else {
+                imcInput.value = '';
+            }
+        };
+        pInput.addEventListener('input', calcularIMC);
+        tInput.addEventListener('input', calcularIMC);
+    }
+
+    // --- LÓGICA DE AMPLIACIÓN DE TEXTAREA DE RECETA ---
+    const btnExpandir = document.getElementById('btn-expandir');
+    const txtReceta = document.getElementById('texto-receta');
+    if (btnExpandir && txtReceta) {
+        btnExpandir.addEventListener('click', () => {
+            txtReceta.classList.toggle('receta-expandida');
+            if (txtReceta.classList.contains('receta-expandida')) {
+                btnExpandir.textContent = 'Minimizar ⤢';
+                btnExpandir.classList.add('btn-flotante');
+            } else {
+                btnExpandir.textContent = 'Ampliar ⤢';
+                btnExpandir.classList.remove('btn-flotante');
+            }
+        });
+    }
 
     // --- FORMATEO GENERAL A MAYÚSCULAS PARA DIRECCIONES ---
     const inputsDireccionM = ['calle', 'colonia', 'municipio', 'colonia_municipio', 'num_ext'];
@@ -442,10 +475,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('btn-personal');
             const errorCurp = document.getElementById('curp-error');
 
-            const apellidoP = document.getElementById('apellido_p').value;
-            const apellidoM = document.getElementById('apellido_m').value;
+            const apellidoP = document.getElementById('apellido_p').value.trim();
+            const apellidoM = document.getElementById('apellido_m').value.trim();
+            
             if (apellidoP.split(' ').filter(p => p.length > 1).length > 1 || apellidoM.split(' ').filter(p => p.length > 1).length > 1) {
-                alert('⚠️ Error: Los campos de apellido no deben contener el mismo apellido dos veces.');
+                alert('⚠️ Error: Los campos de apellido no deben contener palabras o apellidos repetidos duplicados.');
                 return;
             }
 
@@ -469,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const numExt = document.getElementById('num_ext').value;
             if (numExt.length > 0 && !/\d/.test(numExt)) {
-                alert('⚠️ Error: El "Número Exterior" debe contener al menos un dígito si no está vacío.');
+                alert('⚠️ Error: El "Número Exterior" debe contener al menos un dígito.');
                 return;
             }
 
@@ -533,8 +567,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const apPaterno = document.getElementById('ap-paterno').value.trim();
             const apMaterno = document.getElementById('ap-materno').value.trim();
-            if ((apPaterno.split(' ').length > 1 && new Set(apPaterno.split(' ')).size === 1) || (apMaterno.split(' ').length > 1 && new Set(apMaterno.split(' ')).size === 1)) {
-                alert('⚠️ Error: Un mismo apellido no puede repetirse en un solo campo (ej: "GARCIA GARCIA").');
+            
+            if (apPaterno.split(' ').filter(p => p.length > 1).length > 1 || apMaterno.split(' ').filter(p => p.length > 1).length > 1) {
+                alert('⚠️ Error: Los campos de apellido no deben contener palabras o apellidos repetidos duplicados.');
                 return;
             }
 
@@ -652,8 +687,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('28-agenda-enfermero.html')) cargarAgendaEnfermeria();
     if (window.location.pathname.includes('18-borrar-personal.html')) prepararPaginaBorrado();
     if (window.location.pathname.includes('15-mostrar-estudios.html')) cargarEstudiosPaciente();
-    if (window.location.pathname.includes('13-historial-citas.html')) cargarHistorialCitasPaciente();
+    if (window.location.pathname.includes('26-mis-citas.html') || window.location.pathname.includes('13-historial-citas.html')) cargarHistorialCitasPaciente();
     if (window.location.pathname.includes('9-historial.html')) prepararPaginaHistorial();
+    if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
 });
 
 // --- FUNCIONES ASÍNCRONAS GLOBALES ---
@@ -677,8 +713,8 @@ async function cargarAgendaEnfermeria() {
                         <p>Hora: ${cita.hora} - Dr(a). ${cita.doctor_apellido}</p>
                     </div>
                     <div class="botones-control">
-                        <button class="btn-accion-verde" onclick="marcarAsistencia(${cita.id_cita}, 'presente')">Presente</button>
-                        <button class="btn-accion-rojo" onclick="marcarAsistencia(${cita.id_cita}, 'ausente')">Ausente</button>
+                        <button class="btn-accion-verde" onclick=\"marcarAsistencia(${cita.id_cita}, 'presente')\">Presente</button>
+                        <button class="btn-accion-rojo" onclick=\"marcarAsistencia(${cita.id_cita}, 'ausente')\">Ausente</button>
                     </div>
                 </div>
             `).join('');
@@ -686,35 +722,24 @@ async function cargarAgendaEnfermeria() {
             contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C;">No hay citas agendadas para hoy.</p>';
         }
     } catch (error) {
-        console.error("Error cargando agenda de enfermería:", error);
         contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la agenda.</p>';
     }
 }
 
 async function buscarPersonalParaEditar() {
-    const termino = document.getElementById('buscar-cedula').value.trim();
-    if (!termino) {
-        alert("Por favor, ingrese una cédula o correo para buscar.");
-        return;
-    }
+    const term = document.getElementById('buscar-cedula').value.trim();
+    if (!term) return alert("Por favor, ingrese una cédula o correo para buscar.");
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(term)}`);
         const data = await res.json();
 
         if (data.success) {
             const p = data.persona;
             personaOriginal = {
-                cedula: p.cedula_id,
-                nombre: p.nombre,
-                apellido_p: p.apellido_paterno,
-                apellido_m: p.apellido_materno,
-                telefono: p.telefono,
-                correo: p.correo,
-                calle: p.direccion_calle,
-                num_ext: p.direccion_num_ext,
-                cp: p.direccion_cp,
-                colonia: p.direccion_colonia
+                cedula: p.cedula_id, nombre: p.nombre, apellido_p: p.apellido_paterno, apellido_m: p.apellido_materno,
+                telefono: p.telefono, correo: p.correo, calle: p.direccion_calle, num_ext: p.direccion_num_ext,
+                cp: p.direccion_cp, colonia: p.direccion_colonia
             };
 
             document.getElementById('nombre').value = p.nombre || '';
@@ -729,15 +754,11 @@ async function buscarPersonalParaEditar() {
             document.getElementById('display-puesto').value = p.puesto || '';
             document.getElementById('display-cedula').value = p.cedula_id || '';
 
-            alert("✅ Personal encontrado y cargado en el formulario.");
+            alert("✅ Personal encontrado y cargado.");
         } else {
             alert("⚠️ " + data.mensaje);
-            document.getElementById('form-editar-personal').reset();
-            personaOriginal = null;
         }
-    } catch (error) {
-        alert("❌ Error de conexión al buscar el personal.");
-    }
+    } catch (error) { alert("❌ Error de conexión."); }
 }
 
 function prepararPaginaBorrado() {
@@ -746,22 +767,20 @@ function prepararPaginaBorrado() {
 }
 
 async function buscarPersonalParaBorrar() {
-    const termino = document.getElementById('termino-borrar').value.trim();
-    const resultadosDiv = document.getElementById('resultados-borrado');
-    resultadosDiv.innerHTML = '';
+    const term = document.getElementById('termino-borrar').value.trim();
+    const resDiv = document.getElementById('resultados-borrado');
+    if (!resDiv) return;
+    resDiv.innerHTML = '';
 
-    if (!termino) {
-        alert("Por favor, ingrese una cédula o correo para buscar.");
-        return;
-    }
+    if (!term) return alert("Por favor, ingrese una cédula o correo.");
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(term)}`);
         const data = await res.json();
 
         if (data.success) {
             const p = data.persona;
-            resultadosDiv.innerHTML = `
+            resDiv.innerHTML = `
                 <div class="tarjeta-paciente" style="border-left-color: #991D27; background-color: #fff3f4; margin-top: 20px;">
                     <div class="info-paciente">
                         <p><strong>Nombre:</strong> ${p.nombre} ${p.apellido_paterno}</p>
@@ -770,23 +789,18 @@ async function buscarPersonalParaBorrar() {
                         <p><strong>Correo:</strong> ${p.correo}</p>
                     </div>
                     <div class="botones-control">
-                        <button class="btn-accion-rojo" onclick="confirmarBorradoPersonal(${p.id_usuario}, '${p.nombre} ${p.apellido_paterno}')">
-                            Confirmar Baja
-                        </button>
+                        <button class="btn-accion-rojo" onclick=\"confirmarBorradoPersonal(${p.id_usuario}, '${p.nombre} ${p.apellido_paterno}')\">Confirmar Baja</button>
                     </div>
                 </div>
             `;
         } else {
-            resultadosDiv.innerHTML = `<p style="text-align: center; color: #991D27; margin-top: 20px;">${data.mensaje}</p>`;
+            resDiv.innerHTML = `<p style="text-align: center; color: #991D27; margin-top: 20px;">${data.mensaje}</p>`;
         }
-    } catch (error) {
-        alert("❌ Error de conexión al buscar el personal.");
-    }
+    } catch (error) { alert("❌ Error de conexión."); }
 }
 
 async function confirmarBorradoPersonal(idUsuario, nombreCompleto) {
-    const confirmacion = confirm(`❓ ¿Está completamente seguro de que desea dar de baja a ${nombreCompleto}?\n\nEsta acción es irreversible.`);
-    if (confirmacion) {
+    if (confirm(`❓ ¿Está seguro de dar de baja a ${nombreCompleto}?`)) {
         try {
             const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios/baja', {
                 method: 'PUT',
@@ -796,18 +810,14 @@ async function confirmarBorradoPersonal(idUsuario, nombreCompleto) {
             const data = await res.json();
             if (data.success) {
                 alert("✅ " + data.mensaje);
-                document.getElementById('resultados-borrado').innerHTML = '<p style="text-align: center; color: #2D5A27; margin-top: 20px;">El usuario ha sido dado de baja.</p>';
-            } else {
-                alert("⚠️ " + data.mensaje);
-            }
-        } catch (error) {
-            alert("❌ Error de conexión.");
-        }
+                location.reload();
+            } else { alert("⚠️ " + data.mensaje); }
+        } catch (error) { alert("❌ Error de conexión."); }
     }
 }
 
 async function cargarUsuariosAdmin() {
-    const contenedor = document.getElementById('lista-usuarios-admin');
+    const contenedor = document.getElementById('contenedor-usuarios-admin') || document.getElementById('lista-usuarios-admin');
     if (!contenedor) return;
 
     try {
@@ -815,7 +825,7 @@ async function cargarUsuariosAdmin() {
         const data = await res.json();
         if (data.success && data.usuarios.length > 0) {
             contenedor.innerHTML = data.usuarios.map(u => `
-                <div class="tarjeta-usuario ${u.estatus ? '' : 'inactivo'}" style="border-left-color: ${u.estatus ? '#0E3B5C' : '#991D27'};">
+                <div class="tarjeta-usuario ${u.estatus ? '' : 'inactivo'}" style="border-left-color: ${u.estatus ? '#0E3B5C' : '#991D27'}; margin-bottom:10px; padding:10px; background:white; border-radius:5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     <div class="info-paciente">
                         <p><strong>${u.nombre ? (u.nombre + ' ' + (u.apellido_paterno || '')) : 'Usuario sin Perfil'}</strong> (${u.rol})</p>
                         <p>${u.correo} - <span style="font-weight: bold; color: ${u.estatus ? '#2D5A27' : '#991D27'}">${u.estatus ? 'Activo' : 'Inactivo'}</span></p>
@@ -825,17 +835,14 @@ async function cargarUsuariosAdmin() {
             contenedor.innerHTML = '<p style="text-align: center;">No se encontraron usuarios registrados.</p>';
         }
     } catch (error) { 
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la lista de usuarios.</p>'; 
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión.</p>'; 
     }
 }
  
 async function cargarEstudiosPaciente() {
     const idPaciente = localStorage.getItem('idPaciente');
     const contenedor = document.getElementById('contenedor-estudios');
-    if (!idPaciente) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error: No se encontró identificador de paciente.</p>';
-        return;
-    }
+    if (!contenedor || !idPaciente) return;
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${idPaciente}`);
@@ -845,35 +852,27 @@ async function cargarEstudiosPaciente() {
             contenedor.innerHTML = '';
             data.estudios.forEach(estudio => {
                 const fecha = new Date(estudio.fecha_solicitud).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-                const estadoClass = estudio.estado.toLowerCase() === 'pendiente' ? 'pendiente' : 'completado';
-
                 contenedor.innerHTML += `
                     <div class="tarjeta-estudio">
-                        <p><strong>Tipo de Estudio:</strong> ${estudio.tipo_estudio}</p>
+                        <p><strong>Tipo de Estudio:</strong> ${estudio.tipo_estudio.toUpperCase()}</p>
                         <p><strong>Fecha de Solicitud:</strong> ${fecha}</p>
-                        <p><strong>Estado:</strong> <span class="estado ${estadoClass}">${estudio.estado}</span></p>
-                        <p><strong>Indicaciones:</strong> ${estudio.indicaciones || 'Sin indicaciones adicionales.'}</p>
-                        ${estudio.estado.toLowerCase() === 'completado' ? `<p style="background-color: #eef5f9; padding: 8px; border-radius: 4px; margin-top: 8px;"><strong>Notas del Médico:</strong> ${estudio.notas_medico || 'Sin notas.'}</p>` : ''}
+                        <p><strong>Estado:</strong> <span class="estado ${estudio.estado.toLowerCase()}">${estudio.estado}</span></p>
+                        <p><strong>Indicaciones:</strong> ${estudio.indicaciones || 'Sin indicaciones.'}</p>
                     </div>
                 `;
             });
         } else {
-            contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; margin-top: 20px;">No tiene estudios médicos registrados.</p>';
+            contenedor.innerHTML = '<p style="text-align: center;">No tiene estudios registrados.</p>';
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Hubo un error de conexión al cargar estudios.</p>';
-    }
+    } catch (error) { contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión.</p>'; }
 }
 
 async function buscarPacienteConsulta() {
-    const termino = document.getElementById('id-busqueda').value.trim();
-    if (!termino) {
-        alert("Por favor, ingrese un dato para buscar al paciente.");
-        return;
-    }
+    const term = document.getElementById('id-busqueda').value.trim();
+    if (!term) return alert("Por favor, ingrese un dato para buscar.");
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(term)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -888,179 +887,297 @@ async function buscarPacienteConsulta() {
             const resSignos = await fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${p.id_paciente}`);
             const dataSignos = await resSignos.json();
             if (dataSignos.success && dataSignos.signos) {
-                const signos = dataSignos.signos;
-                document.getElementById('peso').value = signos.peso || '';
-                document.getElementById('talla').value = signos.talla || '';
-                document.getElementById('fc').value = signos.fc || '';
-                document.getElementById('fr').value = signos.fr || '';
-                document.getElementById('sato2').value = signos.sato2 || '';
+                const s = dataSignos.signos;
+                document.getElementById('input-peso').value = s.peso || '';
+                document.getElementById('input-talla').value = s.talla || '';
+                document.getElementById('input-fc').value = s.fc || '';
+                document.getElementById('input-fr').value = s.fr || '';
+                document.getElementById('input-sato2').value = s.sato2 || '';
                 document.getElementById('alerta-signos-faltantes').style.display = 'none';
+                
+                // Disparar cálculo automático de IMC al rellenar los datos pre-cargados
+                if(s.peso && s.talla) {
+                    document.getElementById('input-imc').value = (s.peso / (s.talla * s.talla)).toFixed(2);
+                }
             } else {
                 document.getElementById('alerta-signos-faltantes').style.display = 'block';
             }
-        } else {
-            alert("⚠️ " + data.mensaje);
-            document.querySelector('form.datos-paciente-grid').reset();
-        }
-    } catch (error) {
-        alert("❌ Error de conexión al buscar el paciente.");
-    }
+        } else { alert("⚠️ " + data.mensaje); }
+    } catch (error) { alert("❌ Error al buscar."); }
 }
 
-async function buscarPacienteEstudio() {
-    const termino = document.getElementById('id-busqueda-estudio').value.trim();
-    const nombreInput = document.getElementById('nombre-paciente-estudio');
-    if (!termino) {
-        alert("Por favor, ingrese un dato para buscar al paciente.");
-        return;
-    }
+// --- BUSCAR PACIENTE DESDE LA PANTALLA DE ENFERMERÍA (CORRECCIÓN DE BÚSQUEDA) ---
+async function buscarPacienteSignos() {
+    const term = document.getElementById('id-busqueda-signos').value.trim();
+    if (!term) return alert("Por favor, ingrese un dato para buscar.");
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(term)}`);
         const data = await res.json();
 
         if (data.success) {
-            const p = data.paciente;
-            nombreInput.value = `${p.nombre} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
-            nombreInput.dataset.idPaciente = p.id_paciente;
-            alert("✅ Paciente encontrado y seleccionado.");
+            document.getElementById('nombre-paciente').value = `${data.paciente.nombre} ${data.paciente.apellido_paterno} ${data.paciente.apellido_materno || ''}`.trim();
+            document.getElementById('id-busqueda-signos').dataset.idReal = data.paciente.id_paciente;
+            alert("✅ Paciente encontrado.");
         } else {
             alert("⚠️ " + data.mensaje);
-            nombreInput.value = "Esperando paciente...";
-            delete nombreInput.dataset.idPaciente;
         }
-    } catch (error) {
-        alert("❌ Error de conexión.");
-    }
+    } catch(e) { alert("❌ Error de conexión al buscar."); }
+}
+
+// --- FINALIZAR CONSULTA Y GUARDAR RECETA (CORRECCIÓN MÉDICA) ---
+async function guardarYGenerarReceta() {
+    const idPaciente = document.getElementById('nombre-paciente').dataset.idPaciente;
+    const cedulaDoctor = localStorage.getItem('cedulaUsuario');
+    const peso = document.getElementById('input-peso').value;
+    const talla = document.getElementById('input-talla').value;
+    const fc = document.getElementById('input-fc').value;
+    const fr = document.getElementById('input-fr').value;
+    const sato2 = document.getElementById('input-sato2').value;
+    const imc = document.getElementById('input-imc').value;
+    const receta = document.getElementById('texto-receta').value.trim();
+
+    if (!idPaciente) return alert("⚠️ Error: Primero debe buscar y cargar un paciente.");
+    if (!peso || !talla || !receta) return alert("⚠️ Error: Los campos de Peso, Talla y las indicaciones de la Receta son obligatorios.");
+
+    const datosConsulta = { id_paciente: idPaciente, cedula_doctor: cedulaDoctor, peso, talla, fc, fr, sato2, imc, receta };
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/consultas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosConsulta)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            localStorage.setItem('recetaTemporal', receta);
+            localStorage.setItem('fechaReceta', new Date().toLocaleString('es-MX'));
+            localStorage.setItem('pacienteTemporal', document.getElementById('nombre-paciente').value);
+            localStorage.setItem('edadTemporal', document.getElementById('edad-paciente').value);
+            localStorage.setItem('pesoTemporal', peso + " kg");
+            localStorage.setItem('tallaTemporal', talla + " m");
+            localStorage.setItem('imcTemporal', imc);
+
+            // Eliminar signos del triaje temporal al completarse la consulta
+            await fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${idPaciente}`, { method: 'DELETE' });
+
+            alert("✅ Consulta médica finalizada exitosamente.");
+            window.location.href = '20-receta.html';
+        } else {
+            alert("⚠️ " + data.mensaje);
+        }
+    } catch (error) { alert("❌ Error de conexión al intentar cerrar la consulta."); }
+}
+
+async function buscarPacienteEstudio() {
+    const term = document.getElementById('id-busqueda-estudio').value.trim();
+    const inputNom = document.getElementById('nombre-paciente-estudio');
+    if (!term) return alert("Por favor, ingrese un dato.");
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(term)}`);
+        const data = await res.json();
+
+        if (data.success) {
+            inputNom.value = `${data.paciente.nombre} ${data.paciente.apellido_paterno}`.trim();
+            inputNom.dataset.idPaciente = data.paciente.id_paciente;
+            alert("✅ Paciente seleccionado.");
+        } else {
+            alert("⚠️ " + data.mensaje);
+            inputNom.value = "Esperando paciente...";
+        }
+    } catch (error) { alert("❌ Error de conexión."); }
 }
 
 function prepararPaginaHistorial() {
-    const btnBuscar = document.getElementById('btn-buscar-historial');
-    if (btnBuscar) btnBuscar.addEventListener('click', buscarHistorialPaciente);
+    const btn = document.getElementById('btn-buscar-historial');
+    if (btn) btn.addEventListener('click', buscarHistorialPaciente);
 }
 
 async function buscarHistorialPaciente() {
-    const termino = document.getElementById('termino-historial').value.trim();
-    const contenedor = document.getElementById('contenedor-historial');
-    contenedor.innerHTML = '<p style="text-align: center; color: #666;">Buscando...</p>';
+    const term = document.getElementById('termino-historial').value.trim();
+    const cont = document.getElementById('contenedor-historial');
+    if (!cont) return;
+    cont.innerHTML = '<p style="text-align: center;">Buscando...</p>';
 
-    if (!termino) {
-        alert("Por favor, ingrese un dato para buscar al paciente.");
-        contenedor.innerHTML = '<p style="text-align: center; color: #666;">Ingrese un Teléfono, CURP o Correo.</p>';
-        return;
+    if (!term) {
+        cont.innerHTML = '<p style="text-align: center;">Ingrese un Teléfono, CURP o Correo.</p>';
+        return alert("Por favor, rellene el campo.");
     }
 
     try {
-        const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
-        const dataPaciente = await resPaciente.json();
+        const resP = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(term)}`);
+        const dataP = await resP.json();
 
-        if (!dataPaciente.success) {
-            contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${dataPaciente.mensaje}</p>`;
+        if (!dataP.success) {
+            cont.innerHTML = `<p style="text-align: center; color: #991D27;">${dataP.mensaje}</p>`;
             return;
         }
 
-        const idPaciente = dataPaciente.paciente.id_paciente;
-        const nombrePaciente = `${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
+        const idPac = dataP.paciente.id_paciente;
+        const nomPac = `${dataP.paciente.nombre} ${dataP.paciente.apellido_paterno}`;
 
-        const resConsultas = await fetch(`https://clinica-virtual-backend.onrender.com/api/consultas/${idPaciente}`);
-        const dataConsultas = await resConsultas.json();
+        const resC = await fetch(`https://clinica-virtual-backend.onrender.com/api/consultas/${idPac}`);
+        const dataC = await resC.json();
 
-        if (dataConsultas.success && dataConsultas.consultas.length > 0) {
-            contenedor.innerHTML = `<h3 style="color: #0E3B5C; margin-bottom: 15px;">Historial de: ${nombrePaciente}</h3>`;
-            dataConsultas.consultas.forEach(c => {
-                const fecha = new Date(c.fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-                contenedor.innerHTML += `
+        if (dataC.success && dataC.consultas.length > 0) {
+            cont.innerHTML = `<h3 style="color: #0E3B5C; margin-bottom: 15px;">Historial de: ${nomPac}</h3>`;
+            dataC.consultas.forEach(c => {
+                const f = new Date(c.fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+                cont.innerHTML += `
                     <div class="tarjeta-historial">
-                        <div class="fecha-historial">${fecha}</div>
+                        <div class="fecha-historial">${f}</div>
                         <div class="detalle-historial">
                             <p><strong>Atendido por:</strong> Dr(a). ${c.doctor_nombre} ${c.doctor_apellido}</p>
-                            <p><strong>Signos Vitales:</strong> Peso: ${c.peso}kg, Talla: ${c.talla}m, FC: ${c.fc}ppm, FR: ${c.fr}rpm, SatO2: ${c.sato2}%</p>
-                            <div class="receta-historial">
-                                <strong>Receta / Indicaciones:</strong>
-                                <pre>${c.receta || 'Sin indicaciones.'}</pre>
-                            </div>
+                            <p><strong>Signos:</strong> Peso: ${c.peso}kg, Talla: ${c.talla}m, FC: ${c.fc}ppm, SatO2: ${c.sato2}%</p>
+                            <div class="receta-historial"><pre>${c.receta || 'Sin indicaciones.'}</pre></div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         } else {
-            contenedor.innerHTML = `<p style="text-align: center; color: #0E3B5C;">El paciente <strong>${nombrePaciente}</strong> no tiene consultas registradas.</p>`;
+            cont.innerHTML = `<p style="text-align: center;">El paciente <strong>${nomPac}</strong> no registra consultas pasadas.</p>`;
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al buscar el historial.</p>';
-    }
+    } catch (error) { cont.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión.</p>'; }
 }
 
 async function solicitarEstudio() {
-    const idPaciente = document.getElementById('nombre-paciente-estudio').dataset.idPaciente;
-    const cedulaDoctor = localStorage.getItem('cedulaUsuario');
-    const tipoEstudio = document.getElementById('tipo-estudio').value;
-    const indicaciones = document.getElementById('indicaciones-estudio').value;
+    const idPac = document.getElementById('nombre-paciente-estudio').dataset.idPaciente;
+    const cedDoc = localStorage.getItem('cedulaUsuario');
+    const tipo = document.getElementById('tipo-estudio').value;
+    const ind = document.getElementById('indicaciones-estudio').value;
 
-    if (!idPaciente) {
-        alert("⚠️ Primero debe buscar y seleccionar un paciente.");
-        return;
-    }
-    if (!tipoEstudio) {
-        alert("⚠️ Debe seleccionar un tipo de estudio.");
-        return;
-    }
-
-    const datosEstudio = { id_paciente: idPaciente, cedula_doctor: cedulaDoctor, tipo_estudio: tipoEstudio, indicaciones: indicaciones };
+    if (!idPac || !tipo) return alert("⚠️ Debe seleccionar un paciente y el tipo de estudio.");
 
     try {
         const res = await fetch('https://clinica-virtual-backend.onrender.com/api/estudios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosEstudio)
+            body: JSON.stringify({ id_paciente: idPac, cedula_doctor: cedDoc, tipo_estudio: tipo, indicaciones: ind })
         });
         const data = await res.json();
         alert(data.success ? `✅ ${data.mensaje}` : `⚠️ ${data.mensaje}`);
         if (data.success) history.back();
-    } catch (error) {
-        alert("❌ Error de conexión al solicitar el estudio.");
-    }
+    } catch (error) { alert("❌ Error de conexión."); }
 }
 
+// --- CARGAR CITAS (INTEGRACIÓN UNIFICADA PANTALLA 13 Y PANTALLA 26) ---
 async function cargarHistorialCitasPaciente() {
     const idPaciente = localStorage.getItem('idPaciente');
-    const contenedor = document.getElementById('contenedor-citas-historial');
-    if (!idPaciente) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error: No se encontró identificador de paciente.</p>';
-        return;
-    }
+    const contHistorialCompleto = document.getElementById('contenedor-citas-historial'); // Pantalla 13
+    const contProximaCita = document.getElementById('contenedor-proxima-cita'); // Pantalla 26
+    const contHistorialCitas = document.getElementById('contenedor-historial-citas'); // Pantalla 26
+    const msgSinCitas = document.getElementById('mensaje-sin-citas'); // Pantalla 26
+
+    if (!idPaciente) return;
 
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
         const data = await res.json();
 
-        const nombreUsuario = localStorage.getItem('nombreUsuario');
-        const titulo = document.querySelector('.header-consulta h3');
-        if (titulo && nombreUsuario) titulo.textContent = `Bienvenido(a), ${nombreUsuario}`;
+        // Actualizar saludo del encabezado si aplica
+        const nomUsr = localStorage.getItem('nombreUsuario');
+        const tit = document.querySelector('.header-consulta h3');
+        if (tit && nomUsr) tit.textContent = `Bienvenido(a), ${nomUsr}`;
 
         if (data.success && data.citas.length > 0) {
-            contenedor.innerHTML = '';
-            data.citas.forEach(cita => {
-                const fecha = new Date(cita.fecha).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                const estadoClass = cita.estatus.toLowerCase();
+            if (contHistorialCompleto) contHistorialCompleto.innerHTML = '';
+            if (contProximaCita) contProximaCita.innerHTML = '';
+            if (contHistorialCitas) contHistorialCitas.innerHTML = '';
+            if (msgSinCitas) msgSinCitas.style.display = 'none';
 
-                contenedor.innerHTML += `
+            let proximaCitaEncontrada = false;
+
+            data.citas.forEach(cita => {
+                const fStr = new Date(cita.fecha).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const estClass = cita.estatus.toLowerCase();
+
+                const HTMLCard = `
                     <div class="tarjeta-cita-historial">
-                        <p><strong>Fecha:</strong> ${fecha} a las <strong>${cita.hora}</strong></p>
+                        <p><strong>Fecha:</strong> ${fStr} a las <strong>${cita.hora} hrs</strong></p>
                         <p><strong>Médico:</strong> Dr(a). ${cita.nombre} ${cita.apellido_paterno}</p>
-                        <p><strong>Estado:</strong> <span class="estatus ${estadoClass}">${cita.estatus}</span></p>
-                        ${cita.estatus.toLowerCase() === 'cancelada' ? `<p style="font-size: 12px; color: #666;"><em>Cita cancelada.</em></p>` : ''}
-                    </div>
-                `;
+                        <p><strong>Estado:</strong> <span class="estatus ${estClass}">${cita.estatus}</span></p>
+                    </div>`;
+
+                // Si es la pantalla 13 (Ver lista plana)
+                if (contHistorialCompleto) {
+                    contHistorialCompleto.innerHTML += HTMLCard;
+                }
+
+                // Si es la pantalla 26 (Portal del paciente con división de estados)
+                if (contProximaCita && contHistorialCitas) {
+                    if (cita.estatus.toLowerCase() === 'agendada' && !proximaCitaEncontrada) {
+                        // Es la cita vigente del paciente
+                        contProximaCita.innerHTML = `
+                            <div class="tarjeta-cita-destacada">
+                                <p style="font-size:18px; color:#0E3B5C;">📅 <strong>Próxima Cita Confirmada</strong></p>
+                                <p style="margin-top:10px;"><strong>Fecha:</strong> ${fStr}</p>
+                                <p><strong>Hora:</strong> ${cita.hora} hrs</p>
+                                <p><strong>Especialista:</strong> Dr(a). ${cita.nombre} ${cita.apellido_paterno}</p>
+                                <button class="btn-accion-rojo" style="margin-top:15px; width:100%;" onclick=\"if(confirm('¿Desea cancelar esta cita?')){ fetch('https://clinica-virtual-backend.onrender.com/api/citas/cancelar',{method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_cita:${cita.id_cita}})}).then(()=>location.reload()); }\">❌ Cancelar esta Cita</button>
+                            </div>`;
+                        proximaCitaEncontrada = true;
+                    } else {
+                        // Va al historial de pasadas / canceladas
+                        contHistorialCitas.innerHTML += HTMLCard;
+                    }
+                }
             });
-        } else if (data.success) {
-            contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; margin-top: 20px;">No tiene citas registradas en su historial.</p>';
+
+            if (contProximaCita && !proximaCitaEncontrada && msgSinCitas) {
+                msgSinCitas.style.display = 'block';
+            }
         } else {
-            contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${data.mensaje}</p>`;
+            if (msgSinCitas) msgSinCitas.style.display = 'block';
+            if (contHistorialCompleto) contenedor.innerHTML = '<p style="text-align: center;">No registra historial de citas.</p>';
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Hubo un error de conexión.</p>';
+    } catch (error) { console.error(error); }
+}
+
+async function cargarHorarioDoctor() {
+    const cedula = localStorage.getItem('cedulaUsuario');
+    if (!cedula) return;
+    try {
+        if (typeof calcularTotalHoras === "function") calcularTotalHoras();
+    } catch (error) { console.error(error); }
+}
+
+async function guardarHorarioDoctor() {
+    const cedula = localStorage.getItem('cedulaUsuario');
+    if (!cedula) return alert("❌ Error: Sesión de usuario inválida.");
+
+    let totalHoras = 0;
+    if (typeof calcularTotalHoras === "function") totalHoras = calcularTotalHoras();
+
+    if (totalHoras < 40) {
+        alert("⚠️ No se puede guardar: Debe cubrir un mínimo de 40 horas semanales.");
+        return;
     }
+
+    const listaHorarios = [];
+    for (let i = 0; i < 7; i++) {
+        const checkbox = document.getElementById(`chk-${i}`);
+        if (checkbox && checkbox.checked) {
+            listaHorarios.push({
+                dia_semana: i,
+                hora_inicio: document.getElementById(`inicio-${i}`).value,
+                hora_fin: document.getElementById(`fin-${i}`).value
+            });
+        }
+    }
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${encodeURIComponent(cedula)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(listaHorarios)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("✅ " + data.mensaje);
+            history.back();
+        } else { alert("⚠️ " + data.mensaje); }
+    } catch (error) { alert("❌ Error al guardar el horario."); }
 }
 
 async function marcarAsistencia(idCita, nuevoEstatus) {
@@ -1079,10 +1196,8 @@ async function marcarAsistencia(idCita, nuevoEstatus) {
                 tarjeta.classList.add(`estado-${nuevoEstatus}`);
                 tarjeta.querySelector('.botones-control').innerHTML = `<p style="font-weight: bold; color: ${nuevoEstatus === 'presente' ? '#2D5A27' : '#991D27'};">Marcado como ${nuevoEstatus.toUpperCase()}</p>`;
             }
-        } else {
-            alert(`⚠️ ${data.mensaje}`);
-        }
-    } catch (error) {
-        alert('❌ Error de conexión al actualizar el estado de la cita.');
-    }
+        } else { alert(`⚠️ ${data.mensaje}`); }
+    } catch (error) { alert('❌ Error de conexión.'); }
 }
+
+//  
