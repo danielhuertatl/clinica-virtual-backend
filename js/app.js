@@ -16,17 +16,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DE LOGIN ---
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
+        const usuarioInput = document.getElementById('usuario');
+        const contrasenaInput = document.getElementById('contrasena');
         const feedbackDiv = document.getElementById('login-feedback');
+        const capsLockWarning = document.getElementById('caps-lock-warning');
+
+        // 1. Forzar minúsculas en el campo de correo en tiempo real.
+        if (usuarioInput) {
+            usuarioInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.toLowerCase();
+            });
+        }
+
+        // 2. Detectar si el bloqueo de mayúsculas está activado en el campo de contraseña.
+        if (contrasenaInput && capsLockWarning) {
+            contrasenaInput.addEventListener('keyup', (e) => {
+                if (e.getModifierState('CapsLock')) {
+                    capsLockWarning.style.display = 'block';
+                } else {
+                    capsLockWarning.style.display = 'none';
+                }
+            });
+        }
+
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const usuarioInput = document.getElementById('usuario').value.trim().toLowerCase();
-            const contrasenaInput = document.getElementById('contrasena').value;
-
+            const correoValue = usuarioInput.value.trim(); // Ya está en minúsculas por el listener
+            const passwordValue = contrasenaInput.value;
             try {
                 const respuesta = await fetch('https://clinica-virtual-backend.onrender.com/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ correo: usuarioInput, password: contrasenaInput })
+                    body: JSON.stringify({ correo: correoValue, password: passwordValue })
                 });
                 const datos = await respuesta.json();
 
