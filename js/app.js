@@ -945,32 +945,38 @@ async function cargarEstudiosPaciente() {
     const rol = localStorage.getItem('rolUsuario');
     const idPacienteSesion = localStorage.getItem('idPaciente');
 
-    // Elementos de la página de estudios
-    const searchContainer = document.getElementById('search-container-estudios');
-    const headerTitle = document.querySelector('.header-consulta h3');
+    if (!contenedor) return; // Si no hay contenedor principal, no hacemos nada.
 
-    if (!contenedor || !searchContainer || !headerTitle) return;
+    // Contenedor para la barra de búsqueda que debe existir en 15-mostrar-estudios.html
+    const searchContainerHTML = `
+        <div id="search-container-estudios" class="input-inline" style="margin-bottom: 20px;">
+            <input type="text" id="termino-estudios" placeholder="Buscar por Teléfono, CURP o Correo del Paciente">
+            <button id="btn-buscar-estudios" class="btn-ok">Buscar</button>
+        </div>`;
 
     if (rol === 'paciente' && idPacienteSesion) {
         // Si es paciente, carga sus estudios directamente
-        searchContainer.style.display = 'none';
-        headerTitle.textContent = 'Mis Estudios Clínicos';
+        const headerTitle = document.querySelector('.header-consulta h3');
+        if(headerTitle) headerTitle.textContent = 'Mis Estudios Clínicos';
         await buscarYRenderizarEstudios(idPacienteSesion, contenedor);
+
     } else if (rol === 'doctor' || rol === 'admin' || rol === 'enfermero') {
-        // Si es personal médico, activa la barra de búsqueda
-        searchContainer.style.display = 'flex';
+        // Si es personal médico, inyectamos y activamos la barra de búsqueda
+        contenedor.insertAdjacentHTML('beforebegin', searchContainerHTML);
+        
         const btnBuscar = document.getElementById('btn-buscar-estudios');
         if (btnBuscar) {
             btnBuscar.addEventListener('click', async () => {
                 const termino = document.getElementById('termino-estudios').value.trim();
                 if (!termino) return alert('Por favor, ingrese un dato del paciente para buscar.');
-                
+
                 try {
                     const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
                     const dataPaciente = await resPaciente.json();
 
                     if (dataPaciente.success) {
-                        headerTitle.textContent = `Estudios de: ${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
+                        const headerTitle = document.querySelector('.header-consulta h3');
+                        if(headerTitle) headerTitle.textContent = `Estudios de: ${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
                         await buscarYRenderizarEstudios(dataPaciente.paciente.id_paciente, contenedor);
                     } else {
                         contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${dataPaciente.mensaje}</p>`;
@@ -979,6 +985,8 @@ async function cargarEstudiosPaciente() {
                     contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">Error de conexión al buscar paciente.</p>`;
                 }
             });
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center; color: #666;">Ingrese un dato para buscar los estudios de un paciente.</p>';
         }
     }
 }
