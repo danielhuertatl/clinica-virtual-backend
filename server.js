@@ -547,7 +547,7 @@ app.get('/api/admin/incidencias', async (req, res) => {
 
         // Obtenemos las solicitudes de recuperación de contraseña
         const recuperacionRes = await pool.query(
-            `SELECT * FROM mensajes WHERE asunto = 'Recuperación de Contraseña' AND leido = false ORDER BY fecha_envio DESC`
+            `SELECT * FROM mensajes WHERE asunto ILIKE 'Recuperación de Contraseña' AND leido = false ORDER BY fecha_envio DESC`
         );
 
         res.json({

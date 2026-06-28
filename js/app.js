@@ -1394,7 +1394,10 @@ async function renderizarCitaPacienteAgenda() {
 
         if (data.success && data.citas.length > 0) {
             // Buscamos cualquier cita activa (agendada) sin importar la restricción estricta de año escolar
-            const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada');
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0); // Ignoramos la hora para comparar solo la fecha
+
+            const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada' && new Date(c.fecha) >= hoy);
 
             if (citaActiva) {
                 const fechaLimpia = citaActiva.fecha.split('T')[0].replace(/-/g, '/');
