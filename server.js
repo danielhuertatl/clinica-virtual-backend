@@ -54,7 +54,10 @@ app.post('/api/login', async (req, res) => {
     const { correo, password } = req.body;
     try {
         const result = await pool.query(
-            `SELECT u.password_hash, u.rol, COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre, p.cedula_id, pac.id_paciente 
+            `SELECT u.password_hash, u.rol, 
+                    COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre, 
+                    p.cedula_id, 
+                    pac.id_paciente 
              FROM usuarios u 
              LEFT JOIN personal p ON u.id_usuario = p.id_usuario 
              LEFT JOIN pacientes pac ON u.id_usuario = pac.id_usuario
