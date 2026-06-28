@@ -34,14 +34,6 @@
             padding: 10px;
             border-bottom: 1px solid #eee;
         }
-        .indicador-nuevo {
-            background: #d35400;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
     </style>
 </head>
 <body>
@@ -56,122 +48,35 @@
         </div>
 
         <div class="container-admin-29">
-            
-            <!-- SECCIÓN 1: DIRECTORIO DE CONTACTO -->
             <div class="seccion-blanca">
-                <h3 style="color: #0E3B5C; margin-bottom: 5px;">📞 Directorio de Contacto de Especialistas</h3>
-                <p style="font-size: 13px; color: #666;">Lista operativa de los médicos registrados en el sistema y sus vías de contacto directo.</p>
-                
+                <h3 style="color: #0E3B5C; margin-bottom: 5px;">📞 Directorio de Especialistas Activos</h3>
+                <p style="font-size: 13px; color: #666;">Contactos oficiales sincronizados directamente de la base de datos de Clínica Virtual.</p>
                 <table class="tabla-contactos">
                     <thead>
                         <tr>
                             <th>Nombre del Médico</th>
-                            <th>Cédula Profesional</th>
-                            <th>Número Telefónico</th>
+                            <th>Cédula ID</th>
+                            <th>Teléfono de Contacto</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpo-directorio">
                         <tr>
-                            <td colspan="3" style="text-align: center; color: #666;">Sincronizando directorio...</td>
+                            <td colspan="3" style="text-align: center; color: #666;">Conectando al servidor...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- SECCIÓN 2: BUZÓN DE INCIDENCIAS -->
             <div class="seccion-blanca" style="border-top: 5px solid #991D27;">
-                <h3 style="color: #991D27;">📥 Buzón de Incidencias y Alertas de Seguridad</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Mensajes de recuperación de accesos o solicitudes de soporte técnico enviadas por los usuarios.</p>
+                <h3 style="color: #991D27;">📥 Buzón de Alertas e Incidencias</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Reportes de seguridad e historial de bajas lógicas procesadas.</p>
                 <div id="lista-incidencias">
-                    <p style="text-align: center; color: #666;">Cargando mensajes del buzón corporativo...</p>
+                    <p style="text-align: center; color: #666;">Cargando incidencias del servidor...</p>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script src="../js/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarDirectorioReal();
-            cargarBuzonIncidencias();
-        });
-
-        // 1. Sincronizar la tabla con los doctores reales de la Base de Datos
-        async function cargarDirectorioReal() {
-            const tbody = document.getElementById('cuerpo-directorio');
-            try {
-                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
-                const data = await res.json();
-
-                if (data.success && data.doctores.length > 0) {
-                    tbody.innerHTML = data.doctores.map(doc => `
-                        <tr>
-                            <td style="font-weight: bold; color: #0E3B5C;">Dr(a). ${doc.nombre} ${doc.apellido_paterno}</td>
-                            <td><code style="background: #eef5f9; padding: 2px 6px; border-radius: 4px;">${doc.cedula_id}</code></td>
-                            <td>
-                                <a href="tel:${doc.telefono}" style="color: #2D5A27; text-decoration: none; font-weight: bold;">
-                                    📞 ${doc.telefono || 'Sin registrar'}
-                                </a>
-                            </td>
-                        </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #991D27;">No hay médicos activos registrados en el directorio.</td></tr>`;
-                }
-            } catch (error) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #991D27;">❌ Error de conexión al cargar el directorio.</td></tr>`;
-            }
-        }
-
-        // 2. Mapear de forma inteligente las alertas reales de recuperación de contraseñas de la BD
-        async function cargarBuzonIncidencias() {
-            const contenedor = document.getElementById('lista-incidencias');
-            try {
-                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
-                const data = await res.json();
-
-                if (data.success) {
-                    const usuariosInactivos = data.usuarios.filter(u => !u.estatus);
-                    let htmlContenido = "";
-
-                    usuariosInactivos.forEach(u => {
-                        htmlContenido += `
-                            <div style="padding: 15px; background: #fff9f9; border: 1px solid #f5c6cb; border-radius: 6px; margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <strong style="color: #991D27;">🚫 Acceso Revocado (Baja Confirmada)</strong>
-                                    <span class="indicador-nuevo" style="background: #666;">Historial</span>
-                                </div>
-                                <p style="font-size: 14px; margin: 8px 0;">"La cuenta asociada al correo <strong>${u.correo}</strong> (${u.rol}) fue dada de baja de manera lógica. Sus accesos han sido suspendidos de la API."</p>
-                                <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
-                                    <span>👤 ID Usuario: ${u.id_usuario}</span>
-                                    <span>⚙️ Sistema de Auditoría</span>
-                                </div>
-                            </div>`;
-                    });
-
-                    // Añadimos una alerta fija para simular peticiones en /api/recuperar-password
-                    htmlContenido += `
-                        <div style="padding: 15px; background: #fbf9f1; border: 1px solid #f3ebd0; border-radius: 6px; margin-bottom: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <strong style="color: #d35400;">🔑 Solicitud de Restablecimiento</strong>
-                                <span class="indicador-nuevo">Pendiente</span>
-                            </div>
-                            <p style="font-size: 14px; margin: 8px 0;">"Se ha registrado una petición en la ruta <code>/api/recuperar-password</code>. Verifique con el administrador para coordinar la asignación de una nueva clave temporal."</p>
-                            <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
-                                <span>🌐 Origen: Portal de Acceso</span>
-                                <span>📅 Hoy</span>
-                            </div>
-                        </div>`;
-
-                    contenedor.innerHTML = htmlContenido;
-                } else {
-                    contenedor.innerHTML = `<p style="text-align: center; color: #666;">No hay alertas en el buzón.</p>`;
-                }
-            } catch (error) {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">❌ Error de enlace con el buzón de incidencias.</p>`;
-            }
-        }
-    </script>
 </body>
-</html>
+</html>         

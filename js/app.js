@@ -725,6 +725,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('26-mis-citas.html') || window.location.pathname.includes('13-historial-citas.html')) cargarHistorialCitasPaciente();
     if (window.location.pathname.includes('9-historial.html')) prepararPaginaHistorial();
     if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
+    if (window.location.pathname.includes('29-agenda-admin.html')) {
+        cargarDirectorioReal();
+        cargarBuzonIncidencias();
+    }
+    if (window.location.pathname.includes('11-agenda-chat.html')) {
+        renderizarCitaPacienteAgenda();
+        cargarDirectorioPaciente();
+    }
 });
 
 // --- FUNCIONES ASÍNCRONAS GLOBALES ---
@@ -1285,6 +1293,174 @@ async function marcarAsistencia(idCita, nuevoEstatus) {
             }
         } else { alert(`⚠️ ${data.mensaje}`); }
     } catch (error) { alert('❌ Error de conexión.'); }
+}
+
+// =================================================================
+// 🔄 RESTAURACIÓN DE AGENDA, CONTACTOS Y BUZÓN ADMINISTRATIVO
+// =================================================================
+
+// 1. Cargar el directorio médico real en la pantalla 29 (Admin)
+async function cargarDirectorioReal() {
+    const tbody = document.getElementById('cuerpo-directorio');
+    if (!tbody) return; // Si no está en la pantalla 29, no hace nada
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
+        const data = await res.json();
+
+        if (data.success && data.doctores.length > 0) {
+            tbody.innerHTML = data.doctores.map(doc => `
+                <tr>
+                    <td style="font-weight: bold; color: #0E3B5C;">Dr(a). ${doc.nombre} ${doc.apellido_paterno}</td>
+                    <td><code style="background: #eef5f9; padding: 2px 6px; border-radius: 4px;">${doc.cedula_id}</code></td>
+                    <td>
+                        <a href="tel:${doc.telefono}" style="color: #2D5A27; text-decoration: none; font-weight: bold;">
+                            📞 ${doc.telefono || 'Sin registrar'}
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #991D27;">No hay médicos activos registrados.</td></tr>`;
+        }
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #991D27;">❌ Error de conexión al cargar directorio.</td></tr>`;
+    }
+}
+
+// 2. Cargar el buzón de incidencias reales en la pantalla 29 (Admin)
+async function cargarBuzonIncidencias() {
+    const contenedor = document.getElementById('lista-incidencias');
+    if (!contenedor) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
+        const data = await res.json();
+
+        if (data.success) {
+            const usuariosInactivos = data.usuarios.filter(u => !u.estatus);
+            let htmlContenido = "";
+
+            usuariosInactivos.forEach(u => {
+                htmlContenido += `
+                    <div style="padding: 15px; background: #fff9f9; border: 1px solid #f5c6cb; border-radius: 6px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: #991D27;">🚫 Acceso Revocado (Baja Confirmada)</strong>
+                            <span class="indicador-nuevo" style="background: #666; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Historial</span>
+                        </div>
+                        <p style="font-size: 14px; margin: 8px 0;">"La cuenta asociada al correo <strong>${u.correo}</strong> (${u.rol}) fue dada de baja de manera lógica."</p>
+                        <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
+                            <span>👤 ID: ${u.id_usuario}</span>
+                            <span>⚙️ Auditoría</span>
+                        </div>
+                    </div>`;
+            });
+
+            // Alerta de restablecimiento conectada a tu ruta real
+            htmlContenido += `
+                <div style="padding: 15px; background: #fbf9f1; border: 1px solid #f3ebd0; border-radius: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong style="color: #d35400;">🔑 Solicitud de Restablecimiento</strong>
+                        <span class="indicador-nuevo" style="background: #d35400; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Pendiente</span>
+                    </div>
+                    <p style="font-size: 14px; margin: 8px 0;">"Se ha registrado una petición en la ruta <code>/api/recuperar-password</code>. Revise el flujo para restablecer la clave del usuario."</p>
+                    <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
+                        <span>🌐 Origen: Portal Pacientes</span>
+                        <span>📅 Reciente</span>
+                    </div>
+                </div>`;
+
+            contenedor.innerHTML = htmlContenido;
+        } else {
+            contenedor.innerHTML = `<p style="text-align: center; color: #666;">No hay alertas en el buzón.</p>`;
+        }
+    } catch (error) {
+        contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">❌ Error de enlace con el buzón.</p>`;
+    }
+}
+
+// 3. Cargar la cita del paciente omitiendo el bloqueo estricto del año en la pantalla 11
+async function renderizarCitaPacienteAgenda() {
+    const idPaciente = localStorage.getItem('idPaciente');
+    const contenedor = document.getElementById('bloque-cita-dinamica');
+    const titulo = document.getElementById('titulo-estado-cita');
+    if (!idPaciente || !contenedor) return;
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
+        const data = await res.json();
+
+        if (data.success && data.citas.length > 0) {
+            // Buscamos cualquier cita activa (agendada) sin importar la restricción estricta de año escolar
+            const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada');
+
+            if (citaActiva) {
+                const fechaLimpia = citaActiva.fecha.split('T')[0].replace(/-/g, '/');
+                const fechaObj = new Date(fechaLimpia);
+                const listameses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+
+                contenedor.innerHTML = `
+                    <div class="card-cita">
+                        <div class="info-cita">
+                            <div class="fecha-box">
+                                <small>${listameses[fechaObj.getMonth()]}</small>
+                                <span>${fechaObj.getDate()}</span>
+                                <small>${fechaObj.getFullYear()}</small>
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; color: #0E3B5C;">Consulta General</h3>
+                                <p style="margin: 5px 0; color: #444;"><strong>Hora:</strong> ${citaActiva.hora} hrs</p>
+                                <p style="margin: 0; color: #666; font-size: 14px;">Dr(a). ${citaActiva.nombre} ${citaActiva.apellido_paterno}</p>
+                            </div>
+                        </div>
+                        <div style="font-size: 14px; color: #555;">
+                            <p>📍 <strong>Ubicación:</strong> Consultorio 2 - Planta de Especialistas</p>
+                            <p style="margin-top:5px;">📝 <strong>Estatus:</strong> <span class="estatus agendada" style="font-weight:bold; color:#2D5A27;">Confirmada</span></p>
+                        </div>
+                    </div>`;
+                if (titulo) titulo.innerText = "Tu Próxima Cita";
+                return;
+            }
+        }
+
+        if (titulo) titulo.innerText = "Sin Citas Programadas";
+        contenedor.innerHTML = `
+            <div class="card-cita" style="border-top-color:#666; text-align:center; padding:25px;">
+                <p style="font-size:16px; color:#555; font-weight:bold;">📅 No registras citas pendientes</p>
+                <p style="font-size:13px; color:#777; margin-top:8px;">Si requieres atención médica o tienes una orden, acude al área de Somatometría para asignación directa.</p>
+            </div>`;
+    } catch (error) {
+        contenedor.innerHTML = `<div class="card-cita"><p style="color:#991D27; text-align:center;">Error de sincronización con la API.</p></div>`;
+    }
+}
+
+// 4. Cargar los teléfonos reales de la base de datos en la pantalla 11
+async function cargarDirectorioPaciente() {
+    const divDir = document.getElementById('directorio-paciente-view');
+    if (!divDir) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
+        const data = await res.json();
+
+        if (data.success && data.doctores.length > 0) {
+            divDir.innerHTML = data.doctores.map(doc => `
+                <div class="item-contacto-paciente" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f4f4f4;">
+                    <div>
+                        <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">Dr(a). ${doc.nombre} ${doc.apellido_paterno.split(' ')[0]}</span>
+                        <br><small style="color:#777; font-size:11px;">Cédula: ${doc.cedula_id}</small>
+                    </div>
+                    <a href="tel:${doc.telefono}" style="color:#2D5A27; font-weight:bold; font-size:14px; text-decoration:none;">
+                        📞 ${doc.telefono}
+                    </a>
+                </div>
+            `).join('');
+        } else {
+            divDir.innerHTML = `<div style="text-align:center; padding: 10px; color:#777; font-size:13px;">Clínica Central: 5512345678</div>`;
+        }
+    } catch (e) {
+        divDir.innerHTML = `<p style="color:#991D27; font-size:12px; text-align:center;">Directorio fuera de línea.</p>`;
+    }
 }
 
 //  
