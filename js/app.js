@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (/([A-ZÁÉÍÓÚÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
                     if (warnSpan) {
-                        warnSpan.textContent = "⚠️ No se permiten letras consecutivas repetidas.";
+                        warnSpan.textContent = "⚠️ No se permiten 3 letras consecutivas idénticas.";
                         warnSpan.style.display = 'block';
                     }
                     e.target.value = texto;
@@ -149,11 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- FORMATEO GENERAL A MAYÚSCULAS PARA DIRECCIONES ---
-    const inputsDireccionM = ['calle', 'colonia', 'municipio', 'colonia_municipio'];
+    // 4 y 7. Limpieza de caracteres especiales en campos de dirección.
+    const inputsDireccionM = ['calle', 'colonia', 'municipio', 'colonia_municipio', 'num_ext'];
     inputsDireccionM.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('input', (e) => {
+                // Formateo en tiempo real: Permite letras, números, espacios y los caracteres # . -
+                e.target.value = e.target.value.replace(/[^A-Z0-9#.\-\s]/gi, '');
                 e.target.value = e.target.value.toUpperCase();
             });
         }
@@ -459,6 +462,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('btn-personal');
             const errorCurp = document.getElementById('curp-error');
 
+            // --- VALIDACIONES DE SUBMIT ---
+            // 1.1 y 6. APELLIDOS DUPLICADOS
+            const apellidoP = document.getElementById('apellido_p').value;
+            const apellidoM = document.getElementById('apellido_m').value;
+            if (apellidoP.split(' ').filter(p => p.length > 1).length > 1 || apellidoM.split(' ').filter(p => p.length > 1).length > 1) {
+                alert('⚠️ Error: Los campos de apellido no deben contener el mismo apellido dos veces.');
+                return;
+            }
+
+            // 4. CALLE CON CARACTERES ESPECIALES (se valida en submit para ser más estricto)
+            const calle = document.getElementById('calle').value;
+            if (/[^A-Z0-9\s#.-]/.test(calle)) {
+                alert('⚠️ Error: El campo "Calle" contiene caracteres no permitidos.');
+                return;
+            }
+
+            // 5. NÚMERO EXTERIOR ACEPTA LETRAS (se valida que no sea solo texto)
+            const numExt = document.getElementById('num_ext').value;
+            if (numExt.length > 0 && !/\d/.test(numExt)) {
+                alert('⚠️ Error: El "Número Exterior" debe contener al menos un dígito si no está vacío.');
+                return;
+            }
+
             if (errorCurp && errorCurp.style.display === 'block') {
                 alert('⚠️ Error: Corrija las advertencias de la CURP antes de sincronizar.');
                 return;
@@ -468,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('⚠️ El teléfono debe tener exactamente 10 dígitos.');
                 return;
             }
-
+            // --- FIN DE VALIDACIONES ---
             btn.innerText = "Sincronizando...";
 
             const colElement = document.getElementById('colonia_p');
@@ -518,10 +544,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorVisible = document.getElementById('curp-error');
             const errorEmailVisible = document.getElementById('email-error');
 
-            const calleVal = document.getElementById('calle').value.trim();
             const coloniaElement = document.getElementById('colonia');
             const coloniaVal = coloniaElement.value.trim(); 
             const municipioVal = document.getElementById('municipio').value.trim();
+
+            // --- VALIDACIONES DE SUBMIT PARA PACIENTES ---
+
+            // 6. APELLIDOS DUPLICADOS (PACIENTE)
+            const apPaterno = document.getElementById('ap-paterno').value.trim();
+            const apMaterno = document.getElementById('ap-materno').value.trim();
+            if ((apPaterno.split(' ').length > 1 && new Set(apPaterno.split(' ')).size === 1) || (apMaterno.split(' ').length > 1 && new Set(apMaterno.split(' ')).size === 1)) {
+                alert('⚠️ Error: Un mismo apellido no puede repetirse en un solo campo (ej: "GARCIA GARCIA").');
+                return;
+            }
+
+            // 7. CALLE CON CARACTERES ESPECIALES (PACIENTE)
+            if (/[^A-Z0-9\s#.-]/i.test(document.getElementById('calle').value)) {
+                alert('⚠️ Error: El campo "Calle" contiene caracteres no permitidos.');
+                return;
+            }
 
             if (telefono.length !== 10) {
                 alert('⚠️ Error: El teléfono debe tener exactamente 10 dígitos.');
@@ -532,6 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('⚠️ Error: No se puede guardar. Corrija las advertencias del formato antes de proceder.');
                 return;
             }
+            // --- FIN DE VALIDACIONES ---
 
             btn.innerText = "Sincronizando...";
 
@@ -541,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 apellido_m: document.getElementById('ap-materno').value,
                 edad: document.getElementById('edad').value,
                 telefono: telefono,
-                tipo_sangre: document.getElementById('tipo-sangre').value,
+                tipo_sangre: document.getElementById('tipo-sangre').value, // Asegúrate que este ID exista
                 correo: document.getElementById('email').value,
                 curp: curp || null,
                 calle: calleVal,
@@ -637,6 +679,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('9-historial.html')) prepararPaginaHistorial();
 });
 
+// --- FUNCIONES ASÍNCRONAS GLOBALES ---
+
+// 10. NO ENCUENTRA PACIENTE (ENFERMERO) - Implementación de la carga de agenda
+async function cargarAgendaEnfermeria() {
+    const contenedor = document.getElementById('contenedor-agenda-enfermeria');
+    if (!contenedor) return;
+
+    const fechaHoy = new Date().toISOString().split('T')[0];
+    contenedor.innerHTML = '<p style="text-align: center;">Cargando agenda de hoy...</p>';
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/fecha/${fechaHoy}`);
+        const data = await res.json();
+
+        if (data.success && data.citas.length > 0) {
+            contenedor.innerHTML = data.citas.map(cita => `
+                <div class="tarjeta-paciente" id="cita-${cita.id_cita}">
+                    <div class="info-paciente">
+                        <p><strong>${cita.nombre} ${cita.apellido_paterno}</strong></p>
+                        <p>Hora: ${cita.hora} - Dr(a). ${cita.doctor_apellido}</p>
+                    </div>
+                    <div class="botones-control">
+                        <button class="btn-accion-verde" onclick="marcarAsistencia(${cita.id_cita}, 'presente')">Presente</button>
+                        <button class="btn-accion-rojo" onclick="marcarAsistencia(${cita.id_cita}, 'ausente')">Ausente</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C;">No hay citas agendadas para hoy.</p>';
+        }
+    } catch (error) {
+        console.error("Error cargando agenda de enfermería:", error);
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la agenda.</p>';
+    }
+}
+
 async function buscarPersonalParaEditar() {
     const termino = document.getElementById('buscar-cedula').value.trim();
     if (!termino) {
@@ -645,7 +723,7 @@ async function buscarPersonalParaEditar() {
     }
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -697,6 +775,7 @@ function prepararPaginaBorrado() {
     }
 }
 
+// 8. NO ACEPTA CORREO AL DAR DE BAJA (Corregido en frontend y backend)
 async function buscarPersonalParaBorrar() {
     const termino = document.getElementById('termino-borrar').value.trim();
     const resultadosDiv = document.getElementById('resultados-borrado');
@@ -708,7 +787,7 @@ async function buscarPersonalParaBorrar() {
     }
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${termino}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -762,6 +841,31 @@ async function confirmarBorradoPersonal(idUsuario, nombreCompleto) {
     }
 }
 
+// 9. NO SE MUESTRA LISTADO (Corregido)
+async function cargarUsuariosAdmin() {
+    const contenedor = document.getElementById('lista-usuarios-admin');
+    if (!contenedor) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
+        const data = await res.json();
+        if (data.success && data.usuarios.length > 0) {
+            contenedor.innerHTML = data.usuarios.map(u => `
+                <div class="tarjeta-usuario ${u.estatus ? '' : 'inactivo'}" style="border-left-color: ${u.estatus ? '#0E3B5C' : '#991D27'};">
+                    <div class="info-paciente">
+                        <p><strong>${u.nombre ? (u.nombre + ' ' + (u.apellido_paterno || '')) : 'Usuario sin Perfil'}</strong> (${u.rol})</p>
+                        <p>${u.correo} - <span style="font-weight: bold; color: ${u.estatus ? '#2D5A27' : '#991D27'}">${u.estatus ? 'Activo' : 'Inactivo'}</span></p>
+                    </div>
+                </div>`).join('');
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center;">No se encontraron usuarios registrados.</p>';
+        }
+    } catch (error) { 
+        console.error("Error en cargarUsuariosAdmin:", error);
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la lista de usuarios.</p>'; 
+    }
+}
+ 
 async function cargarEstudiosPaciente() {
     const idPaciente = localStorage.getItem('idPaciente');
     const contenedor = document.getElementById('contenedor-estudios');
@@ -809,7 +913,7 @@ async function buscarPacienteConsulta() {
     }
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${termino}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -822,6 +926,22 @@ async function buscarPacienteConsulta() {
             document.getElementById('nombre-paciente').dataset.idPaciente = p.id_paciente;
 
             alert("✅ Paciente encontrado.");
+
+            // 11. NO FINALIZA CONSULTA (IMC) - Precarga de signos vitales para evitar error
+            const resSignos = await fetch(`https://clinica-virtual-backend.onrender.com/api/signos/${p.id_paciente}`);
+            const dataSignos = await resSignos.json();
+            if (dataSignos.success && dataSignos.signos) {
+                const signos = dataSignos.signos;
+                document.getElementById('peso').value = signos.peso || '';
+                document.getElementById('talla').value = signos.talla || '';
+                document.getElementById('fc').value = signos.fc || '';
+                document.getElementById('fr').value = signos.fr || '';
+                document.getElementById('sato2').value = signos.sato2 || '';
+                document.getElementById('alerta-signos-faltantes').style.display = 'none';
+            } else {
+                // No reseteamos el form, solo mostramos la alerta de que no hay signos
+                document.getElementById('alerta-signos-faltantes').style.display = 'block';
+            }
             
         } else {
             alert("⚠️ " + data.mensaje);
@@ -843,7 +963,7 @@ async function buscarPacienteEstudio() {
     }
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${termino}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
         const data = await res.json();
 
         if (data.success) {
@@ -882,8 +1002,8 @@ async function buscarHistorialPaciente() {
     }
 
     try {
-        // 1. Buscar al paciente para obtener su ID
-        const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${termino}`);
+        // 1. Buscar al paciente para obtener su ID (usando el endpoint unificado)
+        const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
         const dataPaciente = await resPaciente.json();
 
         if (!dataPaciente.success) {
@@ -966,7 +1086,7 @@ async function cargarHistorialCitasPaciente() {
     const contenedor = document.getElementById('contenedor-citas-historial');
 
     if (!idPaciente) {
-        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error: No se encontró identificador de paciente. Por favor, inicie sesión de nuevo.</p>';
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error: No se encontró identificador de paciente. Vuelva a iniciar sesión.</p>';
         return;
     }
 
@@ -975,8 +1095,15 @@ async function cargarHistorialCitasPaciente() {
         const data = await res.json();
 
         if (data.success && data.citas.length > 0) {
+            const nombreUsuario = localStorage.getItem('nombreUsuario');
+            const titulo = document.querySelector('.header-consulta h3');
+            if (titulo && nombreUsuario) {
+                titulo.textContent = `Bienvenido(a), ${nombreUsuario}`;
+            }
+
             contenedor.innerHTML = ''; // Limpiar el mensaje de "Cargando..."
             data.citas.forEach(cita => {
+                // 12. NO VE CITAS (Corregido)
                 const fecha = new Date(cita.fecha).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 const estadoClass = cita.estatus.toLowerCase();
 
@@ -991,6 +1118,11 @@ async function cargarHistorialCitasPaciente() {
                 contenedor.innerHTML += tarjetaHTML;
             });
         } else if (data.success) {
+            const nombreUsuario = localStorage.getItem('nombreUsuario');
+            const titulo = document.querySelector('.header-consulta h3');
+            if (titulo && nombreUsuario) {
+                titulo.textContent = `Bienvenido(a), ${nombreUsuario}`;
+            }
             contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C; margin-top: 20px;">No tiene citas registradas en su historial.</p>';
         } else {
             contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${data.mensaje}</p>`;

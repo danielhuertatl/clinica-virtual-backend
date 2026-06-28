@@ -131,9 +131,9 @@ app.get('/api/personal/:termino', async (req, res) => {
     const { termino } = req.params;
     try {
         const result = await pool.query(
-            `SELECT p.*, u.correo FROM personal p 
+            `SELECT p.*, u.correo, u.id_usuario FROM personal p 
              JOIN usuarios u ON p.id_usuario = u.id_usuario 
-             WHERE p.cedula_id = $1 OR u.correo = $1`, [termino]
+             WHERE p.cedula_id = $1 OR LOWER(u.correo) = LOWER($1)`, [termino]
         );
         if (result.rows.length > 0) res.json({ success: true, persona: result.rows[0] });
         else res.json({ success: false, mensaje: 'No se encontró personal con esa Cédula o Correo.' });
@@ -168,7 +168,7 @@ app.get('/api/pacientes/:id', async (req, res) => {
              FROM pacientes p
              LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario
              WHERE p.id_paciente = $1 OR UPPER(p.curp) = UPPER($2) OR p.telefono = $2 OR UPPER(u.correo) = UPPER($2)`, 
-             [!isNaN(idNumerico) ? idNumerico : 0, id]
+             [idNumerico || -1, id]
         );
         if (result.rows.length > 0) res.json({ success: true, paciente: result.rows[0] });
         else res.json({ success: false, mensaje: 'No se encontró paciente con ese Teléfono, CURP o Correo.' });
@@ -473,10 +473,12 @@ app.post('/api/recuperar-password', async (req, res) => {
 app.get('/api/admin/usuarios', async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT u.id_usuario, u.correo, u.password_hash, u.rol, u.estatus, p.cedula_id, p.nombre, p.apellido_paterno, p.apellido_materno
-             FROM usuarios u
-             LEFT JOIN personal p ON u.id_usuario = p.id_usuario
-             ORDER BY u.rol, p.nombre`
+            `SELECT u.id_usuario, u.correo, u.rol, u.estatus, 
+                    COALESCE(p.nombre, pac.nombre) as nombre, 
+                    COALESCE(p.apellido_paterno, pac.apellido_paterno) as apellido_paterno
+             FROM usuarios u 
+             LEFT JOIN personal p ON u.id_usuario = p.id_usuario 
+             LEFT JOIN pacientes pac ON u.id_usuario = pac.id_usuario ORDER BY u.rol, nombre`
         );
         res.json({ success: true, usuarios: result.rows });
     } catch (error) {
