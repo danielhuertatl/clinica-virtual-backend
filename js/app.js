@@ -941,31 +941,62 @@ async function cargarUsuariosAdmin() {
 }
  
 async function cargarEstudiosPaciente() {
-    const idPaciente = localStorage.getItem('idPaciente');
     const contenedor = document.getElementById('contenedor-estudios');
-    if (!contenedor || !idPaciente) return;
+    const rol = localStorage.getItem('rolUsuario');
+    const idPacienteSesion = localStorage.getItem('idPaciente');
 
+    if (!contenedor) return;
+
+    if (rol === 'paciente' && idPacienteSesion) {
+        // Si es paciente, carga sus estudios directamente
+        document.getElementById('search-container-estudios').style.display = 'none';
+        document.querySelector('.header-consulta h3').textContent = 'Mis Estudios Clínicos';
+        await buscarYRenderizarEstudios(idPacienteSesion, contenedor);
+    } else if (rol === 'doctor' || rol === 'admin' || rol === 'enfermero') {
+        // Si es personal médico, activa la barra de búsqueda
+        document.getElementById('search-container-estudios').style.display = 'flex';
+        document.getElementById('btn-buscar-estudios').addEventListener('click', async () => {
+            const termino = document.getElementById('termino-estudios').value.trim();
+            if (!termino) return alert('Por favor, ingrese un dato del paciente para buscar.');
+            
+            // Primero, encontramos el ID del paciente
+            const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
+            const dataPaciente = await resPaciente.json();
+
+            if (dataPaciente.success) {
+                document.querySelector('.header-consulta h3').textContent = `Estudios de: ${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
+                await buscarYRenderizarEstudios(dataPaciente.paciente.id_paciente, contenedor);
+            } else {
+                contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${dataPaciente.mensaje}</p>`;
+            }
+        });
+    }
+}
+
+async function buscarYRenderizarEstudios(idPaciente, contenedor) {
+    contenedor.innerHTML = '<p style="text-align: center;">Cargando estudios...</p>';
     try {
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/estudios/${idPaciente}`);
         const data = await res.json();
 
         if (data.success && data.estudios.length > 0) {
-            contenedor.innerHTML = '';
-            data.estudios.forEach(estudio => {
+            contenedor.innerHTML = data.estudios.map(estudio => {
                 const fecha = new Date(estudio.fecha_solicitud).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-                contenedor.innerHTML += `
-                    <div class="tarjeta-estudio">
+                return `
+                    <div class="tarjeta-estudio" style="background:white; padding:15px; border-radius:5px; margin-bottom:10px; border-left: 5px solid #0E3B5C;">
                         <p><strong>Tipo de Estudio:</strong> ${estudio.tipo_estudio.toUpperCase()}</p>
                         <p><strong>Fecha de Solicitud:</strong> ${fecha}</p>
-                        <p><strong>Estado:</strong> <span class="estado ${estudio.estado.toLowerCase()}">${estudio.estado}</span></p>
+                        <p><strong>Estado:</strong> <span class="estado ${estudio.estado.toLowerCase()}" style="font-weight:bold; color:${estudio.estado.toLowerCase() === 'pendiente' ? '#d35400' : '#2D5A27'};">${estudio.estado}</span></p>
                         <p><strong>Indicaciones:</strong> ${estudio.indicaciones || 'Sin indicaciones.'}</p>
-                    </div>
-                `;
-            });
+                        ${estudio.estado.toLowerCase() === 'completado' ? `<p style="margin-top:10px; padding-top:10px; border-top:1px solid #eee;"><strong>Notas del Médico:</strong> ${estudio.notas_medico || 'Sin notas.'}</p>` : ''}
+                    </div>`;
+            }).join('');
         } else {
-            contenedor.innerHTML = '<p style="text-align: center;">No tiene estudios registrados.</p>';
+            contenedor.innerHTML = '<p style="text-align: center;">No se encontraron estudios para este paciente.</p>';
         }
-    } catch (error) { contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión.</p>'; }
+    } catch (error) {
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar los estudios.</p>';
+    }
 }
 
 async function buscarPacienteConsulta() {
