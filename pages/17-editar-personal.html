@@ -106,7 +106,7 @@
         // Función local avanzada para interceptar el estatus de baja reportado en el PDF
         async function buscarPersonalParaEditarActualizado() {
             const termino = document.getElementById('buscar-cedula').value.trim();
-            if (!termino) return alert("Por favor, ingrese una cédula o correo para buscar.");
+            if (!termino) return alert("Por favor, ingrese una cédula, CURP o correo para buscar.");
 
             try {
                 const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
