@@ -659,7 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }   
-    
+
     // --- FORMULARIO EDITAR PERSONAL ---
     const formEditar = document.getElementById('form-editar-personal');
     if (formEditar) {
@@ -762,19 +762,45 @@ async function cargarAgendaEnfermeria() {
 }
 
 async function buscarPersonalParaEditar() {
-    const term = document.getElementById('buscar-cedula').value.trim();
-    if (!term) return alert("Por favor, ingrese una cédula o correo para buscar.");
+    const inputBuscar = document.getElementById('buscar-cedula');
+    if (!inputBuscar) return;
+
+    let termino = inputBuscar.value.trim();
+    if (!termino) {
+        alert("Por favor, ingrese una cédula o correo para buscar.");
+        return;
+    }
+
+    // BLINDAJE INGENIOSO: Si el término contiene un '@', es un correo, por lo que forzamos minúsculas automáticamente
+    if (termino.includes('@')) {
+        termino = termino.toLowerCase();
+        inputBuscar.value = termino; // Lo pintamos en minúsculas en la interfaz
+    }
+
+    // Validación contra ráfagas de texto basura en el buscador
+    const textoLimpio = termino.replace(/\s/g, '');
+    if (textoLimpio.length >= 6 && /[^AEIOUÁÉÍÓÚÜ0-9#.-]{6,}/i.test(textoLimpio)) {
+        alert("🤔 ¿DATO REAL? Verifique que la cédula o correo ingresado sea verídico.");
+        return;
+    }
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(term)}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
         const data = await res.json();
 
         if (data.success) {
             const p = data.persona;
             personaOriginal = {
-                cedula: p.cedula_id, nombre: p.nombre, apellido_p: p.apellido_paterno, apellido_m: p.apellido_materno,
-                telefono: p.telefono, correo: p.correo, calle: p.direccion_calle, num_ext: p.direccion_num_ext,
-                cp: p.direccion_cp, colonia: p.direccion_colonia
+                cedula: p.cedula_id,
+                nombre: p.nombre,
+                apellido_p: p.apellido_paterno,
+                apellido_m: p.apellido_materno,
+                telefono: p.telefono,
+                correo: p.correo,
+                calle: p.direccion_calle,
+                num_ext: p.direccion_num_ext,
+                cp: p.direccion_cp,
+                colonia: p.direccion_colonia
             };
 
             document.getElementById('nombre').value = p.nombre || '';
@@ -789,11 +815,16 @@ async function buscarPersonalParaEditar() {
             document.getElementById('display-puesto').value = p.puesto || '';
             document.getElementById('display-cedula').value = p.cedula_id || '';
 
-            alert("✅ Personal encontrado y cargado.");
+            alert("✅ Personal encontrado y cargado en el formulario.");
         } else {
             alert("⚠️ " + data.mensaje);
+            const form = document.getElementById('form-editar-personal');
+            if (form) form.reset();
+            personaOriginal = null;
         }
-    } catch (error) { alert("❌ Error de conexión."); }
+    } catch (error) {
+        alert("❌ Error de conexión al buscar el personal.");
+    }
 }
 
 function prepararPaginaBorrado() {
@@ -802,20 +833,37 @@ function prepararPaginaBorrado() {
 }
 
 async function buscarPersonalParaBorrar() {
-    const term = document.getElementById('termino-borrar').value.trim();
-    const resDiv = document.getElementById('resultados-borrado');
-    if (!resDiv) return;
-    resDiv.innerHTML = '';
+    const inputBorrar = document.getElementById('termino-borrar');
+    const resultadosDiv = document.getElementById('resultados-borrado');
+    if (!resultadosDiv || !inputBorrar) return;
+    resultadosDiv.innerHTML = '';
 
-    if (!term) return alert("Por favor, ingrese una cédula o correo.");
+    let termino = inputBorrar.value.trim();
+    if (!termino) {
+        alert("Por favor, ingrese una cédula o correo para buscar.");
+        return;
+    }
+
+    // BLINDAJE INGENIOSO: Si contiene '@', convertimos a minúsculas para coincidir con la Base de Datos
+    if (termino.includes('@')) {
+        termino = termino.toLowerCase();
+        inputBorrar.value = termino;
+    }
+
+    // Validación contra ráfagas de texto basura
+    const textoLimpio = termino.replace(/\s/g, '');
+    if (textoLimpio.length >= 6 && /[^AEIOUÁÉÍÓÚÜ0-9#.-]{6,}/i.test(textoLimpio)) {
+        alert("🤔 ¿DATO REAL? Verifique que la cédula o correo ingresado sea verídico.");
+        return;
+    }
 
     try {
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(term)}`);
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/personal/${encodeURIComponent(termino)}`);
         const data = await res.json();
 
         if (data.success) {
             const p = data.persona;
-            resDiv.innerHTML = `
+            resultadosDiv.innerHTML = `
                 <div class="tarjeta-paciente" style="border-left-color: #991D27; background-color: #fff3f4; margin-top: 20px;">
                     <div class="info-paciente">
                         <p><strong>Nombre:</strong> ${p.nombre} ${p.apellido_paterno}</p>
@@ -824,14 +872,18 @@ async function buscarPersonalParaBorrar() {
                         <p><strong>Correo:</strong> ${p.correo}</p>
                     </div>
                     <div class="botones-control">
-                        <button class="btn-accion-rojo" onclick=\"confirmarBorradoPersonal(${p.id_usuario}, '${p.nombre} ${p.apellido_paterno}')\">Confirmar Baja</button>
+                        <button class="btn-accion-rojo" onclick="confirmarBorradoPersonal(${p.id_usuario}, '${p.nombre} ${p.apellido_paterno}')">
+                            Confirmar Baja
+                        </button>
                     </div>
                 </div>
             `;
         } else {
-            resDiv.innerHTML = `<p style="text-align: center; color: #991D27; margin-top: 20px;">${data.mensaje}</p>`;
+            resultadosDiv.innerHTML = `<p style="text-align: center; color: #991D27; margin-top: 20px;">${data.mensaje}</p>`;
         }
-    } catch (error) { alert("❌ Error de conexión."); }
+    } catch (error) {
+        alert("❌ Error de conexión al buscar el personal.");
+    }
 }
 
 async function confirmarBorradoPersonal(idUsuario, nombreCompleto) {
