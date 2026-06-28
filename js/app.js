@@ -1092,8 +1092,23 @@ async function buscarPacienteEstudio() {
 }
 
 function prepararPaginaHistorial() {
-    const btn = document.getElementById('btn-buscar-historial');
-    if (btn) btn.addEventListener('click', buscarHistorialPaciente);
+    const rol = localStorage.getItem('rolUsuario');
+    const idPaciente = localStorage.getItem('idPaciente');
+
+    if (rol === 'paciente' && idPaciente) {
+        // Si es un paciente, cargamos su historial directamente
+        const searchContainer = document.querySelector('.input-inline');
+        if (searchContainer) searchContainer.style.display = 'none'; // Ocultamos la barra de búsqueda
+
+        const titulo = document.querySelector('.header-consulta h3');
+        if (titulo) titulo.textContent = 'Mi Historial de Consultas';
+
+        buscarHistorialPaciente(idPaciente); // Llamamos a la función con el ID del paciente
+    } else {
+        // Si es personal médico, mantenemos la funcionalidad de búsqueda
+        const btn = document.getElementById('btn-buscar-historial');
+        if (btn) btn.addEventListener('click', () => buscarHistorialPaciente());
+    }
 }
 
 async function buscarHistorialPaciente() {
