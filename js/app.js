@@ -95,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FORMATEO ESTRICTO Y ALERTAS DE IDENTIDAD (TIEMPO REAL) ---
     // Agregados los IDs del formulario de personal (apellido_p, apellido_m) para que se validen igual
-    const camposIdentidad = ['nombre', 'ap-paterno', 'ap-materno', 'apellido_p', 'apellido_m', 'calle'];
     camposIdentidad.forEach(id => {
         const input = document.getElementById(id);
         const warnSpan = document.getElementById(`${id}-warn`);
@@ -150,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FORMATEO GENERAL A MAYÚSCULAS PARA DIRECCIONES ---
     // 4 y 7. Limpieza de caracteres especiales en campos de dirección.
-    const inputsDireccionM = ['colonia', 'municipio', 'colonia_municipio'];
+    const inputsDireccionM = ['calle', 'colonia', 'municipio', 'colonia_municipio', 'num_ext'];
     inputsDireccionM.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
@@ -160,12 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-    const numExtInput = document.getElementById('num_ext');
-    if (numExtInput) {
-        numExtInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/[^0-9#.\-]/g, '');
-        });
-    }
 
     // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ---
     const inputsDireccionCampos = ['calle', 'colonia', 'municipio', 'colonia_municipio'];
@@ -602,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 apellido_m: document.getElementById('ap-materno').value,
                 edad: document.getElementById('edad').value,
                 telefono: telefono,
-                tipo_sangre: document.getElementById('tipo-sangre').value, // Asegúrate que este ID exista
+                tipo_sangre: document.getElementById('tipo-sangre').value,
                 correo: document.getElementById('email').value,
                 curp: curp || null,
                 calle: calleVal,
@@ -2156,3 +2149,149 @@ async function marcarAsistencia(idCita, nuevoEstatus) {
         alert('❌ Error de conexión al actualizar el estado de la cita.');
     }
 }
+                e.target.value = e.target.value.replace(/[^A-Z0-9#.\-\s]/gi, '');
+                e.target.value = e.target.value.toUpperCase();
+            });
+        }
+    });
+
+    // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ---
+    const inputsDireccionCampos = ['calle', 'colonia', 'municipio', 'colonia_municipio'];
+    inputsDireccionCampos.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            let errSpan = document.getElementById(`${id}-dir-error`);
+            if (!errSpan) {
+                errSpan = document.createElement('span');
+                errSpan.id = `${id}-dir-error`;
+                errSpan.style.color = '#991D27';
+                errSpan.style.fontSize = '11px';
+                errSpan.style.display = 'none';
+                errSpan.style.fontWeight = 'bold';
+                input.parentNode.appendChild(errSpan);
+            }
+
+            input.addEventListener('input', (e) => {
+                let texto = e.target.value; 
+                
+                if (/([A-Z0-9áéíóúñÑ])\1\1/i.test(texto)) {
+                    texto = texto.substring(0, texto.length - 1);
+                    errSpan.textContent = "⚠️ ¡Caracteres repetidos no permitidos!";
+                    errSpan.style.display = 'block';
+                    e.target.value = texto;
+                    return;
+                }
+                errSpan.style.display = 'none';
+                e.target.value = texto;
+            });
+        }
+    });
+
+    // --- INTEGRACIÓN DE CATÁLOGO AUTOMÁTICO SEPOMEX POR C.P. ---
+    const inputCp = document.getElementById('cp');
+    const inputMunicipio = document.getElementById('municipio');
+    const inputColonia = document.getElementById('colonia');
+    const contenedorColMun = document.getElementById('contenedor-colonia-municipio'); // Elemento contenedor en personal
+
+    const baseDatosPostales = {
+        "56580": {
+            municipio: "IXTAPALUCA, ESTADO DE MÉXICO",
+            colonias: ["AYOTLA", "ALBORADA", "CENTRO", "EMILIANO ZAPATA", "LA VENTA"]
+        },
+        "56560": {
+            municipio: "IXTAPALUCA, ESTADO DE MÉXICO",
+            colonias: ["LOS HÉROES", "SAN JERÓNIMO", "CUATRO VIENTOS"]
+        },
+        "06000": {
+            municipio: "CUAUHTÉMOC, CIUDAD DE MÉXICO",
+            colonias: ["CENTRO I", "CENTRO II", "CENTRO III"]
+        }
+    };
+
+    if (inputCp) {
+        inputCp.addEventListener('input', (e) => {
+            const cp = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = cp;
+
+            if (cp.length === 5) {
+                let datosPostales = baseDatosPostales[cp];
+
+                if (!datosPostales) {
+                    datosPostales = {
+                        municipio: "MUNICIPIO CENTRAL, ESTADO DE MÉXICO",
+                        colonias: ["SECCIÓN CENTRO", "ZONA VALLE", "COLONIA INDUSTRIAL"]
+                    };
+                }
+
+                // Si estamos en la pantalla de Pacientes
+                if (inputMunicipio && inputColonia) {
+                    inputMunicipio.value = datosPostales.municipio;
+                    inputMunicipio.readOnly = true;
+                    inputMunicipio.style.backgroundColor = '#eee';
+
+                    const selectColonia = document.createElement('select');
+                    selectColonia.id = 'colonia';
+                    selectColonia.style.width = '100%';
+                    selectColonia.style.padding = '5px';
+                    selectColonia.style.height = '33px';
+                    selectColonia.style.border = '1px solid #0E3B5C';
+                    
+                    datosPostales.colonias.forEach(col => {
+                        const opt = document.createElement('option');
+                        opt.value = col;
+                        opt.textContent = col;
+                        selectColonia.appendChild(opt);
+                    });
+
+                    const currentColoniaNode = document.getElementById('colonia');
+                    currentColoniaNode.parentNode.replaceChild(selectColonia, currentColoniaNode);
+                }
+
+                // Si estamos en la pantalla de Agregar Personal
+                if (contenedorColMun) {
+                    contenedorColMun.innerHTML = `
+                        <input type="text" id="municipio_p" value="${datosPostales.municipio}" style="flex:1; background-color:#eee;" readonly>
+                        <select id="colonia_p" style="flex:1; height:35px; border:1px solid #0E3B5C;">
+                            ${datosPostales.colonias.map(c => `<option value="${c}">${c}</option>`).join('')}
+                        </select>
+                    `;
+                }
+            }
+        });
+    }
+
+    // --- BLINDAJE DEL EMAIL / CORREO DE PERSONAL ---
+    const inputsEmails = ['email', 'correo'];
+    inputsEmails.forEach(id => {
+        const emailInput = document.getElementById(id);
+        const spanEmailError = document.getElementById('email-error');
+        
+        if (emailInput) {
+            emailInput.addEventListener('input', (e) => {
+                let texto = e.target.value.toLowerCase().replace(/\s/g, ''); 
+
+                if (/([a-z0-9._%+-])\1\1/i.test(texto) || /\.\./.test(texto)) {
+                    texto = texto.substring(0, texto.length - 1); 
+                    if (spanEmailError) {
+                        spanEmailError.textContent = "⚠️ Caracteres repetidos o puntos consecutivos inválidos.";
+                        spanEmailError.style.display = 'block';
+                    }
+                } else {
+                    if (spanEmailError) spanEmailError.style.display = 'none';
+                }
+                e.target.value = texto;
+            });
+
+            emailInput.addEventListener('blur', (e) => {
+                const texto = e.target.value;
+                const regexCorreoReal = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                
+                if (texto.length > 0 && !regexCorreoReal.test(texto)) {
+                    if (spanEmailError) {
+                        spanEmailError.textContent = "⚠️ Formato de correo inválido (Falta '@' o dominio real).";
+                        spanEmailError.style.display = 'block';
+                    }
+                }
+            });
+        }
+    });
