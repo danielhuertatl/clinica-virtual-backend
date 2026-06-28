@@ -733,6 +733,12 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarCitaPacienteAgenda();
         cargarDirectorioPaciente();
     }
+    // 24. ACTIVAR LÓGICA DE RECUPERACIÓN DE CONTRASEÑA
+    const formRecuperar = document.getElementById('form-recuperar');
+    if (formRecuperar) {
+        formRecuperar.addEventListener('submit', enviarSolicitudRecuperacion);
+    }
+
 });
 
 // --- FUNCIONES ASÍNCRONAS GLOBALES ---
@@ -1310,13 +1316,18 @@ async function cargarDirectorioReal() {
 
         if (data.success && data.doctores.length > 0) {
             tbody.innerHTML = data.doctores.map(doc => `
-                <tr>
+                <tr id="doctor-row-${doc.cedula_id.replace(/\s+/g, '')}">
                     <td style="font-weight: bold; color: #0E3B5C;">Dr(a). ${doc.nombre} ${doc.apellido_paterno}</td>
                     <td><code style="background: #eef5f9; padding: 2px 6px; border-radius: 4px;">${doc.cedula_id}</code></td>
                     <td>
                         <a href="tel:${doc.telefono}" style="color: #2D5A27; text-decoration: none; font-weight: bold;">
                             📞 ${doc.telefono || 'Sin registrar'}
                         </a>
+                    </td>
+                    <td style="text-align:center;">
+                        <button class="btn-accion-rojo" style="padding: 4px 8px; font-size: 12px;" onclick="ocultarDoctor('${doc.cedula_id}', '${doc.nombre} ${doc.apellido_paterno}')">
+                            Ocultar
+                        </button>
                     </td>
                 </tr>
             `).join('');
@@ -1326,6 +1337,11 @@ async function cargarDirectorioReal() {
     } catch (error) {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #991D27;">❌ Error de conexión al cargar directorio.</td></tr>`;
     }
+    // Añadir fila para agregar nuevo doctor
+    tbody.innerHTML += `
+        <tr style="background-color: #f9f9f9;">
+            <td colspan="4" style="text-align: center; padding: 10px;"><a href="16-agregar-personal.html" class="btn-accion-verde" style="text-decoration: none; display: inline-block; padding: 8px 16px;">+ Añadir Nuevo Personal Médico</a></td>
+        </tr>`;
 }
 
 // 2. Cargar el buzón de incidencias reales en la pantalla 29 (Admin)
@@ -1394,10 +1410,10 @@ async function renderizarCitaPacienteAgenda() {
 
         if (data.success && data.citas.length > 0) {
             // Buscamos cualquier cita activa (agendada) sin importar la restricción estricta de año escolar
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0); // Ignoramos la hora para comparar solo la fecha
+            const ahora = new Date();
+            ahora.setHours(0, 0, 0, 0); // Para comparar solo fechas
 
-            const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada' && new Date(c.fecha) >= hoy);
+            const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada' && new Date(c.fecha.split('T')[0] + 'T00:00:00') >= ahora);
 
             if (citaActiva) {
                 const fechaLimpia = citaActiva.fecha.split('T')[0].replace(/-/g, '/');
@@ -1468,4 +1484,57 @@ async function cargarDirectorioPaciente() {
     }
 }
 
-//  
+// --- FUNCIONES NUEVAS PARA INTERACTIVIDAD ---
+
+/**
+ * Oculta un doctor del directorio público (baja lógica en la tabla 'personal').
+ * @param {string} cedula - La cédula del doctor a ocultar.
+ * @param {string} nombre - El nombre completo para el mensaje de confirmación.
+ */
+async function ocultarDoctor(cedula, nombre) {
+    if (confirm(`❓ ¿Está seguro de que desea ocultar al Dr(a). ${nombre} del directorio?\n\nEl doctor ya no aparecerá como disponible para agendar citas.`)) {
+        try {
+            const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores/ocultar', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cedula_doctor: cedula })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ ' + data.mensaje);
+                // Ocultar la fila de la tabla visualmente
+                const fila = document.getElementById(`doctor-row-${cedula.replace(/\s+/g, '')}`);
+                if (fila) fila.style.display = 'none';
+            } else {
+                alert('⚠️ ' + data.mensaje);
+            }
+        } catch (error) {
+            alert('❌ Error de conexión al intentar ocultar al doctor.');
+        }
+    }
+}
+
+/**
+ * Envía la solicitud de recuperación de contraseña desde la página 24.
+ * @param {Event} e - El evento del formulario.
+ */
+async function enviarSolicitudRecuperacion(e) {
+    e.preventDefault();
+    const correo = document.getElementById('correo-recuperar').value;
+    const feedback = document.getElementById('recuperar-feedback');
+    if (!correo) return alert('Por favor, ingrese su correo electrónico.');
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/recuperar-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ correo })
+        });
+        const data = await res.json();
+        feedback.textContent = '✅ ' + data.mensaje;
+        feedback.className = 'login-feedback-message success';
+    } catch (error) {
+        feedback.textContent = '❌ Error de conexión con el servidor.';
+        feedback.className = 'login-feedback-message error';
+    }
+}

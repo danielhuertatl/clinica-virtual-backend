@@ -560,4 +560,16 @@ app.get('/api/admin/incidencias', async (req, res) => {
     } catch (error) { res.status(500).json({ success: false, mensaje: 'Error al cargar incidencias.' }); }
 });
 
+// 25. OCULTAR UN DOCTOR DEL DIRECTORIO (BAJA LÓGICA EN PERSONAL)
+app.put('/api/doctores/ocultar', async (req, res) => {
+    const { cedula_doctor } = req.body;
+    try {
+        await pool.query('UPDATE personal SET activo = false WHERE cedula_id = $1', [cedula_doctor]);
+        res.json({ success: true, mensaje: 'Doctor ocultado del directorio correctamente.' });
+    } catch (error) {
+        console.error('Error al ocultar doctor:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar el estado del doctor.' });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => console.log(`✅ SERVIDOR ACTIVO EN PUERTO ${PORT}`));
