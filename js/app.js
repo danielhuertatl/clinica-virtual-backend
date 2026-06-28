@@ -945,31 +945,41 @@ async function cargarEstudiosPaciente() {
     const rol = localStorage.getItem('rolUsuario');
     const idPacienteSesion = localStorage.getItem('idPaciente');
 
-    if (!contenedor) return;
+    // Elementos de la página de estudios
+    const searchContainer = document.getElementById('search-container-estudios');
+    const headerTitle = document.querySelector('.header-consulta h3');
+
+    if (!contenedor || !searchContainer || !headerTitle) return;
 
     if (rol === 'paciente' && idPacienteSesion) {
         // Si es paciente, carga sus estudios directamente
-        document.getElementById('search-container-estudios').style.display = 'none';
-        document.querySelector('.header-consulta h3').textContent = 'Mis Estudios Clínicos';
+        searchContainer.style.display = 'none';
+        headerTitle.textContent = 'Mis Estudios Clínicos';
         await buscarYRenderizarEstudios(idPacienteSesion, contenedor);
     } else if (rol === 'doctor' || rol === 'admin' || rol === 'enfermero') {
         // Si es personal médico, activa la barra de búsqueda
-        document.getElementById('search-container-estudios').style.display = 'flex';
-        document.getElementById('btn-buscar-estudios').addEventListener('click', async () => {
-            const termino = document.getElementById('termino-estudios').value.trim();
-            if (!termino) return alert('Por favor, ingrese un dato del paciente para buscar.');
-            
-            // Primero, encontramos el ID del paciente
-            const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
-            const dataPaciente = await resPaciente.json();
+        searchContainer.style.display = 'flex';
+        const btnBuscar = document.getElementById('btn-buscar-estudios');
+        if (btnBuscar) {
+            btnBuscar.addEventListener('click', async () => {
+                const termino = document.getElementById('termino-estudios').value.trim();
+                if (!termino) return alert('Por favor, ingrese un dato del paciente para buscar.');
+                
+                try {
+                    const resPaciente = await fetch(`https://clinica-virtual-backend.onrender.com/api/pacientes/${encodeURIComponent(termino)}`);
+                    const dataPaciente = await resPaciente.json();
 
-            if (dataPaciente.success) {
-                document.querySelector('.header-consulta h3').textContent = `Estudios de: ${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
-                await buscarYRenderizarEstudios(dataPaciente.paciente.id_paciente, contenedor);
-            } else {
-                contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${dataPaciente.mensaje}</p>`;
-            }
-        });
+                    if (dataPaciente.success) {
+                        headerTitle.textContent = `Estudios de: ${dataPaciente.paciente.nombre} ${dataPaciente.paciente.apellido_paterno}`;
+                        await buscarYRenderizarEstudios(dataPaciente.paciente.id_paciente, contenedor);
+                    } else {
+                        contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">${dataPaciente.mensaje}</p>`;
+                    }
+                } catch (error) {
+                    contenedor.innerHTML = `<p style="text-align: center; color: #991D27;">Error de conexión al buscar paciente.</p>`;
+                }
+            });
+        }
     }
 }
 
