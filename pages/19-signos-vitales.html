@@ -12,68 +12,64 @@
     <div class="pantalla-consulta" style="max-width: 600px; position: relative; z-index: 1;">
         
         <div class="header-consulta">
-            <p><strong>Registro de Signos Vitales</strong></p>
+            <p><strong>Registro de Signos Vitales y Somatometría</strong></p>
             <div class="reloj-salir">
                 <button class="btn-salir-rojo" onclick="history.back()">cancelar</button>
             </div>
         </div>
 
-        <div class="logo-wrapper-mini" style="margin-bottom: 10px;">
+        <div class="logo-wrapper-mini" style="margin-bottom: 10px; text-align: center;">
             <img src="../assets/logocuad.png" alt="Logo" class="logo-mini" style="max-width: 100px;">
         </div>
 
         <div class="id-paciente-section" style="margin-top: 10px; background-color: #f0f4f8; padding: 15px; border-radius: 5px; border: 1px solid #0E3B5C;">
-            <label style="color: #0E3B5C; font-weight: bold;">Buscar paciente con cita:</label>
+            <label style="color: #0E3B5C; font-weight: bold;">Buscar paciente (Teléfono, CURP o Correo):</label>
             <div class="input-inline" style="margin-top: 5px;">
-                <input type="text" id="id-busqueda-signos" placeholder="Teléfono, CURP o correo..." style="width: 100%; padding: 8px;">
-                <button type="button" class="btn-ok" onclick="buscarPacienteSignos()">Buscar</button>
+                <input type="text" id="id-busqueda-signos" placeholder="Ingrese dato del paciente...">
+                <button type="button" class="btn-ok" onclick="buscarPacienteSignos()">Buscar Paciente</button>
             </div>
         </div>
 
-        <form id="form-signos" class="datos-paciente-grid">
-            <div class="campo" style="margin-top: 15px;">
+        <form id="form-signos" class="datos-paciente-grid" style="margin-top: 20px;">
+            <div class="campo" style="grid-column: span 2;">
                 <label>Nombre del Paciente:</label>
-                <input type="text" id="nombre-paciente" placeholder="Esperando paciente..." required style="border: 1px solid #0E3B5C;" readonly>
-                <p style="font-size: 11px; color: #666; margin-top: 3px;">*Se llenará automáticamente al buscar.</p>
+                <input type="text" id="nombre-paciente" readonly style="background-color: #eee; font-weight: bold;" placeholder="Cargue un paciente arriba...">
             </div>
-            
-            <h3 style="color: #0E3B5C; margin-top: 20px; border-bottom: 2px solid #0E3B5C; padding-bottom: 5px;">Signos Vitales</h3>
-            
-            <div class="campo-fila">
+
+            <h4 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px; grid-column: span 2; margin-top: 10px; text-align: left;">Signos Vitales</h4>
+
+            <div class="campo-fila" style="grid-column: span 2;">
                 <div>
-                    <label>Peso (kg):</label> 
-                    <input type="number" id="peso" step="0.1" min="1" max="350" required placeholder="Ej. 70.5" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46">
+                    <label for="peso">Peso (kg):</label>
+                    <input type="number" id="peso" step="0.1" min="1" max="300" placeholder="Ej. 70.5" required>
                 </div>
                 <div>
-                    <label>Talla (m):</label> 
-                    <input type="number" id="talla" step="0.01" min="0.40" max="2.50" required placeholder="Ej. 1.65" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46">
-                </div>
-            </div>
-            <div class="campo-fila">
-                <div>
-                    <label>FC (ppm):</label> 
-                    <input type="number" id="fc" min="0" max="300" required placeholder="Latidos x min" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                    <label for="talla">Talla (m):</label>
+                    <input type="number" id="talla" step="0.01" min="0.3" max="2.5" placeholder="Ej. 1.75" required>
                 </div>
                 <div>
-                    <label>FR (rpm):</label> 
-                    <input type="number" id="fr" min="0" max="100" required placeholder="Resp. x min" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                    <label for="temp">Temperatura (°C):</label>
+                    <input type="number" id="temp" step="0.1" min="30" max="45" placeholder="Ej. 36.5" required>
                 </div>
             </div>
-            <div class="campo-fila">
+
+            <div class="campo-fila" style="grid-column: span 2;">
                 <div>
-                    <label>SatO2 (%):</label> 
-                    <input type="number" id="sato2" min="0" max="100" required placeholder="0 - 100" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                    <label for="fc">Frec. Cardíaca (ppm):</label>
+                    <input type="number" id="fc" min="30" max="200" placeholder="Ej. 80" required>
                 </div>
                 <div>
-                    <label>Temp (°C):</label> 
-                    <input type="number" id="temp" step="0.1" min="30" max="45" required placeholder="Ej. 36.5" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46">
+                    <label for="fr">Frec. Respiratoria (rpm):</label>
+                    <input type="number" id="fr" min="10" max="60" placeholder="Ej. 16" required>
+                </div>
+                <div>
+                    <label for="sato2">Saturación SatO2 (%):</label>
+                    <input type="number" id="sato2" min="40" max="100" placeholder="Ej. 98" required>
                 </div>
             </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <button type="button" class="btn-accion-verde" style="flex: 1;" onclick="enviarCitaProgramada()">Enviar a Consulta (Con Cita)</button>
-                
-                <button type="button" class="btn-accion-rojo" style="flex: 1; background-color: #d35400; border-color: #d35400;" onclick="enviarPacienteNuevo()">Enviar Paciente Nuevo (Sin Cita)</button>
+
+            <div style="grid-column: span 2; display: flex; gap: 15px; margin-top: 20px;">
+                <button type="button" class="btn-enviar-consulta" style="background-color: #2D5A27; flex: 1;" onclick="enviarPacienteNuevo()">Mandar a tomar Signos Vitales</button>
             </div>
         </form>
     </div>
@@ -82,69 +78,55 @@
         const formSignos = document.getElementById('form-signos');
 
         async function guardarSignosEnBD() {
-            const inputBusqueda = document.getElementById('id-busqueda-signos');
-            const idReal = inputBusqueda ? inputBusqueda.dataset.idReal : null;
-            
-            if (!idReal) {
-                alert("⚠️ Primero debe buscar y seleccionar un paciente válido.");
+            const idPaciente = document.getElementById('id-busqueda-signos').dataset.idReal;
+            if (!idPaciente) {
+                alert("⚠️ Error: Debe cargar a un paciente válido antes de registrar los signos.");
                 return false;
             }
 
-            const signos = {
-                id_paciente: parseInt(idReal),
-                peso: document.getElementById('peso').value,
-                talla: document.getElementById('talla').value,
-                fc: document.getElementById('fc').value,
-                fr: document.getElementById('fr').value,
-                sato2: document.getElementById('sato2').value,
-                temp: document.getElementById('temp').value
+            const datosSignos = {
+                id_paciente: parseInt(idPaciente),
+                peso: parseFloat(document.getElementById('peso').value),
+                talla: parseFloat(document.getElementById('talla').value),
+                fc: parseInt(document.getElementById('fc').value),
+                fr: parseInt(document.getElementById('fr').value),
+                sato2: parseInt(document.getElementById('sato2').value),
+                temp: parseFloat(document.getElementById('temp').value)
             };
 
             try {
                 const res = await fetch('https://clinica-virtual-backend.onrender.com/api/signos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(signos)
+                    body: JSON.stringify(datosSignos)
                 });
                 const data = await res.json();
                 return data.success;
-            } catch(e) {
-                alert("❌ Error de conexión al guardar en la Base de Datos.");
+            } catch (e) {
+                alert("❌ Error de conexión al almacenar signos vitales.");
                 return false;
             }
         }
 
-        // Función para el paciente que ya tenía cita
-        async function enviarCitaProgramada() {
-            if (formSignos.reportValidity()) {
-                const guardado = await guardarSignosEnBD();
-                if (guardado) {
-                    alert('✅ Signos vitales guardados en el expediente.\n\nEl doctor ya los verá listos en su pantalla.');
-                    window.location.href = '4-enfermero.html';
-                }
-            }
-        }
-
-        // Función para el paciente que va llegando (Urgencia/Paso)
         async function enviarPacienteNuevo() {
             if (formSignos.reportValidity()) {
                 const guardado = await guardarSignosEnBD();
                 if (guardado) {
                     const nombre = document.getElementById('nombre-paciente').value;
-                    
                     try {
                         const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores/disponibilidad');
                         const data = await res.json();
                         if (data.success) {
                             const doc = data.doctor;
                             const nombreDoc = `Dr(a). ${doc.nombre} ${doc.apellido_paterno}`.trim();
-                            alert(`✅ DOCTOR DISPONIBLE.\n\nEl paciente ${nombre} ha sido asignado al ${nombreDoc}, quien tiene la menor carga de trabajo en este momento.`);
+                            alert(`✅ PACIENTE ENVIADO A CONSULTA.\n\nEl paciente ${nombre} ha sido asignado al ${nombreDoc} por menor volumen de carga operativa actual.`);
                             window.location.href = '4-enfermero.html';
                         } else {
-                            alert(`⚠️ NO HAY DOCTORES DISPONIBLES.\n\nNo se encontraron doctores activos en el sistema para atender al paciente.`);
+                            alert(`⚠️ AVISO: Signos guardados. No hay médicos disponibles en este momento, el paciente se mantendrá en sala de espera.`);
+                            window.location.href = '4-enfermero.html';
                         }
                     } catch(e) {
-                        alert("❌ Error de conexión al verificar la disponibilidad de doctores.");
+                        alert("❌ Error de comunicación al calcular balanceo de médicos.");
                     }
                 }
             }
