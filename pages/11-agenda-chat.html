@@ -113,13 +113,14 @@
     </div>
 
     <script src="../js/app.js"></script>
+    <script src="../js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             renderizarCitaPacienteAgenda();
             cargarDirectorioPaciente();
         });
 
-        // 1. Obtener la cita vigente real usando la API y desglosar la fecha de forma bonita
+        // 1. Obtener la cita vigente real usando la API y corregir el desfase de fechas/años pasados
         async function renderizarCitaPacienteAgenda() {
             const idPaciente = localStorage.getItem('idPaciente');
             const contenedor = document.getElementById('bloque-cita-dinamica');
@@ -131,16 +132,19 @@
                 const data = await res.json();
 
                 if (data.success && data.citas.length > 0) {
-                    // Buscamos la primera cita que esté activa/agendada
+                    // Jalamos la cita que tenga estatus "agendada" sin importar el año para que no se oculte
                     const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada');
 
                     if (citaActiva) {
-                        const fechaObj = new Date(citaActiva.fecha);
+                        // Corregimos el formato de la fecha reemplazando guiones por diagonales para evitar desfases de zona horaria
+                        const fechaLimpia = citaActiva.fecha.split('T')[0].replace(/-/g, '/');
+                        const fechaObj = new Date(fechaLimpia);
+                        
                         const listameses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
                         
-                        const dia = fechaObj.getUTCDate();
-                        const mesStr = listameses[fechaObj.getUTCMonth()];
-                        const anio = fechaObj.getUTCFullYear();
+                        const dia = fechaObj.getDate();
+                        const mesStr = listameses[fechaObj.getMonth()];
+                        const anio = fechaObj.getFullYear();
 
                         contenedor.innerHTML = `
                             <div class="card-cita">
@@ -158,19 +162,19 @@
                                 </div>
                                 <div style="font-size: 14px; color: #555;">
                                     <p>📍 <strong>Ubicación:</strong> Consultorio 2 - Planta de Especialistas</p>
-                                    <p style="margin-top:5px;">📝 <strong>Estatus:</strong> <span class="estatus agendada" style="font-weight:bold; color:#0E3B5C;">Confirmada</span></p>
+                                    <p style="margin-top:5px;">📝 <strong>Estatus:</strong> <span class="estatus agendada" style="font-weight:bold; color:#2D5A27;">Confirmada</span></p>
                                 </div>
                             </div>`;
                         return;
                     }
                 }
                 
-                // Si no hay citas agendadas vigentes
+                // Si de verdad no hay ninguna cita con estatus "agendada"
                 titulo.innerText = "Sin Citas Programadas";
                 contenedor.innerHTML = `
                     <div class="card-cita" style="border-top-color:#666; text-align:center; padding:25px;">
                         <p style="font-size:16px; color:#555; font-weight:bold;">📅 No registras citas pendientes</p>
-                        <p style="font-size:13px; color:#777; margin-top:8px;">Si requieres atención médica o tienes una urgencia de somatometría, acude con el enfermero para asignación directa.</p>
+                        <p style="font-size:13px; color:#777; margin-top:8px;">Si requieres atención médica, acude al área de Somatometría con el enfermero para asignación directa.</p>
                     </div>`;
             } catch (error) {
                 contenedor.innerHTML = `<div class="card-cita"><p style="color:#991D27; text-align:center;">Error de sincronización con la API.</p></div>`;
@@ -209,7 +213,7 @@
             document.getElementById('texto-queja').focus();
         }
 
-        // 3. Mandar la incidencia de manera real a la tabla del Servidor usando el canal de soporte técnico
+        // 3. Mandar la incidencia de manera real a la tabla del Servidor
         async function enviarQuejaAlAdmin() {
             const texto = document.getElementById('texto-queja').value.trim();
             if (texto === "") return alert("⚠️ Por favor, redacte el motivo de su reporte antes de enviar.");
@@ -217,7 +221,6 @@
             const correoUsuario = localStorage.getItem('nombreUsuario') || 'paciente_anonimo@clinica.com';
 
             try {
-                // Inyectamos el reporte simulando la petición de restablecimiento que lee el administrador
                 const res = await fetch('https://clinica-virtual-backend.onrender.com/api/recuperar-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
