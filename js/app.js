@@ -95,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FORMATEO ESTRICTO Y ALERTAS DE IDENTIDAD (TIEMPO REAL) ---
     // Agregados los IDs del formulario de personal (apellido_p, apellido_m) para que se validen igual
-    const camposIdentidad = ['nombre', 'ap-paterno', 'ap-materno', 'apellido_p', 'apellido_m'];
     const camposIdentidad = ['nombre', 'ap-paterno', 'ap-materno', 'apellido_p', 'apellido_m', 'calle'];
     camposIdentidad.forEach(id => {
         const input = document.getElementById(id);
@@ -136,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (warnSpan) {
                     if (esSospechoso) {
                         const tipoEtiqueta = (id === 'nombre') ? '¿NOMBRE REAL?' : '¿APELLIDO REAL?';
-                        const tipoEtiqueta = (id === 'nombre') ? '¿NOMBRE REAL?' : (id === 'calle' ? '¿CALLE VÁLIDA?' : '¿APELLIDO REAL?');
                         warnSpan.textContent = `🤔 ${tipoEtiqueta} Verifique que la información sea verídica.`;
                         warnSpan.style.color = '#d35400'; // Color Naranja preventivo
                         warnSpan.style.display = 'block';
@@ -152,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FORMATEO GENERAL A MAYÚSCULAS PARA DIRECCIONES ---
     // 4 y 7. Limpieza de caracteres especiales en campos de dirección.
-    const inputsDireccionM = ['calle', 'colonia', 'municipio', 'colonia_municipio', 'num_ext'];
     const inputsDireccionM = ['colonia', 'municipio', 'colonia_municipio'];
     inputsDireccionM.forEach(id => {
         const input = document.getElementById(id);
