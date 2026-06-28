@@ -132,7 +132,7 @@
                 </div>
                 <div style="flex: 2;">
                     <label>Calle y Número:</label>
-                    <input type="text" id="calle" placeholder="Ej. Av. Siempre Viva 123" required>
+                    <input type="text" id="calle" placeholder="Ej. Av. Siempre Viva 123" required oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s#.-]/g, '')">
                 </div>
             </div>
 
@@ -155,6 +155,142 @@
         </form>
     </div>
 
+    <script>
+        const chkExtranjero = document.getElementById('chk-extranjero-reg');
+        const filaExtranjero = document.getElementById('fila-extranjero');
+        const inputCurpField = document.getElementById('curp');
+        const inputEdadField = document.getElementById('edad');
+        const spanCurpErrorField = document.getElementById('curp-error');
+
+        // Manejo de visibilidad para extranjeros
+        if (chkExtranjero && filaExtranjero) {
+            chkExtranjero.addEventListener('change', function() {
+                if (this.checked) {
+                    filaExtranjero.style.display = 'flex';
+                    inputCurpField.value = '';
+                    inputCurpField.disabled = true;
+                    inputEdadField.value = '';
+                    inputEdadField.readOnly = false;
+                    inputEdadField.style.backgroundColor = '#fff';
+                    spanCurpErrorField.style.display = 'none';
+                } else {
+                    filaExtranjero.style.display = 'none';
+                    inputCurpField.disabled = false;
+                    inputEdadField.value = '';
+                    inputEdadField.readOnly = true;
+                    inputEdadField.style.backgroundColor = '#eee';
+                }
+            });
+        }
+
+        // --- TU ALGORITMO INTEGRAL DE CURP CARÁCTER POR CARÁCTER ---
+        if (inputCurpField && inputEdadField && spanCurpErrorField) {
+            const calcularEdadReal = (yy, mm, dd, char17) => {
+                let year = yy;
+                if (char17 && char17.match(/[0-9]/)) year += 1900;
+                else if (char17 && char17.match(/[A-Z]/)) year += 2000;
+                else {
+                    let currentYear = new Date().getFullYear() % 100;
+                    year += (yy > currentYear ? 1900 : 2000);
+                }
+                let birthDate = new Date(year, mm - 1, dd);
+                let today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                let monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+                return age;
+            };
+
+            inputCurpP = inputCurp;
+            inputCurpP.addEventListener('input', (e) => {
+                let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                let idx = v.length - 1;
+
+                // Forzar letras de posición 0 a 3, números de 4 a 9, letras de 10 a 15
+                if (idx >= 0 && idx < 4) {
+                    if (/[0-9]/.test(v[idx])) v = v.substring(0, idx);
+                } else if (idx >= 4 && idx < 10) {
+                    if (/[A-Z]/.test(v[idx])) v = v.substring(0, idx);
+                    if (v.length === 7 && !/^[01]$/.test(v[6])) v = v.substring(0, 6);
+                    if (v.length === 8) {
+                        const mm = parseInt(v.substr(6, 2), 10);
+                        if (mm < 1 || mm > 12) v = v.substring(0, 7);
+                    }
+                    if (v.length === 9 && !/^[0-3]$/.test(v[8])) v = v.substring(0, 8);
+                    if (v.length === 10) {
+                        const mm = parseInt(v.substr(6, 2), 10);
+                        const dd = parseInt(v.substr(8, 2), 10);
+                        if (dd < 1 || dd > 31) v = v.substring(0, 9);
+                        else {
+                            const yy = parseInt(v.substr(4, 2), 10);
+                            let currentYear = new Date().getFullYear() % 100;
+                            let year = yy + (yy > currentYear ? 1900 : 2000);
+                            let testDate = new Date(year, mm - 1, dd);
+                            if (testDate.getDate() !== dd) v = v.substring(0, 9);
+                        }
+                    }
+                } else if (idx >= 10 && idx < 16) {
+                    if (/[0-9]/.test(v[idx])) v = v.substring(0, idx);
+                }
+
+                e.target.value = v;
+
+                if (v.length === 0) {
+                    spanCurpErrorField.style.display = 'none';
+                    inputEdadField.value = '';
+                    return;
+                }
+
+                if (v.length >= 10) {
+                    const yy = parseInt(v.substr(4, 2), 10);
+                    const mm = parseInt(v.substr(6, 2), 10);
+                    const dd = parseInt(v.substr(8, 2), 10);
+                    let age = calcularEdadReal(yy, mm, dd, v.charAt(16));
+                    if (!isNaN(age) && age >= 0 && age <= 120) inputEdadField.value = age;
+
+                    if (v.length === 18) {
+                        const regexCURP = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/;
+                        spanCurpErrorField.style.display = regexCURP.test(v) ? 'none' : 'block';
+                        spanCurpErrorField.textContent = "⚠️ Formato de CURP inválido estructuralmente.";
+                    } else {
+                        spanCurpErrorField.style.display = 'block';
+                        spanCurpErrorField.textContent = "El CURP debe tener 18 caracteres.";
+                    }
+                } else {
+                    inputEdadField.value = '';
+                    spanCurpErrorField.style.display = 'block';
+                    spanCurpErrorField.textContent = "El CURP debe tener 18 caracteres.";
+                }
+            });
+        }
+
+        // Calcular edad para extranjeros mediante inputs manuales
+        const diaN = document.getElementById('dia-nac');
+        const mesN = document.getElementById('mes-nac');
+        const anioN = document.getElementById('anio-nac');
+
+        if (diaN && mesN && anioN) {
+            const calcularEdadManual = () => {
+                const d = parseInt(diaN.value);
+                const m = parseInt(mesN.value);
+                const a = parseInt(anioN.value);
+
+                if (d > 0 && m > 0 && a > 1900) {
+                    const hoy = new Date();
+                    let edad = hoy.getFullYear() - a;
+                    if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) {
+                        edad--;
+                    }
+                    if (edad >= 0 && edad <= 120) {
+                        inputEdadField.value = edad;
+                    }
+                }
+            };
+            diaN.addEventListener('input', calcularEdadManual);
+            mesN.addEventListener('input', calcularEdadManual);
+            anioN.addEventListener('input', calcularEdadManual);
+        }
+    </script>
     <script src="../js/app.js"></script>
 </body>
 </html>

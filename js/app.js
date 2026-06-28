@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ---
+// --- FORMATEO Y BLINDAJE DE DIRECCIONES CONTRA REPETICIONES ---
     const inputsDireccionCampos = ['calle', 'colonia', 'municipio', 'colonia_municipio'];
     inputsDireccionCampos.forEach(id => {
         const input = document.getElementById(id);
@@ -198,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!errSpan) {
                 errSpan = document.createElement('span');
                 errSpan.id = `${id}-dir-error`;
-                errSpan.style.color = '#991D27';
                 errSpan.style.fontSize = '11px';
                 errSpan.style.display = 'none';
                 errSpan.style.fontWeight = 'bold';
@@ -206,15 +205,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             input.addEventListener('input', (e) => {
-                let texto = e.target.value; 
-                if (/([A-Z0-9áéíóúñÑ])\1\1/i.test(texto)) {
+                let texto = e.target.value.toUpperCase(); 
+                
+                // 1. Bloqueo inmediato de 3 caracteres idénticos consecutivos
+                if (/([A-Z0-9ÁÉÍÓÚÑ])\1\1/i.test(texto)) {
                     texto = texto.substring(0, texto.length - 1);
                     errSpan.textContent = "⚠️ ¡Caracteres repetidos no permitidos!";
+                    errSpan.style.color = '#991D27';
                     errSpan.style.display = 'block';
                     e.target.value = texto;
                     return;
                 }
-                errSpan.style.display = 'none';
+
+                // 2. LA VALIDACIÓN CON CARITA: Detectar exceso de consonantes basura seguidas en la calle
+                const textoLimpio = texto.replace(/\s/g, '');
+                let esSospechoso = false;
+                if (textoLimpio.length >= 6) {
+                    esSospechoso = /[^AEIOUÁÉÍÓÚÜ0-9#.-]{6,}/i.test(textoLimpio);
+                }
+
+                if (esSospechoso) {
+                    errSpan.textContent = "🤔 ¿DIRECCIÓN REAL? Verifique que la información sea verídica.";
+                    errSpan.style.color = '#d35400'; // Naranja preventivo
+                    errSpan.style.display = 'block';
+                } else {
+                    errSpan.style.display = 'none';
+                }
+
                 e.target.value = texto;
             });
         }
@@ -475,35 +492,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('btn-personal');
             const errorCurp = document.getElementById('curp-error');
 
+            // --- VALIDACIONES DE SUBMIT ---
+            // 1.1 y 6. APELLIDOS DUPLICADOS (CON PREGUNTA DE CONFIRMACIÓN DE SEGURIDAD)
             const apellidoP = document.getElementById('apellido_p').value.trim();
             const apellidoM = document.getElementById('apellido_m').value.trim();
             
-            if (apellidoP.split(' ').filter(p => p.length > 1).length > 1 || apellidoM.split(' ').filter(p => p.length > 1).length > 1) {
-                alert('⚠️ Error: Los campos de apellido no deben contener palabras o apellidos repetidos duplicados.');
-                return;
+            const dupP = apellidoP.split(' ').filter(p => p.length > 1).length > 1;
+            const dupM = apellidoM.split(' ').filter(p => p.length > 1).length > 1;
+
+            if (dupP || dupM) {
+                const proceder = confirm("🤔 Detectamos un apellido repetido en el mismo campo (Ej: MARQUÉS MARQUÉS).\n\n¿La información es correcta y verídica para este miembro del personal?");
+                if (!proceder) return; // Detiene el registro para corregir
             }
 
+            // CONTRASEÑA FUERTE
             const password = document.getElementById('password').value;
             if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
                 alert('⚠️ La contraseña es débil. Debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.');
                 return;
             }
 
+            // CÉDULA PROFESIONAL
             const cedula = document.getElementById('cedula').value;
             if (cedula.length < 7 || cedula.length > 8) {
                 alert('⚠️ La Cédula Profesional debe tener entre 7 y 8 caracteres.');
                 return;
             }
 
+            // 4. CALLE CON CARACTERES ESPECIALES
             const calle = document.getElementById('calle').value;
             if (/[^A-Z0-9\s#.-]/.test(calle)) {
                 alert('⚠️ Error: El campo "Calle" contiene caracteres no permitidos.');
                 return;
             }
 
+            // 5. NÚMERO EXTERIOR ACEPTA LETRAS (se valida que no sea solo texto)
             const numExt = document.getElementById('num_ext').value;
             if (numExt.length > 0 && !/\d/.test(numExt)) {
-                alert('⚠️ Error: El "Número Exterior" debe contener al menos un dígito.');
+                alert('⚠️ Error: El "Número Exterior" debe contener al menos un dígito si no está vacío.');
                 return;
             }
 
@@ -516,7 +542,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('⚠️ El teléfono debe tener exactamente 10 dígitos.');
                 return;
             }
-
+            // --- FIN DE VALIDACIONES ---
+            
             btn.innerText = "Sincronizando...";
             const colElement = document.getElementById('colonia_p');
             const munElement = document.getElementById('municipio_p');
@@ -554,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
     // --- MANEJO DEL SUBMIT PACIENTES ---
     const formRegistro = document.getElementById('form-registro');
     if (formRegistro) {
@@ -565,14 +593,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorVisible = document.getElementById('curp-error');
             const errorEmailVisible = document.getElementById('email-error');
 
+            // --- VALIDACIONES DE SUBMIT PARA PACIENTES ---
+            // 6. APELLIDOS DUPLICADOS (CON PREGUNTA DE CONFIRMACIÓN DE SEGURIDAD INTERACTIVA)
             const apPaterno = document.getElementById('ap-paterno').value.trim();
             const apMaterno = document.getElementById('ap-materno').value.trim();
             
-            if (apPaterno.split(' ').filter(p => p.length > 1).length > 1 || apMaterno.split(' ').filter(p => p.length > 1).length > 1) {
-                alert('⚠️ Error: Los campos de apellido no deben contener palabras o apellidos repetidos duplicados.');
-                return;
+            const dupPaterno = apPaterno.split(' ').filter(p => p.length > 1).length > 1;
+            const dupMaterno = apMaterno.split(' ').filter(p => p.length > 1).length > 1;
+
+            if (dupPaterno || dupMaterno) {
+                const proceder = confirm("🤔 Detectamos un apellido repetido en el mismo campo (Ej: MÁRQUEZ MÁRQUEZ).\n\n¿La información es correcta y verídica para este paciente?");
+                if (!proceder) return; // Detiene el registro si el usuario quiere corregir
             }
 
+            // 7. CALLE CON CARACTERES ESPECIALES (PACIENTE)
             if (/[^A-Z0-9\s#.-]/i.test(document.getElementById('calle').value)) {
                 alert('⚠️ Error: El campo "Calle" contiene caracteres no permitidos.');
                 return;
@@ -587,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('⚠️ Error: No se puede guardar. Corrija las advertencias del formato antes de proceder.');
                 return;
             }
+            // --- FIN DE VALIDACIONES ---
 
             btn.innerText = "Sincronizando...";
             const datos = {
@@ -623,8 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerText = "Guardar Paciente";
             }
         });
-    }
-
+    }   
+    
     // --- FORMULARIO EDITAR PERSONAL ---
     const formEditar = document.getElementById('form-editar-personal');
     if (formEditar) {
