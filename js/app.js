@@ -1334,14 +1334,14 @@ async function cargarBuzonIncidencias() {
     if (!contenedor) return;
 
     try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/usuarios');
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/incidencias');
         const data = await res.json();
 
         if (data.success) {
-            const usuariosInactivos = data.usuarios.filter(u => !u.estatus);
             let htmlContenido = "";
+            const { bajas, recuperaciones } = data.incidencias;
 
-            usuariosInactivos.forEach(u => {
+            bajas.forEach(u => {
                 htmlContenido += `
                     <div style="padding: 15px; background: #fff9f9; border: 1px solid #f5c6cb; border-radius: 6px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1356,21 +1356,23 @@ async function cargarBuzonIncidencias() {
                     </div>`;
             });
 
-            // Alerta de restablecimiento conectada a tu ruta real
-            htmlContenido += `
-                <div style="padding: 15px; background: #fbf9f1; border: 1px solid #f3ebd0; border-radius: 6px; margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <strong style="color: #d35400;">🔑 Solicitud de Restablecimiento</strong>
-                        <span class="indicador-nuevo" style="background: #d35400; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Pendiente</span>
-                    </div>
-                    <p style="font-size: 14px; margin: 8px 0;">"Se ha registrado una petición en la ruta <code>/api/recuperar-password</code>. Revise el flujo para restablecer la clave del usuario."</p>
-                    <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
-                        <span>🌐 Origen: Portal Pacientes</span>
-                        <span>📅 Reciente</span>
-                    </div>
-                </div>`;
+            recuperaciones.forEach(msg => {
+                htmlContenido += `
+                    <div style="padding: 15px; background: #fbf9f1; border: 1px solid #f3ebd0; border-radius: 6px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: #d35400;">🔑 Solicitud de Restablecimiento</strong>
+                            <span class="indicador-nuevo" style="background: #d35400; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Pendiente</span>
+                        </div>
+                        <p style="font-size: 14px; margin: 8px 0;">${msg.contenido}</p>
+                        <div style="display: flex; gap: 10px; font-size: 12px; color: #666;">
+                            <span>🌐 Origen: Portal Pacientes</span>
+                            <span>📅 ${new Date(msg.fecha_envio).toLocaleDateString('es-MX')}</span>
+                        </div>
+                    </div>`;
+            });
 
-            contenedor.innerHTML = htmlContenido;
+            if (htmlContenido === "") contenedor.innerHTML = `<p style="text-align: center; color: #666;">No hay alertas en el buzón.</p>`;
+            else contenedor.innerHTML = htmlContenido;
         } else {
             contenedor.innerHTML = `<p style="text-align: center; color: #666;">No hay alertas en el buzón.</p>`;
         }

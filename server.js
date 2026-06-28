@@ -299,7 +299,7 @@ app.get('/api/citas/doctor/:cedula/fecha/:fecha', async (req, res) => {
 app.get('/api/doctores', async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT cedula_id, nombre, apellido_paterno, apellido_materno 
+            `SELECT cedula_id, nombre, apellido_paterno, apellido_materno, telefono 
              FROM personal WHERE puesto = 'doctor' AND activo = true`
         );
         res.json({ success: true, doctores: result.rows });
@@ -535,6 +535,29 @@ app.put('/api/admin/usuarios/baja', async (req, res) => {
         console.error('Error al dar de baja:', error);
         res.status(500).json({ success: false, mensaje: 'Error al actualizar el estatus.' });
     }
+});
+
+// 24. OBTENER INCIDENCIAS PARA EL BUZÓN DEL ADMIN
+app.get('/api/admin/incidencias', async (req, res) => {
+    try {
+        // Obtenemos usuarios inactivos
+        const inactivosRes = await pool.query(
+            `SELECT id_usuario, correo, rol FROM usuarios WHERE estatus = false`
+        );
+
+        // Obtenemos las solicitudes de recuperación de contraseña
+        const recuperacionRes = await pool.query(
+            `SELECT * FROM mensajes WHERE asunto = 'Recuperación de Contraseña' AND leido = false ORDER BY fecha_envio DESC`
+        );
+
+        res.json({
+            success: true,
+            incidencias: {
+                bajas: inactivosRes.rows,
+                recuperaciones: recuperacionRes.rows
+            }
+        });
+    } catch (error) { res.status(500).json({ success: false, mensaje: 'Error al cargar incidencias.' }); }
 });
 
 app.listen(PORT, '0.0.0.0', () => console.log(`✅ SERVIDOR ACTIVO EN PUERTO ${PORT}`));
