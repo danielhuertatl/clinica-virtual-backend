@@ -733,6 +733,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarCitaPacienteAgenda();
         cargarDirectorioPaciente();
     }
+    // 25. LÓGICA DE DISPONIBILIDAD DE HORARIOS PARA AGENDAR CITA
+    if (window.location.pathname.includes('27-agendar-cita.html')) {
+        cargarDisponibilidadParaAgendar();
+    }
     // 24. ACTIVAR LÓGICA DE RECUPERACIÓN DE CONTRASEÑA
     const formRecuperar = document.getElementById('form-recuperar');
     if (formRecuperar) {
@@ -1307,9 +1311,32 @@ async function cargarHistorialCitasPaciente() {
 async function cargarHorarioDoctor() {
     const cedula = localStorage.getItem('cedulaUsuario');
     if (!cedula) return;
+
     try {
         if (typeof calcularTotalHoras === "function") calcularTotalHoras();
     } catch (error) { console.error(error); }
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`);
+        const data = await res.json();
+
+        if (data.success && data.horario) {
+            // Limpiar todos los checkboxes y horas antes de popular
+            for (let i = 0; i < 7; i++) {
+                const chk = document.getElementById(`chk-${i}`);
+                if(chk) chk.checked = false;
+            }
+
+            data.horario.forEach(h => {
+                const chk = document.getElementById(`chk-${h.dia_semana}`);
+                if (chk) {
+                    chk.checked = true;
+                    document.getElementById(`inicio-${h.dia_semana}`).value = h.hora_inicio;
+                    document.getElementById(`fin-${h.dia_semana}`).value = h.hora_fin;
+                }
+            });
+        }
+        // Finalmente, calculamos las horas totales con los datos cargados
+        if (typeof calcularTotalHoras === "function") calcularTotalHoras(); 
+    } catch (error) { console.error("Error al cargar horario:", error); }
 }
 
 async function guardarHorarioDoctor() {
