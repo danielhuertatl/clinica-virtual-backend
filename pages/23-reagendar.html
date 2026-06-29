@@ -21,30 +21,115 @@
 
         <div class="datos-agenda" style="margin-top: 20px; background: #fff; padding: 15px; border: 1px solid #0E3B5C;">
             <h3 style="color: #0E3B5C; margin-bottom: 10px; text-align: center;">Cita Actual</h3>
-            <div class="campo"><label>Doctor(a):</label> <p>Médico Asignado</p></div>
-            <div class="campo"><label>Fecha:</label> <p>Jueves, 16 de Abril de 2026</p></div>
-            <div class="campo"><label>Hora:</label> <p>13:43 hrs</p></div>
+            <div class="campo"><label>Doctor(a):</label> <p id="detalle-doctor">Cargando datos...</p></div>
+            <div class="campo"><label>Fecha:</label> <p id="detalle-fecha">--/--/----</p></div>
+            <div class="campo"><label>Hora:</label> <p id="detalle-hora">--:-- hrs</p></div>
+            <input type="hidden" id="id-cita-actual">
         </div>
 
         <form class="datos-paciente-grid" style="margin-top: 20px;">
-            <h3 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Reagendar</h3>
+            <h3 style="color: #0E3B5C; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Solicitar Cambio de Fecha/Hora</h3>
             <div class="campo-fila">
                 <div>
                     <label>Nueva Fecha:</label> 
-                    <input type="date" required style="width: 100%; padding: 8px; border: 1px solid #0E3B5C;">
+                    <input type="date" id="fecha-nueva" required style="width: 100%; padding: 8px; border: 1px solid #0E3B5C;">
                 </div>
                 <div>
                     <label>Hora preferida:</label> 
-                    <input type="time" required style="width: 100%; padding: 8px; border: 1px solid #0E3B5C;">
+                    <input type="time" id="hora-nueva" required style="width: 100%; padding: 8px; border: 1px solid #0E3B5C;">
                 </div>
             </div>
-            
-            <div class="acciones-consulta" style="margin-top: 30px;">
-                <button type="button" class="btn-accion-rojo" onclick="if(confirm('¿Está seguro de que desea CANCELAR definitivamente esta cita?')) { alert('Cita cancelada.'); window.location.href='3-paciente.html'; }">Cancelar Cita Definitivamente</button>
-                
-                <button type="button" class="btn-accion-verde" onclick="alert('Su solicitud de reagenda ha sido enviada a la clínica. Le confirmaremos en breve.'); window.location.href='3-paciente.html';">Solicitar Nuevo Horario</button>
+            <div style="margin-top: 12px;">
+                <label>Motivo:</label>
+                <textarea id="motivo-reagendacion" rows="4" style="width: 100%; padding: 8px; border: 1px solid #0E3B5C; border-radius: 6px; resize: none;" placeholder="Explique brevemente por qué necesita cambiar esta cita."></textarea>
+            </div>
+            <div id="mensaje-estado-reagendar" style="margin-top: 12px; color: #991D27; font-size: 13px; display: none;"></div>
+            <div class="acciones-consulta" style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-accion-rojo" onclick="confirmarCancelarCita()">Cancelar Cita Definitivamente</button>
+                <button type="button" class="btn-accion-verde" onclick="solicitarReagendacionCita()">Enviar Solicitud de Reagendación</button>
             </div>
         </form>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', cargarDatosCitaActual);
+
+        async function cargarDatosCitaActual() {
+            const idPaciente = localStorage.getItem('idPaciente');
+            if (!idPaciente) return;
+
+            try {
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
+                const data = await res.json();
+                if (!data.success || !data.citas.length) return;
+
+                const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada');
+                if (!citaActiva) return;
+
+                document.getElementById('detalle-doctor').textContent = `Dr(a). ${citaActiva.nombre} ${citaActiva.apellido_paterno}`;
+                document.getElementById('detalle-fecha').textContent = citaActiva.fecha.split('T')[0];
+                document.getElementById('detalle-hora').textContent = `${citaActiva.hora} hrs`;
+                document.getElementById('id-cita-actual').value = citaActiva.id_cita;
+            } catch (error) {
+                console.error('Error al cargar datos de cita actual:', error);
+            }
+        }
+
+        function confirmarCancelarCita() {
+            if (!confirm('¿Está seguro de que desea cancelar definitivamente esta cita?')) return;
+            const idCita = document.getElementById('id-cita-actual').value;
+            if (!idCita) return alert('No se encontró la cita actual.');
+            fetch('https://clinica-virtual-backend.onrender.com/api/citas/cancelar', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_cita: Number(idCita) })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Cita cancelada correctamente.');
+                    window.location.href = '3-paciente.html';
+                } else {
+                    alert('⚠️ ' + data.mensaje);
+                }
+            })
+            .catch(() => alert('❌ Error al cancelar la cita.'));
+        }
+
+        async function solicitarReagendacionCita() {
+            const idCita = document.getElementById('id-cita-actual').value;
+            const fecha = document.getElementById('fecha-nueva').value;
+            const hora = document.getElementById('hora-nueva').value;
+            const motivo = document.getElementById('motivo-reagendacion').value.trim();
+            const idPaciente = localStorage.getItem('idPaciente');
+            const estado = document.getElementById('mensaje-estado-reagendar');
+
+            if (!idCita || !fecha || !hora || !motivo) {
+                estado.style.display = 'block';
+                estado.textContent = 'Complete todos los campos antes de enviar la solicitud.';
+                return;
+            }
+            estado.style.display = 'none';
+
+            try {
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/reagendaciones', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_cita: Number(idCita), id_paciente: Number(idPaciente), fecha_solicitada: fecha, hora_solicitada: hora, motivo })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ Solicitud de reagendación enviada. El administrador revisará su caso.');
+                    window.location.href = '3-paciente.html';
+                } else {
+                    estado.style.display = 'block';
+                    estado.textContent = data.mensaje || 'No se pudo enviar la solicitud.';
+                }
+            } catch (error) {
+                estado.style.display = 'block';
+                estado.textContent = '❌ Error de conexión. Intente nuevamente más tarde.';
+            }
+        }
+    </script>
 </body>
 </html>

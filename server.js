@@ -72,6 +72,23 @@ pool.query(`
     )
 `).catch(err => console.error("Error creando tabla contactos_admin:", err));
 
+// CREAR TABLA DE SOLICITUDES DE REAGENDACIÓN
+pool.query(`
+    CREATE TABLE IF NOT EXISTS reagendaciones (
+        id_reagendacion SERIAL PRIMARY KEY,
+        id_cita INTEGER NOT NULL,
+        id_paciente INTEGER NOT NULL,
+        cedula_doctor VARCHAR(20) NOT NULL,
+        fecha_solicitada DATE NOT NULL,
+        hora_solicitada TIME NOT NULL,
+        motivo TEXT NOT NULL,
+        estatus VARCHAR(30) DEFAULT 'pendiente',
+        fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        fecha_respuesta TIMESTAMP NULL,
+        comentario_respuesta TEXT
+    )
+`).catch(err => console.error("Error creando tabla reagendaciones:", err));
+
 // SERVIR LOS ARCHIVOS FRONTEND (HTML, CSS, JS) DESDE EL MISMO SERVIDOR
 app.use(express.static(__dirname));
 
@@ -80,7 +97,7 @@ app.post('/api/login', async (req, res) => {
     const { correo, password } = req.body;
     try {
         const result = await pool.query(
-            `SELECT u.password_hash, u.rol, 
+            `SELECT u.password_hash, u.rol, u.correo,
                     COALESCE(p.nombre, pac.nombre, 'Usuario') as nombre, 
                     p.cedula_id, 
                     pac.id_paciente 
@@ -694,6 +711,135 @@ app.post('/api/mensajes', async (req, res) => {
     } catch (error) {
         console.error('Error al enviar mensaje:', error);
         res.status(500).json({ success: false, mensaje: 'Error al enviar el mensaje.' });
+    }
+});
+
+// 33. SOLICITAR REAGENDACIÓN DE CITA (PACIENTE)
+app.post('/api/reagendaciones', async (req, res) => {
+    const { id_cita, id_paciente, fecha_solicitada, hora_solicitada, motivo } = req.body;
+    if (!id_cita || !id_paciente || !fecha_solicitada || !hora_solicitada || !motivo) {
+        return res.status(400).json({ success: false, mensaje: 'Todos los campos de la solicitud son obligatorios.' });
+    }
+
+    try {
+        const citaRes = await pool.query(
+            `SELECT cedula_doctor, estatus FROM citas WHERE id_cita = $1 AND id_paciente = $2`,
+            [id_cita, id_paciente]
+        );
+        if (citaRes.rows.length === 0) {
+            return res.status(404).json({ success: false, mensaje: 'No se encontró la cita solicitada.' });
+        }
+
+        const cita = citaRes.rows[0];
+        if (cita.estatus.toLowerCase() !== 'agendada') {
+            return res.status(400).json({ success: false, mensaje: 'Solo se pueden reagendar citas que estén agendadas.' });
+        }
+
+        const existingReq = await pool.query(
+            `SELECT id_reagendacion FROM reagendaciones WHERE id_cita = $1 AND estatus = 'pendiente'`,
+            [id_cita]
+        );
+        if (existingReq.rows.length > 0) {
+            return res.status(400).json({ success: false, mensaje: 'Ya existe una solicitud de reagendación pendiente para esta cita.' });
+        }
+
+        const conflictRes = await pool.query(
+            `SELECT id_cita FROM citas WHERE cedula_doctor = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada' AND id_cita <> $4`,
+            [cita.cedula_doctor, fecha_solicitada, hora_solicitada, id_cita]
+        );
+        if (conflictRes.rows.length > 0) {
+            return res.status(400).json({ success: false, mensaje: 'El horario solicitado ya está ocupado en la agenda del doctor.' });
+        }
+
+        await pool.query(
+            `INSERT INTO reagendaciones (id_cita, id_paciente, cedula_doctor, fecha_solicitada, hora_solicitada, motivo)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [id_cita, id_paciente, cita.cedula_doctor, fecha_solicitada, hora_solicitada, motivo]
+        );
+
+        res.json({ success: true, mensaje: 'Solicitud de reagendación enviada correctamente. El administrador la revisará pronto.' });
+    } catch (error) {
+        console.error('Error al crear solicitud de reagendación:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al procesar la solicitud de reagendación.' });
+    }
+});
+
+// 34. OBTENER SOLICITUDES DE REAGENDACIÓN PARA ADMIN
+app.get('/api/admin/reagendaciones', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT r.*, p.nombre as paciente_nombre, p.apellido_paterno, p.apellido_materno, u.correo as correo_usuario
+             FROM reagendaciones r
+             JOIN pacientes p ON r.id_paciente = p.id_paciente
+             LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario
+             ORDER BY r.fecha_solicitud DESC`
+        );
+        res.json({ success: true, reagendaciones: result.rows });
+    } catch (error) {
+        console.error('Error al obtener solicitudes de reagendación:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener las solicitudes de reagendación.' });
+    }
+});
+
+// 35. ACEPTAR SOLICITUD DE REAGENDACIÓN
+app.put('/api/admin/reagendaciones/:id/aceptar', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const reqRes = await pool.query('SELECT * FROM reagendaciones WHERE id_reagendacion = $1', [id]);
+        if (reqRes.rows.length === 0) return res.status(404).json({ success: false, mensaje: 'Solicitud no encontrada.' });
+
+        const solicitud = reqRes.rows[0];
+        if (solicitud.estatus !== 'pendiente') return res.status(400).json({ success: false, mensaje: 'La solicitud ya fue procesada.' });
+
+        const conflictRes = await pool.query(
+            `SELECT id_cita FROM citas WHERE cedula_doctor = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada' AND id_cita <> $4`,
+            [solicitud.cedula_doctor, solicitud.fecha_solicitada, solicitud.hora_solicitada, solicitud.id_cita]
+        );
+        if (conflictRes.rows.length > 0) {
+            return res.status(400).json({ success: false, mensaje: 'El horario solicitado ya no está disponible. Verifique antes de aceptar.' });
+        }
+
+        await pool.query('BEGIN');
+        await pool.query(
+            `UPDATE citas SET fecha = $1, hora = $2 WHERE id_cita = $3`,
+            [solicitud.fecha_solicitada, solicitud.hora_solicitada, solicitud.id_cita]
+        );
+        await pool.query(
+            `UPDATE reagendaciones SET estatus = 'aceptada', fecha_respuesta = CURRENT_TIMESTAMP, comentario_respuesta = 'Reagendación aceptada por el administrador.'
+             WHERE id_reagendacion = $1`,
+            [id]
+        );
+        await pool.query('COMMIT');
+
+        res.json({ success: true, mensaje: 'Solicitud de reagendación aceptada y cita actualizada.' });
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Error al aceptar solicitud de reagendación:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al procesar la aceptación de reagendación.' });
+    }
+});
+
+// 36. RECHAZAR SOLICITUD DE REAGENDACIÓN
+app.put('/api/admin/reagendaciones/:id/rechazar', async (req, res) => {
+    const { id } = req.params;
+    const { comentario } = req.body;
+    try {
+        const reqRes = await pool.query('SELECT * FROM reagendaciones WHERE id_reagendacion = $1', [id]);
+        if (reqRes.rows.length === 0) return res.status(404).json({ success: false, mensaje: 'Solicitud no encontrada.' });
+
+        const solicitud = reqRes.rows[0];
+        if (solicitud.estatus !== 'pendiente') return res.status(400).json({ success: false, mensaje: 'La solicitud ya fue procesada.' });
+
+        await pool.query(
+            `UPDATE reagendaciones SET estatus = 'rechazada', fecha_respuesta = CURRENT_TIMESTAMP, comentario_respuesta = $1
+             WHERE id_reagendacion = $2`,
+            [comentario || 'Solicitud rechazada por el administrador.', id]
+        );
+
+        res.json({ success: true, mensaje: 'Solicitud de reagendación rechazada.' });
+    } catch (error) {
+        console.error('Error al rechazar solicitud de reagendación:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al procesar el rechazo de reagendación.' });
     }
 });
 

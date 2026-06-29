@@ -732,6 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarBuzonIncidencias();
         cargarContactosAdmin();
         cargarMensajesAdmin();
+        cargarSolicitudesReagendacionAdmin();
 
         const btnAgregarContacto = document.getElementById('btn-agregar-contacto');
         if (btnAgregarContacto) btnAgregarContacto.addEventListener('click', agregarContactoAdmin);
@@ -1609,6 +1610,63 @@ async function marcarMensajeLeido(idMensaje) {
         }
     } catch (error) {
         alert('❌ Error al marcar mensaje como leído.');
+    }
+}
+
+async function cargarSolicitudesReagendacionAdmin() {
+    const contenedor = document.getElementById('lista-reagendaciones-admin');
+    if (!contenedor) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/reagendaciones');
+        const data = await res.json();
+
+        if (data.success && data.reagendaciones.length > 0) {
+            contenedor.innerHTML = data.reagendaciones.map(req => `
+                <div style="padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <strong>${req.paciente_nombre} ${req.apellido_paterno} ${req.apellido_materno || ''}</strong>
+                            <span style="color:#666; font-size:12px; margin-left:10px;">${new Date(req.fecha_solicitud).toLocaleString('es-MX')}</span>
+                        </div>
+                        <span style="font-size:12px; color:#0E3B5C; font-weight:bold;">${req.estatus.toUpperCase()}</span>
+                    </div>
+                    <p style="margin: 10px 0 4px; font-weight: 700; color:#0E3B5C;">Doctor: ${req.cedula_doctor}</p>
+                    <p style="margin: 4px 0; color:#333;"><strong>Fecha solicitada:</strong> ${req.fecha_solicitada} a las ${req.hora_solicitada}</p>
+                    <p style="margin: 4px 0; color:#333;"><strong>Motivo:</strong> ${req.motivo}</p>
+                    ${req.comentario_respuesta ? `<p style="margin: 6px 0; color:#555;"><strong>Respuesta:</strong> ${req.comentario_respuesta}</p>` : ''}
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                        <button class="btn-accion-verde" style="padding: 6px 10px; font-size:12px;" onclick="procesarSolicitudReagendacion(${req.id_reagendacion}, true)">Aceptar</button>
+                        <button class="btn-accion-rojo" style="padding: 6px 10px; font-size:12px;" onclick="procesarSolicitudReagendacion(${req.id_reagendacion}, false)">Rechazar</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            contenedor.innerHTML = `<p style="text-align:center; color:#666;">No hay solicitudes de reagendación pendientes.</p>`;
+        }
+    } catch (error) {
+        contenedor.innerHTML = `<p style="text-align:center; color:#991D27;">Error al cargar solicitudes de reagendación.</p>`;
+    }
+}
+
+async function procesarSolicitudReagendacion(idReagendacion, aceptar) {
+    if (!confirm(`¿Desea ${aceptar ? 'aceptar' : 'rechazar'} esta solicitud de reagendación?`)) return;
+
+    try {
+        const url = `https://clinica-virtual-backend.onrender.com/api/admin/reagendaciones/${idReagendacion}/${aceptar ? 'aceptar' : 'rechazar'}`;
+        const options = { method: 'PUT', headers: { 'Content-Type': 'application/json' } };
+        if (!aceptar) options.body = JSON.stringify({ comentario: 'La solicitud fue rechazada. Por favor seleccione otra fecha u hora.' });
+
+        const res = await fetch(url, options);
+        const data = await res.json();
+        if (data.success) {
+            alert(`✅ ${data.mensaje}`);
+            cargarSolicitudesReagendacionAdmin();
+        } else {
+            alert('⚠️ ' + data.mensaje);
+        }
+    } catch (error) {
+        alert('❌ Error al procesar la solicitud de reagendación.');
     }
 }
 
