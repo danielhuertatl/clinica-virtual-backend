@@ -1317,7 +1317,7 @@ async function cargarHorarioDoctor() {
 
     try {
         if (typeof calcularTotalHoras === "function") calcularTotalHoras();
-    } catch (error) { console.error(error); }
+
         const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`);
         const data = await res.json();
 
@@ -1325,7 +1325,7 @@ async function cargarHorarioDoctor() {
             // Limpiar todos los checkboxes y horas antes de popular
             for (let i = 0; i < 7; i++) {
                 const chk = document.getElementById(`chk-${i}`);
-                if(chk) chk.checked = false;
+                if (chk) chk.checked = false;
             }
 
             data.horario.forEach(h => {
@@ -1337,27 +1337,12 @@ async function cargarHorarioDoctor() {
                 }
             });
         }
+
         // Finalmente, calculamos las horas totales con los datos cargados
-        if (typeof calcularTotalHoras === "function") calcularTotalHoras(); 
-    } catch (error) { console.error("Error al cargar horario:", error); }
-        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${cedula}`);
-        const data = await res.json();
-
-        if (data.success && data.horario) {
-            // Limpiar todos los checkboxes y horas antes de popular
-            for (let i = 0; i < 7; i++) {
-                const chk = document.getElementById(`chk-${i}`);
-                if(chk) chk.checked = false;
-            }
-
-            data.horario.forEach(h => {
-                const chk = document.getElementById(`chk-${h.dia_semana}`);
-                if (chk) {
-                    chk.checked = true;
-                    document.getElementById(`inicio-${h.dia_semana}`).value = h.hora_inicio;
-                    document.getElementById(`fin-${h.dia_semana}`).value = h.hora_fin;
-                }
-            });
+        if (typeof calcularTotalHoras === "function") calcularTotalHoras();
+    } catch (error) {
+        console.error("Error al cargar horario:", error);
+    }
 }
 
 async function guardarHorarioDoctor() {
