@@ -130,6 +130,17 @@
             }
         }
 
+        async function cargarHorariosReservados(cedula, fecha) {
+            try {
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/doctor/${encodeURIComponent(cedula)}/fecha/${fecha}`);
+                const data = await res.json();
+                return data.success && Array.isArray(data.citas) ? data.citas.map(c => c.hora) : [];
+            } catch (err) {
+                console.error('Error al cargar citas reservadas:', err);
+                return [];
+            }
+        }
+
         function generarHorariosDisponibles(inicio, fin) {
             const horarios = [];
             const [hInicio, mInicio] = inicio.split(':').map(Number);
@@ -189,14 +200,17 @@
             }
 
             const horariosDisponibles = generarHorariosDisponibles(horarioDia.hora_inicio, horarioDia.hora_fin);
-            if (horariosDisponibles.length === 0) {
+            const horariosReservados = await cargarHorariosReservados(selectDoctor.value, this.value);
+            const horariosFiltrados = horariosDisponibles.filter(hora => !horariosReservados.includes(hora));
+
+            if (horariosFiltrados.length === 0) {
                 gridHorarios.style.display = 'block';
-                gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">No hay horas disponibles en el rango configurado.</p>';
+                gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">No hay horas disponibles en ese día. Seleccione otra fecha o doctor.</p>';
                 return;
             }
 
             gridHorarios.style.display = 'grid';
-            horariosDisponibles.forEach(hora => {
+            horariosFiltrados.forEach(hora => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn-horario';

@@ -376,7 +376,30 @@ app.get('/api/doctores/disponibilidad', async (req, res) => {
 // 15. AGENDAR UNA NUEVA CITA
 app.post('/api/citas', async (req, res) => {
     const d = req.body;
+
+    if (!d.id_paciente || !d.cedula_doctor || !d.fecha || !d.hora || !d.motivo) {
+        return res.status(400).json({ success: false, mensaje: 'Todos los campos son obligatorios para agendar la cita.' });
+    }
+
     try {
+        const conflictoDoctor = await pool.query(
+            `SELECT id_cita FROM citas WHERE cedula_doctor = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada'`,
+            [d.cedula_doctor, d.fecha, d.hora]
+        );
+
+        if (conflictoDoctor.rows.length > 0) {
+            return res.status(400).json({ success: false, mensaje: 'El horario seleccionado ya está ocupado para ese doctor.' });
+        }
+
+        const conflictoPaciente = await pool.query(
+            `SELECT id_cita FROM citas WHERE id_paciente = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada'`,
+            [d.id_paciente, d.fecha, d.hora]
+        );
+
+        if (conflictoPaciente.rows.length > 0) {
+            return res.status(400).json({ success: false, mensaje: 'Ya tiene una cita agendada en ese mismo horario.' });
+        }
+
         await pool.query(
             `INSERT INTO citas (id_paciente, cedula_doctor, fecha, hora, motivo, estatus) 
              VALUES ($1, $2, $3, $4, $5, 'agendada')`,
