@@ -1728,12 +1728,21 @@ async function cargarDirectorioPaciente() {
     const divDir = document.getElementById('directorio-paciente-view');
     if (!divDir) return;
 
-    try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/contactos');
-        const data = await res.json();
+    let html = '';
 
-        if (data.success && data.contactos.length > 0) {
-            divDir.innerHTML = data.contactos.map(contacto => `
+    try {
+        const [contactosRes, doctoresRes] = await Promise.all([
+            fetch('https://clinica-virtual-backend.onrender.com/api/contactos'),
+            fetch('https://clinica-virtual-backend.onrender.com/api/doctores')
+        ]);
+        const contactosData = await contactosRes.json();
+        const doctoresData = await doctoresRes.json();
+
+        if (contactosData.success && contactosData.contactos.length > 0) {
+            html += `<div style="margin-bottom: 14px;">
+                        <strong style="color:#0E3B5C; display:block; margin-bottom:8px;">📞 Contactos Administrativos Temporales</strong>
+                    </div>`;
+            html += contactosData.contactos.map(contacto => `
                 <div class="item-contacto-paciente" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f4f4f4;">
                     <div>
                         <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">${contacto.nombre}</span>
@@ -1744,9 +1753,27 @@ async function cargarDirectorioPaciente() {
                     </a>
                 </div>
             `).join('');
-        } else {
-            divDir.innerHTML = `<div style="text-align:center; padding: 10px; color:#777; font-size:13px;">Clínica Central: 5512345678</div>`;
         }
+
+        if (doctoresData.success && doctoresData.doctores.length > 0) {
+            html += `<div style="margin: 20px 0 10px;"><strong style="color:#0E3B5C;">👩‍⚕️ Directorio de Doctores</strong></div>`;
+            html += doctoresData.doctores.map(doc => `
+                <div class="item-contacto-paciente" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f4f4f4;">
+                    <div>
+                        <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">Dr(a). ${doc.nombre} ${doc.apellido_paterno}</span>
+                        <br><small style="color:#777; font-size:11px;">Cédula: ${doc.cedula_id}</small>
+                    </div>
+                    <a href="tel:${doc.telefono || ''}" style="color:#2D5A27; font-weight:bold; font-size:14px; text-decoration:none;">
+                        📞 ${doc.telefono || 'No disponible'}</a>
+                </div>
+            `).join('');
+        }
+
+        if (!html) {
+            html = `<div style="text-align:center; padding: 10px; color:#777; font-size:13px;">No hay contactos disponibles en este momento.</div>`;
+        }
+
+        divDir.innerHTML = html;
     } catch (e) {
         divDir.innerHTML = `<p style="color:#991D27; font-size:12px; text-align:center;">Directorio fuera de línea.</p>`;
     }
