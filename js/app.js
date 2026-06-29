@@ -728,6 +728,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('29-agenda-admin.html')) {
         cargarDirectorioReal();
         cargarBuzonIncidencias();
+        cargarContactosAdmin();
+        cargarMensajesAdmin();
+
+        const btnAgregarContacto = document.getElementById('btn-agregar-contacto');
+        if (btnAgregarContacto) btnAgregarContacto.addEventListener('click', agregarContactoAdmin);
     }
     if (window.location.pathname.includes('11-agenda-chat.html')) {
         renderizarCitaPacienteAgenda();
@@ -1334,6 +1339,7 @@ async function cargarHorarioDoctor() {
                     chk.checked = true;
                     document.getElementById(`inicio-${h.dia_semana}`).value = h.hora_inicio;
                     document.getElementById(`fin-${h.dia_semana}`).value = h.hora_fin;
+                    if (typeof toggleDia === 'function') toggleDia(chk);
                 }
             });
         }
@@ -1444,6 +1450,121 @@ async function cargarDirectorioReal() {
         <tr style="background-color: #f9f9f9;">
             <td colspan="4" style="text-align: center; padding: 10px;"><a href="16-agregar-personal.html" class="btn-accion-verde" style="text-decoration: none; display: inline-block; padding: 8px 16px;">+ Añadir Nuevo Personal Médico</a></td>
         </tr>`;
+}
+
+// 2. Cargar los contactos administrativos y mensajes en la pantalla 29 (Admin)
+async function cargarContactosAdmin() {
+    const tbody = document.getElementById('cuerpo-contactos-admin');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/contactos');
+        const data = await res.json();
+
+        if (data.success && data.contactos.length > 0) {
+            tbody.innerHTML = data.contactos.map(contacto => `
+                <tr>
+                    <td>${contacto.nombre}</td>
+                    <td>${contacto.telefono}</td>
+                    <td>${contacto.tipo}</td>
+                    <td>${new Date(contacto.fecha_expiracion).toLocaleDateString('es-MX')}</td>
+                    <td style="text-align:center;"><button class="btn-accion-rojo" style="padding: 6px 10px; font-size: 12px;" onclick="desactivarContactoAdmin(${contacto.id_contacto})">Desactivar</button></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">No hay contactos administrativos temporales.</td></tr>`;
+        }
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#991D27;">Error al cargar contactos.</td></tr>`;
+    }
+}
+
+async function cargarMensajesAdmin() {
+    const contenedor = document.getElementById('lista-mensajes-admin');
+    if (!contenedor) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/mensajes');
+        const data = await res.json();
+
+        if (data.success && data.mensajes.length > 0) {
+            contenedor.innerHTML = data.mensajes.map(msg => `
+                <div style="padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <strong>${msg.correo || 'Paciente Anónimo'}</strong>
+                            <span style="color:#666; font-size:12px; margin-left:10px;">${new Date(msg.fecha_envio).toLocaleString('es-MX')}</span>
+                        </div>
+                        <button class="btn-accion-rojo" style="padding: 6px 10px; font-size: 12px;" onclick="marcarMensajeLeido(${msg.id_mensaje})">Marcar leído</button>
+                    </div>
+                    <p style="margin: 10px 0 4px; font-weight: 700; color:#0E3B5C;">${msg.asunto}</p>
+                    <p style="margin: 0; color:#333; white-space: pre-line;">${msg.contenido}</p>
+                </div>
+            `).join('');
+        } else {
+            contenedor.innerHTML = `<p style="text-align:center; color:#666;">No hay mensajes nuevos.</p>`;
+        }
+    } catch (error) {
+        contenedor.innerHTML = `<p style="text-align:center; color:#991D27;">Error al cargar mensajes administrativos.</p>`;
+    }
+}
+
+async function desactivarContactoAdmin(idContacto) {
+    if (!confirm('¿Desea desactivar este contacto administrativo?')) return;
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/admin/contactos/${idContacto}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Contacto desactivado correctamente.');
+            cargarContactosAdmin();
+        } else {
+            alert('⚠️ ' + data.mensaje);
+        }
+    } catch (error) {
+        alert('❌ Error al desactivar el contacto.');
+    }
+}
+
+async function agregarContactoAdmin() {
+    const nombre = document.getElementById('contacto-nombre').value.trim();
+    const telefono = document.getElementById('contacto-telefono').value.trim();
+    const tipo = document.getElementById('contacto-tipo').value.trim();
+
+    if (!nombre || !telefono) return alert('⚠️ Debe ingresar nombre y teléfono.');
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/admin/contactos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre, telefono, tipo })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Contacto agregado. Estará disponible hasta 15 días.');
+            document.getElementById('contacto-nombre').value = '';
+            document.getElementById('contacto-telefono').value = '';
+            document.getElementById('contacto-tipo').value = '';
+            cargarContactosAdmin();
+        } else {
+            alert('⚠️ ' + data.mensaje);
+        }
+    } catch (error) {
+        alert('❌ Error al agregar contacto.');
+    }
+}
+
+async function marcarMensajeLeido(idMensaje) {
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/admin/mensajes/${idMensaje}/leido`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) {
+            cargarMensajesAdmin();
+        } else {
+            alert('⚠️ ' + data.mensaje);
+        }
+    } catch (error) {
+        alert('❌ Error al marcar mensaje como leído.');
+    }
 }
 
 // 2. Cargar el buzón de incidencias reales en la pantalla 29 (Admin)
@@ -1563,18 +1684,18 @@ async function cargarDirectorioPaciente() {
     if (!divDir) return;
 
     try {
-        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/contactos');
         const data = await res.json();
 
-        if (data.success && data.doctores.length > 0) {
-            divDir.innerHTML = data.doctores.map(doc => `
+        if (data.success && data.contactos.length > 0) {
+            divDir.innerHTML = data.contactos.map(contacto => `
                 <div class="item-contacto-paciente" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f4f4f4;">
                     <div>
-                        <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">Dr(a). ${doc.nombre} ${doc.apellido_paterno.split(' ')[0]}</span>
-                        <br><small style="color:#777; font-size:11px;">Cédula: ${doc.cedula_id}</small>
+                        <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">${contacto.nombre}</span>
+                        <br><small style="color:#777; font-size:11px;">${contacto.tipo || 'Soporte'}</small>
                     </div>
-                    <a href="tel:${doc.telefono}" style="color:#2D5A27; font-weight:bold; font-size:14px; text-decoration:none;">
-                        📞 ${doc.telefono}
+                    <a href="tel:${contacto.telefono}" style="color:#2D5A27; font-weight:bold; font-size:14px; text-decoration:none;">
+                        📞 ${contacto.telefono}
                     </a>
                 </div>
             `).join('');

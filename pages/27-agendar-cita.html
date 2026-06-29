@@ -119,46 +119,91 @@
         const maxStr = maxDate.toISOString().split('T')[0];
         inputFecha.setAttribute('max', maxStr);
 
+        async function cargarHorariosDoctor(cedula) {
+            try {
+                const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${encodeURIComponent(cedula)}`);
+                const data = await res.json();
+                return data.success && Array.isArray(data.horario) ? data.horario : [];
+            } catch (err) {
+                console.error('Error al cargar el horario del doctor:', err);
+                return [];
+            }
+        }
+
+        function generarHorariosDisponibles(inicio, fin) {
+            const horarios = [];
+            const [hInicio, mInicio] = inicio.split(':').map(Number);
+            const [hFin, mFin] = fin.split(':').map(Number);
+            let minutoActual = hInicio * 60 + mInicio;
+            const minutoFin = hFin * 60 + mFin;
+
+            while (minutoActual + 30 <= minutoFin) {
+                const hora = String(Math.floor(minutoActual / 60)).padStart(2, '0');
+                const minuto = String(minutoActual % 60).padStart(2, '0');
+                horarios.push(`${hora}:${minuto}`);
+                minutoActual += 30;
+            }
+
+            return horarios;
+        }
+
         selectDoctor.addEventListener('change', function() {
             seccionFecha.style.display = 'block';
-            inputFecha.value = ''; 
+            inputFecha.value = '';
             seccionHorarios.style.display = 'none';
             btnConfirmar.style.display = 'none';
+            inputHora.value = '';
+            gridHorarios.innerHTML = '';
         });
 
-        inputFecha.addEventListener('change', function() {
-            if(this.value) {
-                seccionHorarios.style.display = 'block';
-                btnConfirmar.style.display = 'none';
-                inputHora.value = '';
+        inputFecha.addEventListener('change', async function() {
+            if (!this.value) return;
 
-                // Truco Pro: Saber qué día de la semana eligió el paciente
-                // En JS, 0 es Lunes (ajustado), 5 es Sábado, 6 es Domingo
-                const fechaSeleccionada = new Date(this.value + 'T12:00:00'); 
-                const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 6 es Sábado
+            seccionHorarios.style.display = 'block';
+            btnConfirmar.style.display = 'none';
+            inputHora.value = '';
+            gridHorarios.innerHTML = '';
 
-                // Limpiamos los botones viejos
-                gridHorarios.innerHTML = '';
+            const fechaSeleccionada = new Date(this.value + 'T12:00:00');
+            const diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 6 es Sábado
 
-                if(diaSemana === 0 || diaSemana === 6) {
-                    // Si es fin de semana (Sábado o Domingo)
-                    gridHorarios.style.display = 'block';
-                    gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">El doctor no atiende en fines de semana. Por favor, elija de Lunes a Viernes.</p>';
-                } else {
-                    // Si es entre semana, "cargamos" los horarios desde la base de datos fantasma
-                    gridHorarios.style.display = 'grid';
-                    const horariosSimulados = ['09:00', '09:45', '11:30', '13:00', '16:00', '17:15'];
-                    
-                    horariosSimulados.forEach(hora => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'btn-horario';
-                        btn.textContent = hora + ' hrs';
-                        btn.onclick = function() { seleccionarHora(this, hora); };
-                        gridHorarios.appendChild(btn);
-                    });
-                }
+            if (diaSemana === 0 || diaSemana === 6) {
+                gridHorarios.style.display = 'block';
+                gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">El doctor no atiende en fines de semana. Por favor, elija de Lunes a Viernes.</p>';
+                return;
             }
+
+            if (!selectDoctor.value) {
+                gridHorarios.style.display = 'block';
+                gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">Seleccione primero un doctor antes de elegir la fecha.</p>';
+                return;
+            }
+
+            const horariosDoctor = await cargarHorariosDoctor(selectDoctor.value);
+            const horarioDia = horariosDoctor.find(h => Number(h.dia_semana) === diaSemana);
+
+            if (!horarioDia) {
+                gridHorarios.style.display = 'block';
+                gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">El doctor no tiene horario disponible para ese día. Por favor, seleccione otra fecha.</p>';
+                return;
+            }
+
+            const horariosDisponibles = generarHorariosDisponibles(horarioDia.hora_inicio, horarioDia.hora_fin);
+            if (horariosDisponibles.length === 0) {
+                gridHorarios.style.display = 'block';
+                gridHorarios.innerHTML = '<p style="color: #991D27; font-weight: bold; text-align: center; padding: 10px; background: #fff3f4; border-radius: 5px;">No hay horas disponibles en el rango configurado.</p>';
+                return;
+            }
+
+            gridHorarios.style.display = 'grid';
+            horariosDisponibles.forEach(hora => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-horario';
+                btn.textContent = hora + ' hrs';
+                btn.onclick = function() { seleccionarHora(this, hora); };
+                gridHorarios.appendChild(btn);
+            });
         });
 
         function seleccionarHora(boton, hora) {

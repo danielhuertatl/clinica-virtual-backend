@@ -57,21 +57,49 @@
                             <th>Nombre del Médico</th>
                             <th>Cédula ID</th>
                             <th>Teléfono de Contacto</th>
+                            <th style="text-align:center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpo-directorio">
                         <tr>
-                            <td colspan="3" style="text-align: center; color: #666;">Conectando al servidor...</td>
+                            <td colspan="4" style="text-align: center; color: #666;">Conectando al servidor...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="seccion-blanca">
+                <h3 style="color: #0E3B5C; margin-bottom: 5px;">🧾 Contactos Administrativos Temporales</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Agrega un número de contacto que estará disponible hasta 15 días.</p>
+                <div style="display: grid; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="contacto-nombre" placeholder="Nombre del contacto" style="padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%;">
+                    <input type="text" id="contacto-telefono" placeholder="Teléfono" style="padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%;">
+                    <input type="text" id="contacto-tipo" placeholder="Tipo (Ej: ADMIN, QUEJAS, OTROS)" style="padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%;">
+                    <button class="btn-accion-verde" style="width: 100%; padding: 12px;" id="btn-agregar-contacto">+ Agregar Contacto Temporal</button>
+                </div>
+                <table class="tabla-contactos">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Tipo</th>
+                            <th>Vence</th>
+                            <th style="text-align:center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-contactos-admin">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #666;">Cargando contactos temporales...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <div class="seccion-blanca" style="border-top: 5px solid #991D27;">
-                <h3 style="color: #991D27;">📥 Buzón de Alertas e Incidencias</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Reportes de seguridad e historial de bajas lógicas procesadas.</p>
-                <div id="lista-incidencias">
-                    <p style="text-align: center; color: #666;">Cargando incidencias del servidor...</p>
+                <h3 style="color: #991D27;">📥 Buzón de Mensajes e Incidencias</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Recibe solicitudes de pacientes, sugerencias y reportes de soporte.</p>
+                <div id="lista-mensajes-admin">
+                    <p style="text-align: center; color: #666;">Cargando mensajes del servidor...</p>
                 </div>
             </div>
         </div>

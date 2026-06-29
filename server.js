@@ -46,6 +46,32 @@ pool.query(`
     )
 `).catch(err => console.error("Error creando tabla horarios_doctores:", err));
 
+// CREAR TABLA DE MENSAJES TEMPORALES PARA ADMINISTRACIÓN Y QUEJAS
+pool.query(`
+    CREATE TABLE IF NOT EXISTS mensajes (
+        id_mensaje SERIAL PRIMARY KEY,
+        id_usuario_emisor INTEGER,
+        asunto TEXT NOT NULL,
+        contenido TEXT NOT NULL,
+        fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        leido BOOLEAN DEFAULT false,
+        expiracion TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '15 days')
+    )
+`).catch(err => console.error("Error creando tabla mensajes:", err));
+
+// CREAR TABLA DE CONTACTOS ADMINISTRATIVOS TEMPORALES
+pool.query(`
+    CREATE TABLE IF NOT EXISTS contactos_admin (
+        id_contacto SERIAL PRIMARY KEY,
+        nombre VARCHAR(120) NOT NULL,
+        telefono VARCHAR(40) NOT NULL,
+        tipo VARCHAR(50) DEFAULT 'GENERAL',
+        activo BOOLEAN DEFAULT true,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        fecha_expiracion TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '15 days')
+    )
+`).catch(err => console.error("Error creando tabla contactos_admin:", err));
+
 // SERVIR LOS ARCHIVOS FRONTEND (HTML, CSS, JS) DESDE EL MISMO SERVIDOR
 app.use(express.static(__dirname));
 
@@ -558,6 +584,117 @@ app.get('/api/admin/incidencias', async (req, res) => {
             }
         });
     } catch (error) { res.status(500).json({ success: false, mensaje: 'Error al cargar incidencias.' }); }
+});
+
+// 26. OBTENER CONTACTOS ADMINISTRATIVOS PARA EL PANEL DE ADMIN
+app.get('/api/admin/contactos', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT id_contacto, nombre, telefono, tipo, activo, fecha_creacion, fecha_expiracion
+             FROM contactos_admin
+             WHERE activo = true AND fecha_expiracion > CURRENT_TIMESTAMP
+             ORDER BY fecha_creacion DESC`
+        );
+        res.json({ success: true, contactos: result.rows });
+    } catch (error) {
+        console.error('Error al obtener contactos admin:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener contactos administrativos.' });
+    }
+});
+
+// 27. AGREGAR CONTACTO ADMINISTRATIVO TEMPORAL
+app.post('/api/admin/contactos', async (req, res) => {
+    const { nombre, telefono, tipo } = req.body;
+    if (!nombre || !telefono) return res.status(400).json({ success: false, mensaje: 'Nombre y teléfono son requeridos.' });
+    try {
+        await pool.query(
+            `INSERT INTO contactos_admin (nombre, telefono, tipo) VALUES ($1, $2, $3)`,
+            [nombre, telefono, tipo || 'GENERAL']
+        );
+        res.json({ success: true, mensaje: 'Contacto administrativo agregado correctamente.' });
+    } catch (error) {
+        console.error('Error al agregar contacto admin:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al guardar el contacto administrativo.' });
+    }
+});
+
+// 28. ELIMINAR CONTACTO ADMINISTRATIVO (BAJA LÓGICA)
+app.delete('/api/admin/contactos/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('UPDATE contactos_admin SET activo = false WHERE id_contacto = $1', [id]);
+        res.json({ success: true, mensaje: 'Contacto administrativo desactivado correctamente.' });
+    } catch (error) {
+        console.error('Error al desactivar contacto admin:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al desactivar el contacto administrativo.' });
+    }
+});
+
+// 29. OBTENER CONTACTOS PÚBLICOS PARA PACIENTES
+app.get('/api/contactos', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT nombre, telefono, tipo
+             FROM contactos_admin
+             WHERE activo = true AND fecha_expiracion > CURRENT_TIMESTAMP
+             ORDER BY fecha_creacion DESC`
+        );
+        res.json({ success: true, contactos: result.rows });
+    } catch (error) {
+        console.error('Error al obtener contactos públicos:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener los contactos públicos.' });
+    }
+});
+
+// 30. OBTENER MENSAJES DE PACIENTES PARA EL ADMIN
+app.get('/api/admin/mensajes', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT m.id_mensaje, m.id_usuario_emisor, u.correo, m.asunto, m.contenido, m.fecha_envio, m.leido
+             FROM mensajes m
+             LEFT JOIN usuarios u ON m.id_usuario_emisor = u.id_usuario
+             WHERE m.expiracion > CURRENT_TIMESTAMP
+             ORDER BY m.fecha_envio DESC`
+        );
+        res.json({ success: true, mensajes: result.rows });
+    } catch (error) {
+        console.error('Error al obtener mensajes admin:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al obtener mensajes de pacientes.' });
+    }
+});
+
+// 31. MARCAR MENSAJE COMO LEÍDO
+app.put('/api/admin/mensajes/:id/leido', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('UPDATE mensajes SET leido = true WHERE id_mensaje = $1', [id]);
+        res.json({ success: true, mensaje: 'Mensaje marcado como leído.' });
+    } catch (error) {
+        console.error('Error al marcar mensaje como leído:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al actualizar el estado del mensaje.' });
+    }
+});
+
+// 32. ENVIAR MENSAJE / QUEJA DESDE PACIENTE
+app.post('/api/mensajes', async (req, res) => {
+    const { correo, asunto, contenido } = req.body;
+    if (!asunto || !contenido) return res.status(400).json({ success: false, mensaje: 'Asunto y contenido son obligatorios.' });
+    try {
+        let idUsuario = null;
+        if (correo) {
+            const userRes = await pool.query('SELECT id_usuario FROM usuarios WHERE correo = $1', [correo]);
+            if (userRes.rows.length > 0) idUsuario = userRes.rows[0].id_usuario;
+        }
+
+        await pool.query(
+            `INSERT INTO mensajes (id_usuario_emisor, asunto, contenido) VALUES ($1, $2, $3)`,
+            [idUsuario, asunto, contenido]
+        );
+        res.json({ success: true, mensaje: 'Mensaje de paciente enviado correctamente.' });
+    } catch (error) {
+        console.error('Error al enviar mensaje:', error);
+        res.status(500).json({ success: false, mensaje: 'Error al enviar el mensaje.' });
+    }
 });
 
 // 25. OCULTAR UN DOCTOR DEL DIRECTORIO (BAJA LÓGICA EN PERSONAL)

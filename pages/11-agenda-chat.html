@@ -92,27 +92,33 @@
         </div>
 
         <div class="seccion-directorio">
-            <h4 style="color: #0E3B5C; margin-bottom: 3px;">📞 Números Telefónicos de Contacto</h4>
-            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Marque directamente para solicitar aclaraciones o reportar incidencias inmediatas.</p>
+            <h4 style="color: #0E3B5C; margin-bottom: 3px;">📞 Contactos de Soporte y Quejas</h4>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Estos números son añadidos por el administrador y están disponibles por 15 días.</p>
             <div id="directorio-paciente-view" class="lista-telefonos-paciente">
-                <p style="font-size: 13px; color: #777; text-align: center;">Cargando teléfonos del personal...</p>
+                <p style="font-size: 13px; color: #777; text-align: center;">Cargando contactos de soporte...</p>
             </div>
         </div>
 
         <button class="btn-soporte" onclick="mostrarBuzon()">
-            💬 ¿Dudas o problemas con tu cuenta? Reportar Incidencia
+            💬 Solicitar Reagendar o Enviar Queja
         </button>
 
         <div id="seccion-mensaje" style="display: none; margin-top: 20px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #991D27; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-            <h4 style="margin-bottom: 5px; color: #991D27;">Levantar Reporte Técnico</h4>
-            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Describa detalladamente su incidencia. El Administrador recibirá la alerta con su correo en el panel operativo.</p>
-            <textarea id="texto-queja" placeholder="Escriba su mensaje, duda o aclaración técnica aquí..." style="width: 100%; height: 90px; margin-bottom: 10px; padding: 8px; resize: none;" oninput="this.value = this.value.toUpperCase()"></textarea>
-            <button class="btn-ok" style="width: 100%; background-color: #991D27;" onclick="enviarQuejaAlAdmin()">Enviar Reporte a Administración</button>
+            <h4 style="margin-bottom: 5px; color: #991D27;">Enviar Mensaje al Administrador</h4>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Seleccione el motivo y describa lo que necesita. El mensaje estará disponible para el administrador durante 15 días.</p>
+            <select id="tipo-mensaje" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px;">
+                <option value="">Seleccione un motivo</option>
+                <option value="Solicitud de Reagendar Cita">Solicitud de Reagendar Cita</option>
+                <option value="Queja">Queja</option>
+                <option value="Sugerencia">Sugerencia</option>
+                <option value="Otro">Otro</option>
+            </select>
+            <textarea id="texto-queja" placeholder="Escriba su mensaje aquí..." style="width: 100%; height: 90px; margin-bottom: 10px; padding: 8px; resize: none;" oninput="this.value = this.value.toUpperCase()"></textarea>
+            <button class="btn-ok" style="width: 100%; background-color: #991D27;" onclick="enviarQuejaAlAdmin()">Enviar Mensaje</button>
         </div>
 
     </div>
 
-    <script src="../js/app.js"></script>
     <script src="../js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -215,24 +221,31 @@
 
         // 3. Mandar la incidencia de manera real a la tabla del Servidor
         async function enviarQuejaAlAdmin() {
+            const tipo = document.getElementById('tipo-mensaje').value;
             const texto = document.getElementById('texto-queja').value.trim();
-            if (texto === "") return alert("⚠️ Por favor, redacte el motivo de su reporte antes de enviar.");
+            if (!tipo) return alert('⚠️ Seleccione el motivo del mensaje.');
+            if (texto === "") return alert('⚠️ Por favor, redacte el motivo de su mensaje antes de enviar.');
 
-            const correoUsuario = localStorage.getItem('nombreUsuario') || 'paciente_anonimo@clinica.com';
+            const correoUsuario = localStorage.getItem('rolUsuario') === 'paciente' ? localStorage.getItem('nombreUsuario') + '@clinica.com' : '';
 
             try {
-                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/recuperar-password', {
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/mensajes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ correo: correoUsuario })
+                    body: JSON.stringify({ correo: correoUsuario, asunto: tipo, contenido: texto })
                 });
                 const data = await res.json();
 
-                alert("✅ Reporte enviado exitosamente.\n\nLa incidencia ha sido notificada al Panel de Control del Administrador.");
-                document.getElementById('texto-queja').value = "";
-                document.getElementById('seccion-mensaje').style.display = 'none';
+                if (data.success) {
+                    alert('✅ Mensaje enviado exitosamente. El administrador lo verá en su panel.');
+                    document.getElementById('texto-queja').value = "";
+                    document.getElementById('tipo-mensaje').value = "";
+                    document.getElementById('seccion-mensaje').style.display = 'none';
+                } else {
+                    alert('❌ ' + (data.mensaje || 'Error al enviar el mensaje.'));
+                }
             } catch (error) {
-                alert("❌ Error de red: No se pudo enlazar con el buzón administrativo.");
+                alert('❌ Error de red: No se pudo enviar el mensaje al buzón administrativo.');
             }
         }
     </script>
