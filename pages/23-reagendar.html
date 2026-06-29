@@ -52,7 +52,21 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', cargarDatosCitaActual);
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarDatosCitaActual();
+            prefillDatosReagendacion();
+        });
+
+        function prefillDatosReagendacion() {
+            const fecha = localStorage.getItem('reagendar_fecha');
+            const hora = localStorage.getItem('reagendar_hora');
+            if (fecha) {
+                document.getElementById('fecha-nueva').value = fecha;
+            }
+            if (hora) {
+                document.getElementById('hora-nueva').value = hora;
+            }
+        }
 
         async function cargarDatosCitaActual() {
             const idPaciente = localStorage.getItem('idPaciente');

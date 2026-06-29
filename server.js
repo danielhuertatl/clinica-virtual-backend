@@ -382,6 +382,20 @@ app.post('/api/citas', async (req, res) => {
     }
 
     try {
+        const citaActivaPaciente = await pool.query(
+            `SELECT id_cita, fecha, hora, cedula_doctor FROM citas WHERE id_paciente = $1 AND estatus = 'agendada' LIMIT 1`,
+            [d.id_paciente]
+        );
+
+        if (citaActivaPaciente.rows.length > 0) {
+            return res.status(409).json({
+                success: false,
+                requires_reagendacion: true,
+                mensaje: 'Ya tiene una cita activa. Use el flujo de reagendación para solicitar un cambio de horario.',
+                cita_actual: citaActivaPaciente.rows[0]
+            });
+        }
+
         const conflictoDoctor = await pool.query(
             `SELECT id_cita FROM citas WHERE cedula_doctor = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada'`,
             [d.cedula_doctor, d.fecha, d.hora]
@@ -389,15 +403,6 @@ app.post('/api/citas', async (req, res) => {
 
         if (conflictoDoctor.rows.length > 0) {
             return res.status(400).json({ success: false, mensaje: 'El horario seleccionado ya está ocupado para ese doctor.' });
-        }
-
-        const conflictoPaciente = await pool.query(
-            `SELECT id_cita FROM citas WHERE id_paciente = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada'`,
-            [d.id_paciente, d.fecha, d.hora]
-        );
-
-        if (conflictoPaciente.rows.length > 0) {
-            return res.status(400).json({ success: false, mensaje: 'Ya tiene una cita agendada en ese mismo horario.' });
         }
 
         await pool.query(

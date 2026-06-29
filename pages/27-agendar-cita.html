@@ -262,11 +262,23 @@
                 if(data.success) {
                     alert("✅ ¡Cita confirmada con éxito!\n\nDoctor: " + selectDoctor.options[selectDoctor.selectedIndex].text + "\nFecha: " + inputFecha.value + "\nHora: " + inputHora.value);
                     window.location.href = '26-mis-citas.html';
-                } else {
-                    alert("❌ " + data.mensaje);
-                    btnConfirmar.textContent = 'Confirmar y Agendar Cita';
-                    btnConfirmar.disabled = false;
+                    return;
                 }
+
+                if (data.requires_reagendacion) {
+                    const confirmar = confirm('Ya tiene una cita activa. Si solicita una nueva cita, se generará una solicitud de reagendación para que el administrador la revise. ¿Desea continuar?');
+                    if (confirmar) {
+                        localStorage.setItem('reagendar_fecha', inputFecha.value);
+                        localStorage.setItem('reagendar_hora', inputHora.value);
+                        localStorage.setItem('reagendar_doctor', selectDoctor.value);
+                        window.location.href = '23-reagendar.html';
+                        return;
+                    }
+                }
+
+                alert("❌ " + data.mensaje);
+                btnConfirmar.textContent = 'Confirmar y Agendar Cita';
+                btnConfirmar.disabled = false;
             } catch(e) {
                 alert("❌ Error de conexión al agendar.");
                 btnConfirmar.textContent = 'Confirmar y Agendar Cita';
