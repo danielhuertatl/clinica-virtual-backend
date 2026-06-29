@@ -25,6 +25,7 @@
             <div class="campo"><label>Fecha:</label> <p id="detalle-fecha">--/--/----</p></div>
             <div class="campo"><label>Hora:</label> <p id="detalle-hora">--:-- hrs</p></div>
             <input type="hidden" id="id-cita-actual">
+            <input type="hidden" id="cedula-doctor-actual">
         </div>
 
         <form class="datos-paciente-grid" style="margin-top: 20px;">
@@ -43,6 +44,7 @@
                 <label>Motivo:</label>
                 <textarea id="motivo-reagendacion" rows="4" style="width: 100%; padding: 8px; border: 1px solid #0E3B5C; border-radius: 6px; resize: none;" placeholder="Explique brevemente por qué necesita cambiar esta cita."></textarea>
             </div>
+            <div id="mensaje-disponibilidad" style="margin-top: 12px; color: #d45400; font-size: 13px; display: none;"></div>
             <div id="mensaje-estado-reagendar" style="margin-top: 12px; color: #991D27; font-size: 13px; display: none;"></div>
             <div class="acciones-consulta" style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn-accion-rojo" onclick="confirmarCancelarCita()">Cancelar Cita Definitivamente</button>
@@ -84,6 +86,7 @@
                 document.getElementById('detalle-fecha').textContent = citaActiva.fecha.split('T')[0];
                 document.getElementById('detalle-hora').textContent = `${citaActiva.hora} hrs`;
                 document.getElementById('id-cita-actual').value = citaActiva.id_cita;
+                document.getElementById('cedula-doctor-actual').value = citaActiva.cedula_doctor;
             } catch (error) {
                 console.error('Error al cargar datos de cita actual:', error);
             }
@@ -110,6 +113,94 @@
             .catch(() => alert('❌ Error al cancelar la cita.'));
         }
 
+        async function validarDisponibilidadDoctor(fecha, hora) {
+            const mensaje = document.getElementById('mensaje-disponibilidad');
+            if (!fecha) {
+                mensaje.style.display = 'none';
+                return { valid: false, mensaje: 'Seleccione una fecha para validar la disponibilidad.' };
+            }
+
+            const cedulaDoctor = document.getElementById('cedula-doctor-actual').value;
+            if (!cedulaDoctor) {
+                mensaje.style.display = 'block';
+                mensaje.textContent = 'No se pudo identificar el doctor de la cita actual.';
+                return { valid: false, mensaje: 'No se pudo identificar el doctor de la cita actual.' };
+            }
+
+            try {
+                const resHorario = await fetch(`https://clinica-virtual-backend.onrender.com/api/horarios/${encodeURIComponent(cedulaDoctor)}`);
+                const dataHorario = await resHorario.json();
+                if (!dataHorario.success || !Array.isArray(dataHorario.horario)) {
+                    mensaje.style.display = 'block';
+                    mensaje.textContent = 'No se pudo verificar el horario del doctor. Intente más tarde.';
+                    return { valid: false, mensaje: 'No se pudo verificar el horario del doctor.' };
+                }
+
+                const fechaObj = new Date(fecha + 'T12:00:00');
+                const diaSemana = fechaObj.getDay();
+                const horarioDia = dataHorario.horario.find(h => Number(h.dia_semana) === diaSemana);
+
+                if (!horarioDia) {
+                    mensaje.style.display = 'block';
+                    mensaje.textContent = 'El doctor no atiende ese día. Elija otra fecha.';
+                    return { valid: false, mensaje: 'El doctor no atiende ese día.' };
+                }
+
+                if (!hora) {
+                    mensaje.style.display = 'none';
+                    return { valid: true };
+                }
+
+                const [hSel, mSel] = hora.split(':').map(Number);
+                const minutoSel = hSel * 60 + mSel;
+                const [hInicio, mInicio] = horarioDia.hora_inicio.split(':').map(Number);
+                const [hFin, mFin] = horarioDia.hora_fin.split(':').map(Number);
+                const minutoInicio = hInicio * 60 + mInicio;
+                const minutoFin = hFin * 60 + mFin;
+
+                if (minutoSel < minutoInicio || minutoSel >= minutoFin) {
+                    mensaje.style.display = 'block';
+                    mensaje.textContent = `El doctor sólo atiende de ${horarioDia.hora_inicio} a ${horarioDia.hora_fin} ese día.`;
+                    return { valid: false, mensaje: 'Hora fuera del horario de atención del doctor.' };
+                }
+
+                const resCitas = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/doctor/${encodeURIComponent(cedulaDoctor)}/fecha/${fecha}`);
+                const dataCitas = await resCitas.json();
+                if (!dataCitas.success || !Array.isArray(dataCitas.citas)) {
+                    mensaje.style.display = 'block';
+                    mensaje.textContent = 'No se pudo verificar si el horario ya está reservado.';
+                    return { valid: false, mensaje: 'No se pudo verificar reservas existentes.' };
+                }
+
+                const idCitaActual = Number(document.getElementById('id-cita-actual').value);
+                const conflicto = dataCitas.citas.find(c => c.hora === hora && Number(c.id_cita) !== idCitaActual);
+                if (conflicto) {
+                    mensaje.style.display = 'block';
+                    mensaje.textContent = 'El horario seleccionado ya está ocupado. Elija otra hora.';
+                    return { valid: false, mensaje: 'Horario ocupado.' };
+                }
+
+                mensaje.style.display = 'none';
+                return { valid: true };
+            } catch (error) {
+                mensaje.style.display = 'block';
+                mensaje.textContent = 'Error al validar disponibilidad. Intente más tarde.';
+                return { valid: false, mensaje: 'Error al validar disponibilidad.' };
+            }
+        }
+
+        document.getElementById('fecha-nueva').addEventListener('change', async () => {
+            const fecha = document.getElementById('fecha-nueva').value;
+            const hora = document.getElementById('hora-nueva').value;
+            await validarDisponibilidadDoctor(fecha, hora);
+        });
+
+        document.getElementById('hora-nueva').addEventListener('change', async () => {
+            const fecha = document.getElementById('fecha-nueva').value;
+            const hora = document.getElementById('hora-nueva').value;
+            await validarDisponibilidadDoctor(fecha, hora);
+        });
+
         async function solicitarReagendacionCita() {
             const idCita = document.getElementById('id-cita-actual').value;
             const fecha = document.getElementById('fecha-nueva').value;
@@ -117,12 +208,20 @@
             const motivo = document.getElementById('motivo-reagendacion').value.trim();
             const idPaciente = localStorage.getItem('idPaciente');
             const estado = document.getElementById('mensaje-estado-reagendar');
+            const validacion = await validarDisponibilidadDoctor(fecha, hora);
 
             if (!idCita || !fecha || !hora || !motivo) {
                 estado.style.display = 'block';
                 estado.textContent = 'Complete todos los campos antes de enviar la solicitud.';
                 return;
             }
+
+            if (!validacion.valid) {
+                estado.style.display = 'block';
+                estado.textContent = validacion.mensaje;
+                return;
+            }
+
             estado.style.display = 'none';
 
             try {

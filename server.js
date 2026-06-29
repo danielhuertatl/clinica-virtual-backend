@@ -422,7 +422,7 @@ app.get('/api/citas/paciente/:id_paciente', async (req, res) => {
     const { id_paciente } = req.params;
     try {
         const result = await pool.query(
-            `SELECT c.id_cita, c.fecha, c.hora, c.estatus, p.nombre, p.apellido_paterno, p.apellido_materno
+            `SELECT c.id_cita, c.cedula_doctor, c.fecha, c.hora, c.estatus, p.nombre, p.apellido_paterno, p.apellido_materno
              FROM citas c
              JOIN personal p ON c.cedula_doctor = p.cedula_id
              WHERE c.id_paciente = $1
