@@ -240,6 +240,23 @@
                 return;
             }
 
+            const citaActual = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`)
+                .then(r => r.json())
+                .then(data => data.success && Array.isArray(data.citas) ? data.citas.find(c => c.estatus.toLowerCase() === 'agendada') : null)
+                .catch(() => null);
+
+            if (citaActual) {
+                if (!confirm('Ya tiene una cita activa. Para agendar una nueva cita debe solicitar un cambio de fecha/hora. ¿Desea enviar una solicitud de reagendación?')) {
+                    return;
+                }
+                localStorage.setItem('reagendar_id_cita', citaActual.id_cita);
+                localStorage.setItem('reagendar_fecha', inputFecha.value);
+                localStorage.setItem('reagendar_hora', inputHora.value);
+                localStorage.setItem('reagendar_doctor', selectDoctor.value);
+                window.location.href = '23-reagendar.html';
+                return;
+            }
+
             const datosCita = {
                 id_paciente: idPaciente,
                 cedula_doctor: selectDoctor.value,

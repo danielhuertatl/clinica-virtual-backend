@@ -383,7 +383,7 @@ app.post('/api/citas', async (req, res) => {
 
     try {
         const citaActivaPaciente = await pool.query(
-            `SELECT id_cita, fecha, hora, cedula_doctor FROM citas WHERE id_paciente = $1 AND estatus = 'agendada' LIMIT 1`,
+            `SELECT id_cita, fecha, hora, cedula_doctor FROM citas WHERE id_paciente = $1 AND LOWER(estatus) = 'agendada' LIMIT 1`,
             [d.id_paciente]
         );
 
@@ -397,7 +397,7 @@ app.post('/api/citas', async (req, res) => {
         }
 
         const conflictoDoctor = await pool.query(
-            `SELECT id_cita FROM citas WHERE cedula_doctor = $1 AND fecha = $2 AND hora = $3 AND estatus <> 'cancelada'`,
+            `SELECT id_cita FROM citas WHERE cedula_doctor = $1 AND fecha = $2 AND hora = $3 AND LOWER(estatus) <> 'cancelada'`,
             [d.cedula_doctor, d.fecha, d.hora]
         );
 
@@ -698,8 +698,7 @@ app.get('/api/admin/mensajes', async (req, res) => {
             `SELECT m.id_mensaje, m.id_usuario_emisor, u.correo, m.asunto, m.contenido, m.fecha_envio, m.leido
              FROM mensajes m
              LEFT JOIN usuarios u ON m.id_usuario_emisor = u.id_usuario
-             WHERE m.expiracion > CURRENT_TIMESTAMP
-             ORDER BY m.fecha_envio DESC`
+             ORDER BY m.leido ASC, m.fecha_envio DESC`
         );
         res.json({ success: true, mensajes: result.rows });
     } catch (error) {

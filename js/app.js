@@ -725,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('18-borrar-personal.html')) prepararPaginaBorrado();
     if (window.location.pathname.includes('15-mostrar-estudios.html')) cargarEstudiosPaciente();
     if (window.location.pathname.includes('26-mis-citas.html') || window.location.pathname.includes('13-historial-citas.html')) cargarHistorialCitasPaciente();
+    if (window.location.pathname.includes('26-mis-citas.html')) actualizarBotonMisCitas();
     if (window.location.pathname.includes('9-historial.html')) prepararPaginaHistorial();
     if (window.location.pathname.includes('25-editar-horario.html')) cargarHorarioDoctor();
     if (window.location.pathname.includes('29-agenda-admin.html')) {
@@ -766,6 +767,41 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- FUNCIONES ASÍNCRONAS GLOBALES ---
+
+async function actualizarBotonMisCitas() {
+    const idPaciente = localStorage.getItem('idPaciente');
+    const boton = document.getElementById('btn-agendar-nueva-cita');
+    const mensaje = document.getElementById('mensaje-cita-activa');
+    if (!idPaciente || !boton || !mensaje) return;
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/paciente/${idPaciente}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.citas)) {
+            const citaActiva = data.citas.find(c => c.estatus.toLowerCase() === 'agendada');
+            if (citaActiva) {
+                mensaje.style.display = 'block';
+                mensaje.innerHTML = `Ya tienes una cita activa el <strong>${citaActiva.fecha.split('T')[0]}</strong> a las <strong>${citaActiva.hora} hrs</strong> con Dr(a). ${citaActiva.nombre} ${citaActiva.apellido_paterno}. Puedes solicitar un cambio de horario en vez de agendar una nueva.`;
+                boton.textContent = '🔄 Solicitar Reagendación';
+                boton.onclick = () => {
+                    localStorage.setItem('reagendar_id_cita', citaActiva.id_cita);
+                    window.location.href = '23-reagendar.html';
+                };
+                boton.classList.remove('btn-accion-verde');
+                boton.classList.add('btn-accion-amarillo');
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error al verificar cita activa:', error);
+    }
+
+    mensaje.style.display = 'none';
+    boton.textContent = '➕ Agendar Nueva Cita';
+    boton.onclick = () => window.location.href = '27-agendar-cita.html';
+    boton.classList.remove('btn-accion-amarillo');
+    boton.classList.add('btn-accion-verde');
+}
 
 async function cargarAgendaEnfermeria() {
     const contenedor = document.getElementById('contenedor-agenda-enfermeria');
@@ -1361,6 +1397,12 @@ async function cargarHistorialCitasPaciente() {
         }
     } catch (error) { console.error(error); }
 }
+
+function solicitarReagendacionDesdeMisCitas(idCita) {
+    localStorage.setItem('reagendar_id_cita', idCita);
+    window.location.href = '23-reagendar.html';
+}
+
 
 async function cargarHorarioDoctor() {
     const cedula = localStorage.getItem('cedulaUsuario');

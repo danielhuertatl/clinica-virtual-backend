@@ -407,7 +407,7 @@ body {
     margin-top: 20px;
 }
 
-.btn-accion, .btn-accion-rojo, .btn-accion-verde {
+.btn-accion, .btn-accion-rojo, .btn-accion-verde, .btn-accion-amarillo {
     padding: 10px;
     color: white;
     border: none;
@@ -418,6 +418,7 @@ body {
 .btn-accion { background-color: #0E3B5C; }
 .btn-accion-rojo { background-color: #991D27; }
 .btn-accion-verde { background-color: #2D5A27; grid-column: span 2; }
+.btn-accion-amarillo { background-color: #D79C1F; }
 
 .btn-cargar {
     width: 100%;
