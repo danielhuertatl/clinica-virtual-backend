@@ -850,13 +850,44 @@ async function cargarAgendaDoctor(fechaSeleccionada = null) {
         const data = await res.json();
 
         if (data.success && data.citas.length > 0) {
-            contenedor.innerHTML = data.citas.map(cita => `
-                <div class="tarjeta-cita" style="margin-bottom: 14px;">
+            const hiddenCitas = JSON.parse(sessionStorage.getItem('agendaCitasOcultas') || '[]');
+            const seen = new Set();
+            const citasUnicas = [];
+            const duplicados = [];
+
+            data.citas.forEach(cita => {
+                const idKey = cita.id_cita ? String(cita.id_cita) : `${cita.id_paciente}|${cita.hora}|${new Date(cita.fecha).toISOString().split('T')[0]}`;
+                if (seen.has(idKey)) {
+                    duplicados.push(cita);
+                } else {
+                    seen.add(idKey);
+                    citasUnicas.push(cita);
+                }
+            });
+
+            const citasVisibles = citasUnicas.filter(cita => !hiddenCitas.includes(String(cita.id_cita)));
+
+            if (citasVisibles.length === 0) {
+                contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C;">No hay citas agendadas para esta fecha.</p>';
+                return;
+            }
+
+            let avisoDuplicados = '';
+            if (duplicados.length > 0) {
+                avisoDuplicados = `<div style="margin-bottom: 14px; padding: 12px; border-radius: 10px; background: #fff4e6; border: 1px solid #f0c27b; color: #7a4a00;">Se encontraron ${duplicados.length} registros duplicados. Use "Descartar" para ocultarlos temporalmente.</div>`;
+            }
+
+            contenedor.innerHTML = avisoDuplicados + citasVisibles.map(cita => `
+                <div class="tarjeta-cita" id="cita-${cita.id_cita}" style="margin-bottom: 14px; position: relative;">
                     <div class="info-cita">
                         <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">${cita.hora}</p>
                         <p><strong>${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}</strong></p>
                         <p>ID Paciente: ${cita.id_paciente}</p>
                         <p style="margin-top: 8px;"><strong>Estatus:</strong> <span class="estatus ${cita.estatus.toLowerCase()}">${cita.estatus}</span></p>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+                        <button class="btn-accion-rojo" style="padding: 8px 12px;" onclick="cancelarCitaDoctor(${cita.id_cita})">Cancelar</button>
+                        <button class="btn-accion" style="background: #D79C1F; padding: 8px 12px;" onclick="descartarCitaDoctor(${cita.id_cita})">Descartar</button>
                     </div>
                 </div>
             `).join('');
@@ -866,6 +897,39 @@ async function cargarAgendaDoctor(fechaSeleccionada = null) {
     } catch (error) {
         console.error('Error en cargarAgendaDoctor:', error);
         contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la agenda.</p>';
+    }
+}
+
+function descartarCitaDoctor(idCita) {
+    if (!idCita) return;
+    const ocultas = JSON.parse(sessionStorage.getItem('agendaCitasOcultas') || '[]');
+    if (!ocultas.includes(String(idCita))) {
+        ocultas.push(String(idCita));
+        sessionStorage.setItem('agendaCitasOcultas', JSON.stringify(ocultas));
+    }
+    const elemento = document.getElementById(`cita-${idCita}`);
+    if (elemento) elemento.remove();
+}
+
+async function cancelarCitaDoctor(idCita) {
+    if (!idCita) return;
+    if (!confirm('¿Desea cancelar definitivamente esta cita?')) return;
+
+    try {
+        const res = await fetch('https://clinica-virtual-backend.onrender.com/api/citas/cancelar', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_cita: Number(idCita) })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Cita cancelada correctamente.');
+            cargarAgendaDoctor();
+        } else {
+            alert('⚠️ ' + (data.mensaje || 'No se pudo cancelar la cita.'));
+        }
+    } catch (error) {
+        alert('❌ Error al cancelar la cita. Intente nuevamente.');
     }
 }
 
