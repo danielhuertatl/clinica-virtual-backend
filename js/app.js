@@ -54,10 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (datos.success) {
                     localStorage.removeItem('cedulaUsuario');
                     localStorage.removeItem('idPaciente');
+                    localStorage.removeItem('correoUsuario');
                     localStorage.setItem('nombreUsuario', datos.nombre); 
                     localStorage.setItem('rolUsuario', datos.rol); 
                     if (datos.cedula) localStorage.setItem('cedulaUsuario', datos.cedula);
                     if (datos.id_paciente) localStorage.setItem('idPaciente', datos.id_paciente);
+                    if (datos.correo) localStorage.setItem('correoUsuario', datos.correo);
                     
                     if (feedbackDiv) {
                         feedbackDiv.textContent = '✅ ¡Acceso concedido! Redirigiendo...';
@@ -734,6 +736,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnAgregarContacto = document.getElementById('btn-agregar-contacto');
         if (btnAgregarContacto) btnAgregarContacto.addEventListener('click', agregarContactoAdmin);
     }
+    if (window.location.pathname.includes('7-agenda.html')) {
+        const filtroFecha = document.getElementById('filtro-fecha-agenda');
+        if (filtroFecha) {
+            const hoy = new Date().toISOString().split('T')[0];
+            filtroFecha.value = hoy;
+            filtroFecha.addEventListener('change', () => cargarAgendaDoctor(filtroFecha.value));
+        }
+        cargarAgendaDoctor();
+    }
     if (window.location.pathname.includes('11-agenda-chat.html')) {
         renderizarCitaPacienteAgenda();
         cargarDirectorioPaciente();
@@ -783,6 +794,40 @@ async function cargarAgendaEnfermeria() {
             contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C;">No hay citas agendadas para hoy.</p>';
         }
     } catch (error) {
+        contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la agenda.</p>';
+    }
+}
+
+async function cargarAgendaDoctor(fechaSeleccionada = null) {
+    const cedula = localStorage.getItem('cedulaUsuario');
+    const contenedor = document.getElementById('contenedor-citas-hoy-agenda');
+    const filtroFecha = document.getElementById('filtro-fecha-agenda');
+    if (!cedula || !contenedor || !filtroFecha) return;
+
+    const fecha = fechaSeleccionada || filtroFecha.value || new Date().toISOString().split('T')[0];
+    filtroFecha.value = fecha;
+    contenedor.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Cargando su agenda del día...</p>';
+
+    try {
+        const res = await fetch(`https://clinica-virtual-backend.onrender.com/api/citas/doctor/${cedula}/fecha/${fecha}`);
+        const data = await res.json();
+
+        if (data.success && data.citas.length > 0) {
+            contenedor.innerHTML = data.citas.map(cita => `
+                <div class="tarjeta-cita" style="margin-bottom: 14px;">
+                    <div class="info-cita">
+                        <p style="font-size: 18px; font-weight: bold; color: #0E3B5C;">${cita.hora}</p>
+                        <p><strong>${cita.nombre} ${cita.apellido_paterno} ${cita.apellido_materno || ''}</strong></p>
+                        <p>ID Paciente: ${cita.id_paciente}</p>
+                        <p style="margin-top: 8px;"><strong>Estatus:</strong> <span class="estatus ${cita.estatus.toLowerCase()}">${cita.estatus}</span></p>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            contenedor.innerHTML = '<p style="text-align: center; color: #0E3B5C;">No hay citas agendadas para esta fecha.</p>';
+        }
+    } catch (error) {
+        console.error('Error en cargarAgendaDoctor:', error);
         contenedor.innerHTML = '<p style="text-align: center; color: #991D27;">Error de conexión al cargar la agenda.</p>';
     }
 }

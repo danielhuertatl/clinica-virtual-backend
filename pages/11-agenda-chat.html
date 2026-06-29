@@ -187,27 +187,29 @@
             }
         }
 
-        // 2. Cargar los números telefónicos reales de la base de datos
+        // 2. Cargar los números telefónicos administrativos temporales disponibles para pacientes
         async function cargarDirectorioPaciente() {
             const divDir = document.getElementById('directorio-paciente-view');
+            if (!divDir) return;
+
             try {
-                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/doctores');
+                const res = await fetch('https://clinica-virtual-backend.onrender.com/api/contactos');
                 const data = await res.json();
 
-                if (data.success && data.doctores.length > 0) {
-                    divDir.innerHTML = data.doctores.map(doc => `
+                if (data.success && data.contactos.length > 0) {
+                    divDir.innerHTML = data.contactos.map(contacto => `
                         <div class="item-contacto-paciente">
                             <div>
-                                <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">Dr(a). ${doc.nombre} ${doc.apellido_paterno.split(' ')[0]}</span>
-                                <br><small style="color:#777; font-size:11px;">Cédula: ${doc.cedula_id}</small>
+                                <span style="font-weight:bold; color:#0E3B5C; font-size:14px;">${contacto.nombre}</span>
+                                <br><small style="color:#777; font-size:11px;">${contacto.tipo || 'Soporte'}</small>
                             </div>
-                            <a href="tel:${doc.telefono}" style="color:#2D5A27; font-weight:bold; font-size:14px; text-decoration:none;">
-                                📞 ${doc.telefono}
+                            <a href="tel:${contacto.telefono}" style="color:#2D5A27; font-weight:bold; font-size:14px; text-decoration:none;">
+                                📞 ${contacto.telefono}
                             </a>
                         </div>
                     `).join('');
                 } else {
-                    divDir.innerHTML = `<div class="item-contacto-paciente" style="justify-content:center;"><span style="color:#666; font-size:13px;">Clínica Central: 5512345678</span></div>`;
+                    divDir.innerHTML = `<div class="item-contacto-paciente" style="justify-content:center;"><span style="color:#666; font-size:13px;">No hay contactos temporales disponibles.</span></div>`;
                 }
             } catch (e) {
                 divDir.innerHTML = `<p style="color:#991D27; font-size:12px; text-align:center;">Directorio temporalmente fuera de línea.</p>`;
@@ -226,7 +228,7 @@
             if (!tipo) return alert('⚠️ Seleccione el motivo del mensaje.');
             if (texto === "") return alert('⚠️ Por favor, redacte el motivo de su mensaje antes de enviar.');
 
-            const correoUsuario = localStorage.getItem('rolUsuario') === 'paciente' ? localStorage.getItem('nombreUsuario') + '@clinica.com' : '';
+            const correoUsuario = localStorage.getItem('rolUsuario') === 'paciente' ? localStorage.getItem('correoUsuario') || '' : '';
 
             try {
                 const res = await fetch('https://clinica-virtual-backend.onrender.com/api/mensajes', {

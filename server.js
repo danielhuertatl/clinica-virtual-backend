@@ -97,7 +97,7 @@ app.post('/api/login', async (req, res) => {
             const esPasswordValido = await bcrypt.compare(password, user.password_hash) || password === user.password_hash;
             
             if (esPasswordValido) {
-                res.json({ success: true, rol: user.rol, nombre: user.nombre, cedula: user.cedula_id, id_paciente: user.id_paciente });
+                res.json({ success: true, rol: user.rol, nombre: user.nombre, correo: user.correo, cedula: user.cedula_id, id_paciente: user.id_paciente });
             } else {
                 res.json({ success: false, mensaje: 'Usuario o contraseña incorrectos' });
             }
